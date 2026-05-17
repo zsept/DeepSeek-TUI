@@ -1,0 +1,520 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                        DeepSeek TUI 配置文件                                  ║
+# ║                                                                              ║
+# ║  DeepSeek 平台非官方 CLI —— 与 DeepSeek 公司无隶属关系                         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# 配置加载方式详见 `docs/CONFIGURATION.md`（profile、环境变量覆盖等）。
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 当前 provider + DeepSeek 默认值
+# ─────────────────────────────────────────────────────────────────────────────────
+# 选择默认使用的 provider。各 provider 的凭据存放在文件底部的
+# `[providers.*]` 段中 —— 同时保存多个凭据意味着用 `/provider deepseek` 和
+# `/provider nvidia-nim`（或 `--provider openai`、`--provider fireworks`、
+# `/provider sglang`、`/provider vllm`、`/provider ollama`）切换时无需重新输入密钥。
+# 当 `[providers.deepseek]` 不存在时，顶层的 `api_key` / `base_url` 仍作为
+# DeepSeek 默认值读取（向后兼容）。
+provider = "deepseek" # deepseek | deepseek-cn | nvidia-nim | openai | atlascloud | openrouter | novita | fireworks | sglang | vllm | ollama
+api_key = "YOUR_DEEPSEEK_API_KEY" # 必须非空
+base_url = "https://api.deepseek.com/beta"
+# provider = "deepseek-cn"                       # 旧版别名（官方主机仍为 https://api.deepseek.com）
+# base_url = "https://api.deepseek.com"          # 不使用 DeepSeek beta 功能时可设此项
+# 可选的 OpenAI 兼容网关自定义模型请求头。
+# Authorization 和 Content-Type 由客户端管理，不可在此覆盖。
+# http_headers = { "X-Model-Provider-Id" = "your-model-provider" }
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 默认模型
+# ─────────────────────────────────────────────────────────────────────────────────
+# DeepSeek V4 系列：
+#   deepseek-v4-pro             —— DeepSeek 平台旗舰推理模型
+#   deepseek-v4-flash           —— 快速、高性价比（旧版别名：deepseek-chat、deepseek-reasoner）
+#   deepseek-ai/deepseek-v4-pro   —— NVIDIA NIM 托管的 Pro 模型 ID
+#   deepseek-ai/deepseek-v4-flash —— NVIDIA NIM 托管的 Flash 模型 ID
+#   gpt-4.1                        —— 通用 OpenAI 兼容默认模型 ID
+#   deepseek-ai/deepseek-v4-flash  —— AtlasCloud 默认模型 ID
+#   accounts/fireworks/models/deepseek-v4-pro —— Fireworks AI Pro 模型 ID
+#   deepseek-ai/DeepSeek-V4-Pro    —— SGLang 自托管 Pro 模型 ID
+#   deepseek-ai/DeepSeek-V4-Flash  —— SGLang 自托管 Flash 模型 ID
+default_text_model = "deepseek-v4-pro"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 思考模式（DeepSeek V4 推理深度）
+# ─────────────────────────────────────────────────────────────────────────────────
+# "off"    —— 禁用思维链（thinking.type = disabled）
+# "low"    —— 兼容映射为服务端 "high"
+# "medium" —— 兼容映射为服务端 "high"
+# "high"   —— reasoning_effort = high（DeepSeek 默认值）
+# "max"    —— reasoning_effort = max（最深推理）
+#
+# 在 TUI 中按 Shift+Tab 可在 off / high / max 之间循环切换。
+# 标题栏会以 ⚡ 标签显示当前层级。
+reasoning_effort = "max"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 自动模式（`--model auto` / `/model auto`）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 自动模式默认推理模型。DeepSeek 平台上默认为 "deepseek-v4-pro"；
+# NVIDIA NIM 默认为 "deepseek-ai/deepseek-v4-pro"。
+# auto_model = "deepseek-v4-pro"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 自动模式思考层级（自动模式下使用的默认推理深度）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 当 `reasoning_effort` 设置为 "auto" 时使用。可以是 "off"、"high"、"max"。
+# auto_reasoning_effort = "high"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 上下文压缩
+# ─────────────────────────────────────────────────────────────────────────────────
+# 自动压缩是可通过 `/config` 编辑的已保存 UI 设置（`auto_compact`）。
+# 目前尚无 `[compaction]` 配置文件段；详细阈值由 TUI
+# 根据活跃模型/上下文预算选择。
+
+# 仅追加的 Flash 接缝是实验性的，在 v0.7.5 上下文/缓存审计
+# 验证前缀缓存行为期间需手动选择启用。
+[context]
+enabled = false
+verbatim_window_turns = 16
+# 阈值基于活跃请求输入估算，而非累计的
+# API 用量。
+l1_threshold = 192000
+l2_threshold = 384000
+l3_threshold = 576000
+# 硬循环保留常规的 262144 token 内部轮次预算加上 1024
+# token 安全余量，独立于 V4 官方的 384000 最大输出元数据。
+cycle_threshold = 768000
+seam_model = "deepseek-v4-flash"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 工作间 / 大输出路由（#548）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 超过 `large_output_threshold_tokens` 的工具输出将通过
+# V4-Flash 综合子代理路由。只有综合结果到达父级上下文；
+# 原始文本存储在工作间变量 `last_tool_result` 中，父级
+# 后续需要完整内容时可调用 `promote_to_context`。
+#
+# 每个工具可单独设置覆盖阈值，让高量工具（如 exec_shell）
+# 使用更严格的阈值而不改变全局默认值。
+#
+# 在任何工具调用中添加 `raw = true` 可为该次调用绕过路由。
+#
+# [workshop]
+# large_output_threshold_tokens = 4096
+# [workshop.per_tool_thresholds]
+# exec_shell  = 2048   # shell 输出积极综合
+# grep_files  = 2048
+# web_search  = 8192   # 网页结果可能较大；给予更多空间
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 容量控制器（运行时压力护栏）
+# ─────────────────────────────────────────────────────────────────────────────────
+[capacity]
+enabled = false
+low_risk_max = 0.50
+medium_risk_max = 0.62
+severe_min_slack = -0.25
+severe_violation_ratio = 0.40
+refresh_cooldown_turns = 6
+replan_cooldown_turns = 5
+max_replay_per_turn = 1
+min_turns_before_guardrail = 4
+profile_window = 8
+deepseek_v3_2_chat_prior = 3.9
+deepseek_v3_2_reasoner_prior = 4.1
+deepseek_v4_pro_prior = 3.5
+deepseek_v4_flash_prior = 4.2
+fallback_default_prior = 3.8
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Shell 工具配置
+# ─────────────────────────────────────────────────────────────────────────────────
+# allow_shell: 是否允许代理执行 shell 命令。
+#   true  = 允许 shell 工具（默认）
+#   false = 禁用所有直接 shell 执行（仍可使用内置工具）
+#   未设置时，若 `DEEPSEEK_ALLOW_SHELL` 环境变量存在则根据其值决定，
+#   否则默认为 true。
+#
+# sandbox: 控制代理 shell 执行的沙箱策略。
+#   "read-only"      = 禁止一切写入（最安全）
+#   "workspace-write" = 允许写入当前工作空间（默认，若未明确设置或环境变量未覆盖）
+#   "danger-full-access" = 允许在任意位置写入（极度危险！）
+#
+# sandbox 设置可被以下方式覆盖（优先级从低到高）：
+#   1. DEEPSEEK_SANDBOX 环境变量
+#   2. --sandbox CLI 参数
+#
+# auto_allow: 无需逐个批准即可自动执行的命令前缀列表。
+#   未设置时，若 `DEEPSEEK_AUTO_ALLOW` 环境变量存在则根据其值决定，
+#   否则默认为空（所有 shell 命令均需批准）。
+#
+# 安全说明：auto_allow 并不能让不安全的命令变得安全 ——
+# 它只是跳过批准提示。始终审核要添加的命令，并且
+# 永远不要加入 `rm`、`git push`、`curl | sh` 或 `chmod` 等命令。
+#
+# 与远程 shell 后端的区别：auto_allow 只影响内建 shell 工具。
+# 如果配置了 `[shell.remote]` 后端，命令通过 HTTP 发送到
+# 外部服务器执行，每一条都会请求批准（远程后端不支持 auto_allow）。
+# 后端使用 30 秒 HTTP 超时。外部后端不支持后台、交互和
+# TTY 模式 —— 所有命令通过 HTTP 同步运行。
+#
+# auto_allow 条目按命令前缀匹配，而非原始字符串。
+# 前缀字典见 command_safety.rs。
+#
+# 示例：
+#   auto_allow = ["git status"]   # 自动批准：git status、git status -s、git status --porcelain
+#                                 # 不会自动批准：git push、git checkout
+#   auto_allow = ["cargo check", "npm run"]
+#
+# auto_allow = []
+max_subagents = 10 # 可选（1-20）
+
+# 可选子代理调优。max_concurrent 覆盖顶层 max_subagents。
+# [subagents]
+# max_concurrent = 10
+
+# 可选托管策略路径（Unix 默认 /etc/deepseek/*.toml）：
+# managed_config_path = "/etc/deepseek/managed_config.toml"
+# requirements_path = "/etc/deepseek/requirements.toml"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 各 provider 凭据（同级 provider —— NIM 是一等公民，非开关）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 可同时存储多个 provider；用文件顶部的 `provider = "..."` 或
+# `/provider deepseek` / `/provider nvidia-nim` / `--provider openai` /
+# `/provider fireworks` 切换，无需重新输入密钥。
+# 环境变量可覆盖此处任何设置：
+#   DeepSeek: DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+#   NIM:      NVIDIA_API_KEY（或 NVIDIA_NIM_API_KEY）, NIM_BASE_URL
+#             （或 NVIDIA_NIM_BASE_URL / NVIDIA_BASE_URL）, NVIDIA_NIM_MODEL
+#   OpenAI 兼容: OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+#   Fireworks: FIREWORKS_API_KEY, FIREWORKS_BASE_URL
+#   SGLang:    SGLANG_BASE_URL, SGLANG_MODEL, 可选 SGLANG_API_KEY
+#   vLLM:      VLLM_BASE_URL, VLLM_MODEL, 可选 VLLM_API_KEY
+#   Ollama:    OLLAMA_BASE_URL, OLLAMA_MODEL, 可选 OLLAMA_API_KEY
+
+# DeepSeek 平台 (https://platform.deepseek.com)
+[providers.deepseek]
+# api_key = "YOUR_DEEPSEEK_API_KEY"
+# base_url = "https://api.deepseek.com/beta"
+# model = "deepseek-v4-pro"
+# http_headers = { "X-Model-Provider-Id" = "your-model-provider" } # 可选自定义请求头
+
+# NVIDIA NIM 托管的 DeepSeek V4 (https://build.nvidia.com)
+[providers.nvidia_nim]
+# api_key = "YOUR_NVIDIA_API_KEY"
+# base_url = "https://integrate.api.nvidia.com/v1"
+# model = "deepseek-ai/deepseek-v4-pro"     # 或 deepseek-ai/deepseek-v4-flash
+
+# 通用 OpenAI 兼容端点。对第三方网关使用内置的 `openai` provider；
+# 不要自定义 provider 名称。对于非本地 http:// 网关，
+# 仅可在受信任网络上以 DEEPSEEK_ALLOW_INSECURE_HTTP=1 启动。
+[providers.openai]
+# api_key = "YOUR_OPENAI_COMPATIBLE_API_KEY"
+# base_url = "https://api.openai.com/v1"
+# model = "gpt-4.1"
+
+# AtlasCloud OpenAI 兼容端点 (https://www.atlascloud.ai/docs/models/llm)
+[providers.atlascloud]
+# api_key = "YOUR_ATLASCLOUD_API_KEY"
+# base_url = "https://api.atlascloud.ai/v1"
+# model = "deepseek-ai/deepseek-v4-flash"
+
+# Fireworks AI 托管的 DeepSeek V4 (https://fireworks.ai)
+[providers.fireworks]
+# api_key = "YOUR_FIREWORKS_API_KEY"
+# base_url = "https://api.fireworks.ai/inference/v1"
+# model = "accounts/fireworks/models/deepseek-v4-pro"
+
+# 自托管 SGLang OpenAI 兼容服务器
+[providers.sglang]
+# api_key = "OPTIONAL_SGLANG_TOKEN"
+# base_url = "http://localhost:30000/v1"
+# model = "deepseek-ai/DeepSeek-V4-Pro"     # 或 deepseek-ai/DeepSeek-V4-Flash
+
+# 自托管 vLLM OpenAI 兼容服务器
+[providers.vllm]
+# api_key = "OPTIONAL_VLLM_TOKEN"
+# base_url = "http://localhost:8000/v1"
+# model = "deepseek-ai/DeepSeek-V4-Pro"     # 或 deepseek-ai/DeepSeek-V4-Flash
+
+# 自托管 Ollama OpenAI 兼容服务器
+[providers.ollama]
+# api_key = "OPTIONAL_OLLAMA_TOKEN"
+# base_url = "http://localhost:11434/v1"
+# model = "deepseek-coder:1.3b"             # 或任何本地 Ollama 标签
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 网页搜索 provider
+# ─────────────────────────────────────────────────────────────────────────────────
+# 选择 `web_search` 使用的后端。默认为 Bing HTML 抓取 —— 无需 API 密钥。
+# DuckDuckGo 仍可选，在其 HTML 端点返回机器人挑战或无可用结果时
+# 会回退到 Bing。
+# 切换到 Tavily 或 Bocha 可在中国大陆获得可靠的搜索体验。
+#
+# [search]
+# provider = "bing"         # bing | duckduckgo | tavily | bocha
+#                            # duckduckgo: HTML 抓取，Bing 作为回退
+#                            # tavily: https://tavily.com —— AI 搜索，需要 api_key
+#                            # bocha:  https://bochaai.com —— 博查AI搜索，国内友好，需api_key
+# api_key = "tvly-YOUR_KEY"  # tavily 和 bocha 必需
+#                            # 警告：在 config.toml 中存储 API 密钥时，
+#                            # 请将其视为机密文件。建议使用环境变量或 `auth set`。
+#
+# 环境变量覆盖：
+#   DEEPSEEK_SEARCH_PROVIDER → search.provider
+#   DEEPSEEK_SEARCH_API_KEY  → search.api_key
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 网络策略（#135）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 按域名设置允许/拒绝规则，控制 TUI 工具（`fetch_url`、`web_search`）
+# 和 MCP HTTP 传输的出站网络调用。Stdio MCP 服务器和直接的 LLM API 调用不受影响。
+#
+# 优先级：拒绝优先。同时出现在 `allow` 和 `deny` 中的主机将被拒绝。
+#
+# 主机匹配规则：
+#   - 精确匹配：`api.deepseek.com` 仅匹配 `api.deepseek.com`。
+#   - 子域名通配符：以 `.` 开头的条目（如 `.example.com`）
+#     匹配 `api.example.com` 和 `a.b.example.com`，但不匹配顶点域
+#     `example.com`。要同时覆盖二者，需同时列出。`*.example.com` 也可接受。
+#
+# 默认值有意保守：当此段缺失时不强制执行任何策略
+# （与 v0.7.0 之前的行为一致）。要启用：
+#
+# [network]
+# default = "prompt"     # allow | deny | prompt
+# allow = ["api.deepseek.com", "github.com", ".githubusercontent.com"]
+# deny = []
+# audit = true            # 每次调用写入一行至 ~/.deepseek/audit.log
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 技能（#140）
+# ─────────────────────────────────────────────────────────────────────────────────
+# `/skill install <spec>` 社区技能安装器设置。
+#   * registry_url           —— 精选的 index.json，将裸名称解析为
+#                              `github:owner/repo` 规格。可覆盖指向私有 fork
+#                              或内部镜像。
+#   * max_install_size_bytes —— 每个技能的解压大小上限。超过此限制的
+#                              tarball 在验证期间会被拒绝。
+#                              默认：5 MiB。
+#
+# `/skill install` 受 `[network]` 限制。运行前请确保 `github.com` 和
+# `raw.githubusercontent.com` 可达（默认 `prompt` 即可 —— 首次会询问
+# 并可持久化）。
+#
+# [skills]
+# registry_url = "https://raw.githubusercontent.com/Hmbown/deepseek-skills/main/index.json"
+# max_install_size_bytes = 5_242_880
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TUI
+# ─────────────────────────────────────────────────────────────────────────────────
+[tui]
+alternate_screen = "auto"   # auto/always 使用 TUI 屏幕；never 使用终端滚动回显
+mouse_capture = true        # true 仅复制对话记录中用户/助手文本；false 使用原始终端选择/复制
+terminal_probe_timeout_ms = 500 # 可选启动终端模式超时（100-5000ms）
+osc8_links = true            # 在 URL 周围发送 OSC 8 转义序列（在 iTerm2/Ghostty/Kitty/WezTerm/Terminal.app 13+ 中 Cmd+点击）；对渲染异常的终端设为 false
+# notification_condition = "always" # always | never —— 覆盖 [notifications].threshold_secs。
+#                                    "always" = 每次成功轮次都通知（无阈值）；
+#                                    "never"  = 抑制所有轮次完成通知；
+#                                    未设置    = 使用 [notifications] 默认值（推荐）。
+# locale = "auto"           # UI 界面语言：auto | en | ja | zh-Hans | pt-BR
+#                           # "auto" 读取 LC_ALL → LC_MESSAGES → LANG；回退到英语。
+#                           # 覆盖：`locale = "zh-Hans"` 设为简体中文，不受操作系统区域设置影响。
+#                           # 也可在运行时设置：/config locale zh-Hans
+#                           # 注意：此项仅影响 TUI 标签/界面 —— 不会改变模型输出语言。
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 功能开关
+# ─────────────────────────────────────────────────────────────────────────────────
+[features]
+shell_tool = true
+subagents = true
+web_search = true # 启用规范的 web.run 以及兼容别名 web_search
+apply_patch = true
+mcp = true
+exec_policy = true
+# vision_model = false  # 启用视觉模型以使用 image_analyze 工具
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 视觉模型配置（可选）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 为 `image_analyze` 工具使用 OpenAI 兼容的视觉模型 API。
+# 若未指定，api_key 从主配置继承。
+#
+# [vision_model]
+# model = "gemini-3.1-flash-lite-preview"  # 必需：支持视觉的模型 ID
+# api_key = "YOUR_API_KEY"                 # 可选：默认使用主 api_key
+# base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"  # 可选
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 重试配置
+# ─────────────────────────────────────────────────────────────────────────────────
+[retry]
+enabled = true
+max_retries = 3
+initial_delay = 1.0
+max_delay = 60.0
+exponential_base = 2.0
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Profile 示例（多环境）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 使用 `deepseek --profile <name>` 或 `DEEPSEEK_PROFILE=<name>` 选择 profile。
+[profiles.work]
+api_key = "WORK_DEEPSEEK_API_KEY"
+base_url = "https://api.deepseek.com/beta"
+
+[profiles.dev]
+api_key = "DEV_DEEPSEEK_API_KEY"
+allow_shell = true
+
+[profiles.nvidia-nim]
+provider = "nvidia-nim"
+api_key = "YOUR_NVIDIA_API_KEY"
+base_url = "https://integrate.api.nvidia.com/v1"
+default_text_model = "deepseek-ai/deepseek-v4-pro"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 桌面通知（代理轮次长时间完成后 OSC 9 / BEL）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 当轮次**成功完成**且耗时超过 `threshold_secs` 时向终端发送转义序列。
+# 失败或取消的轮次有意保持静默。适用于你切出 TUI 窗口后
+# 希望收到"任务完成"提醒的场景。
+#
+# method        = "auto"   # auto | osc9 | bel | off
+#                 auto: iTerm.app / Ghostty / WezTerm 使用 OSC 9。
+#                       在 macOS / Linux 上回退为 BEL。
+#                       在 Windows 上回退为 "off" —— BEL 映射为
+#                       系统错误提示音（SystemAsterisk / MB_OK），
+#                       听起来像错误弹窗。可显式设置 method = "bel"
+#                       以重新启用（#583）。
+#                 osc9: \x1b]9;<msg>\x07（iTerm2 风格；显示 macOS 通知）
+#                 bel:  普通 \x07 蜂鸣声
+#                 off:  完全禁用
+# threshold_secs = 30      # 仅当轮次耗时 >= 此秒数时通知
+# include_summary = false  # 在通知正文中包含耗时 + 费用
+[notifications]
+# method = "auto"
+# threshold_secs = 30
+# include_summary = false
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 工作空间快照（#137）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 每轮 TUI 会在以下位置的旁路 git 仓库中拍下你工作空间的
+# `pre-turn:<seq>` 和 `post-turn:<seq>` 快照：
+#
+#     ~/.deepseek/snapshots/<project_hash>/<worktree_hash>/.git
+#
+# 你自己的 `.git` 完全不受影响 —— 调用 git 时
+# `--git-dir` 和 `--work-tree` 始终一起设置。
+# 使用 `/restore N`（斜杠命令）或 `revert_turn` 工具回滚工作树。
+# 对话历史不受影响。
+#
+# 磁盘占用：100 MB 工作空间 × 每天 12 轮，最坏情况约 1-2 GB，
+# 得益于 git 的内容寻址存储，实际通常远少于此。会话启动时
+# 会清理超过 `max_age_days`（默认 7 天）的旧快照。
+#
+# [snapshots]
+# enabled = true        # 每轮前后快照工作空间以支持 /restore
+# max_age_days = 7      # 会话启动时清理更旧的快照
+# max_workspace_gb = 2  # 首次初始化时若未排除的工作空间超过此 GB 数
+#                        # 则自动禁用快照（v0.8.32）。
+#                        # 默认 2 GB 可防止在包含数百 GB 数据集 /
+#                        # 模型权重 / docker dump 的目录中运行
+#                        # deepseek-tui 时 `git add -A` 卡住 TUI 数小时。
+#                        # 设为 0 可移除此上限（v0.8.31 行为）；
+#                        # 对于合法的大型单体仓库可调高此值。
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# LSP 诊断（编辑后）（#136）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 每次成功编辑文件（`edit_file`、`apply_patch`、`write_file`）后，
+# 引擎会向 LSP 服务器请求该文件的诊断信息，并将其作为
+# 合成的系统消息注入到下一条 API 调用之前。这使得代理可以
+# 立即看到编译错误，无需通过用户来回传。
+#
+# 默认启用。失败模式为非阻塞：缺少 LSP 二进制文件、
+# 服务器崩溃或超时仅跳过该轮次的后编辑钩子 ——
+# 代理的工作永远不会被阻断。
+#
+# 内置语言 → 服务器默认值：
+#   rust       → rust-analyzer
+#   go         → gopls serve
+#   python     → pyright-langserver --stdio
+#   typescript → typescript-language-server --stdio
+#   c, cpp     → clangd
+#
+# 通过下方的 `servers` 表覆盖默认值。
+[lsp]
+# enabled = true
+# poll_after_edit_ms = 5000
+# max_diagnostics_per_file = 20
+# include_warnings = false
+# [lsp.servers]
+# rust = ["rust-analyzer"]
+# go = ["gopls", "serve"]
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 钩子（可选）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 钩子在生命周期事件（会话启动/结束、工具调用等）上运行 shell 命令。
+# 在 `[hooks]` 表下配置为 `[[hooks.hooks]]`。
+#
+# 可用事件：session_start, session_end, message_submit,
+# tool_call_before, tool_call_after, mode_change, on_error, shell_env。
+#
+# `shell_env`（#456）较为特殊：钩子在每次 `exec_shell` 调用前立即运行，
+# 其 stdout 被解析为 `KEY=VALUE\n` 行。这些变量会合并到
+# 生成的进程环境中（后面的钩子覆盖前面的）。
+# 用于临时凭据、按技能调整 PATH 或短期令牌。
+# 解析出的 KEY 名称（绝不包含值）写入 `~/.deepseek/audit.log`，
+# 以便后续对每个会话进行核对。钩子失败/超时仅意味着不提供变量 ——
+# 不会中止 shell 调用。
+#
+# [hooks]
+# enabled = true
+# default_timeout_secs = 30
+#
+# [[hooks.hooks]]
+# event = "session_start"
+# command = "echo 'DeepSeek TUI 会话已启动'"
+#
+# # 将临时凭据注入每个 shell 调用。在 stdout 上每行输出一个
+# # KEY=VALUE（export 前缀可选）。
+# [[hooks.hooks]]
+# name = "aws-creds"
+# event = "shell_env"
+# command = "aws-vault export my-profile --format=env"
+# # 可选择限制到特定工具名称/类别：
+# # condition = { type = "tool_category", category = "shell" }
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# 运行时 API（`deepseek serve --http`）（#561）
+# ─────────────────────────────────────────────────────────────────────────────────
+# 本地 HTTP/SSE 守护进程的调优参数。服务器默认绑定到 127.0.0.1，
+# 适用于本地 UI（whalescale-desktop、仪表盘、自动化脚本）。
+# 目前此段仅控制 CORS 允许列表；host/port/workers 仍使用
+# `--host`、`--port` 和 `--workers` 参数。
+#
+# 内置默认值始终包括：
+#   http://localhost:3000   http://127.0.0.1:3000
+#   http://localhost:1420   http://127.0.0.1:1420
+#   tauri://localhost
+#
+# 使用 `cors_origins` 添加额外的开发源（如 Vite 默认的 `:5173`）。
+# 用户条目会叠加到默认值上 —— 不会替换它们。
+# CLI 参数 `--cors-origin URL`（可重复）和环境变量
+# `DEEPSEEK_CORS_ORIGINS=url1,url2` 解析为相同的合并列表。
+#
+# [runtime_api]
+# cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Requirements（管理员约束）示例文件
+# ─────────────────────────────────────────────────────────────────────────────────
+# allowed_approval_policies = ["on-request", "untrusted", "never"]
+# allowed_sandbox_modes = ["read-only", "workspace-write"]

@@ -57,6 +57,7 @@ pub struct SettingsSection {
     pub paste_burst_detection: bool,
     pub show_thinking: bool,
     pub show_tool_details: bool,
+    pub verbose_transcript: bool,
     pub locale: UiLocale,
     pub theme: UiThemeValue,
     #[schemars(title = "Border type", description = "plain or rounded")]
@@ -343,6 +344,7 @@ pub fn build_document(app: &App, config: &Config) -> Result<ConfigUiDocument> {
             paste_burst_detection: settings.paste_burst_detection,
             show_thinking: settings.show_thinking,
             show_tool_details: settings.show_tool_details,
+            verbose_transcript: settings.verbose_transcript,
             locale: UiLocale::from_setting(&settings.locale)?,
             theme: UiThemeValue::from_setting(&settings.theme)?,
             border_type: BorderTypeValue::from_setting(settings.border_type.as_deref()),
@@ -506,6 +508,10 @@ pub fn apply_document(
         (
             "show_tool_details",
             bool_str(doc.settings.show_tool_details),
+        ),
+        (
+            "verbose_transcript",
+            bool_str(doc.settings.verbose_transcript),
         ),
         ("locale", doc.settings.locale.as_setting()),
         ("theme", doc.settings.theme.as_setting()),

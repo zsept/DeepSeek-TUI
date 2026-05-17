@@ -170,6 +170,14 @@ fn show_single_setting(app: &App, key: &str) -> CommandResult {
             }
             .to_string(),
         ),
+        "verbose_transcript" | "verbose" => Some(
+            if app.verbose_transcript {
+                "true"
+            } else {
+                "false"
+            }
+            .to_string(),
+        ),
         "mode" | "default_mode" => Some(app.mode.as_setting().to_string()),
         "max_history" | "history" => Some(app.max_input_history.to_string()),
         "sidebar_width" | "sidebar" => Some(app.sidebar_width_percent.to_string()),
@@ -490,6 +498,10 @@ pub fn set_config_value(app: &mut App, key: &str, value: &str, persist: bool) ->
         }
         "show_tool_details" | "tool_details" => {
             app.show_tool_details = settings.show_tool_details;
+            app.mark_history_updated();
+        }
+        "verbose_transcript" | "verbose" => {
+            app.verbose_transcript = settings.verbose_transcript;
             app.mark_history_updated();
         }
         "locale" | "language" => {

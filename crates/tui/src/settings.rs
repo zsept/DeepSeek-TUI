@@ -193,6 +193,8 @@ pub struct Settings {
     pub show_thinking: bool,
     /// Show detailed tool output
     pub show_tool_details: bool,
+    /// Show full thinking content inline in the transcript
+    pub verbose_transcript: bool,
     /// UI locale: auto, en, ja, zh-Hans, pt-BR, es-419
     pub locale: String,
     /// Named UI theme. Accepts `"system"` (follow terminal background),
@@ -296,6 +298,7 @@ impl Default for Settings {
             paste_burst_detection: true,
             show_thinking: true,
             show_tool_details: true,
+            verbose_transcript: false,
             locale: "auto".to_string(),
             theme: "system".to_string(),
             border_type: None,
@@ -491,6 +494,9 @@ impl Settings {
             }
             "show_tool_details" | "tool_details" => {
                 self.show_tool_details = parse_bool(value)?;
+            }
+            "verbose_transcript" | "verbose" => {
+                self.verbose_transcript = parse_bool(value)?;
             }
             "locale" | "language" => {
                 let Some(locale) = normalize_configured_locale(value) else {

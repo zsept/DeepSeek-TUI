@@ -1316,6 +1316,7 @@ impl App {
         let status_indicator = settings.status_indicator.clone();
         let show_thinking = settings.show_thinking;
         let show_tool_details = settings.show_tool_details;
+        let verbose_transcript = settings.verbose_transcript;
         let ui_locale = resolve_locale(&settings.locale);
         let cost_currency = match (settings.cost_currency.as_str(), ui_locale.tag()) {
             ("usd", "zh-Hans") => CostCurrency::Cny,
@@ -1497,7 +1498,7 @@ impl App {
             synchronized_output_enabled,
             status_indicator,
             show_thinking,
-            verbose_transcript: false,
+            verbose_transcript,
             show_tool_details,
             ui_locale,
             cost_currency,

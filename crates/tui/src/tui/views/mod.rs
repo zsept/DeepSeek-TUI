@@ -1394,7 +1394,15 @@ impl ModalView for ConfigView {
                         let line_y = inner.y.saturating_add(lines.len() as u16);
                         row_hitboxes.push((line_y, *idx));
                         let selected = *idx == self.selected;
-                        let style = if selected {
+                        let marker = if selected { "▶" } else { " " };
+                        let marker_style = if selected {
+                            Style::default()
+                                .fg(self.theme.section_title_color)
+                                .bg(self.theme.selection_bg)
+                        } else {
+                            Style::default()
+                        };
+                        let row_style = if selected {
                             Style::default()
                                 .fg(ratatui::style::Color::White)
                                 .bg(self.theme.selection_bg)
@@ -1403,15 +1411,20 @@ impl ModalView for ConfigView {
                             Style::default().fg(self.theme.text_body)
                         };
                         let value = truncate_view_text(&row.value, CONFIG_VALUE_COLUMN_WIDTH);
-                        let mut line = Line::from(format!(
-                            "  {:<key_width$} {:<value_width$} {}",
-                            row.key,
-                            value,
-                            row.scope.label(),
-                            key_width = key_column_width,
-                            value_width = CONFIG_VALUE_COLUMN_WIDTH
-                        ));
-                        line.style = style;
+                        let line = Line::from(vec![
+                            Span::styled(format!(" {}", marker), marker_style),
+                            Span::styled(
+                                format!(
+                                    " {:<key_width$} {:<value_width$} {}",
+                                    row.key,
+                                    value,
+                                    row.scope.label(),
+                                    key_width = key_column_width,
+                                    value_width = CONFIG_VALUE_COLUMN_WIDTH,
+                                ),
+                                row_style,
+                            ),
+                        ]);
                         lines.push(line);
                     }
                 }

@@ -90,6 +90,9 @@ pub struct EngineConfig {
     pub mcp_config_path: PathBuf,
     /// Directory containing discoverable skills.
     pub skills_dir: PathBuf,
+    /// Extra skill directories from config. Appended after
+    /// built-in workspace/global candidates.
+    pub extra_skills_dirs: Vec<PathBuf>,
     /// Additional instruction files concatenated into the system
     /// prompt (#454). Loaded in declared order from the user's
     /// `instructions = [...]` config (or the per-project override).
@@ -178,6 +181,7 @@ impl Default for EngineConfig {
             notes_path: PathBuf::from("notes.txt"),
             mcp_config_path: PathBuf::from("mcp.json"),
             skills_dir: crate::skills::default_skills_dir(),
+            extra_skills_dirs: Vec::new(),
             instructions: Vec::new(),
             project_context_pack_enabled: true,
             translation_enabled: false,
@@ -436,6 +440,7 @@ impl Engine {
                     translation_enabled: config.translation_enabled,
                 },
                 session.approval_mode,
+                &config.extra_skills_dirs,
             );
         let stable_prompt = Some(system_prompt);
         session.last_system_prompt_hash = Some(system_prompt_hash(stable_prompt.as_ref()));
@@ -1424,6 +1429,10 @@ impl Engine {
         ctx.search_provider = self.config.search_provider;
         ctx.search_api_key = self.config.search_api_key.clone();
 
+        // Wire extra skill directories so load_skill finds skills
+        // from the same directories listed in the system prompt.
+        ctx.extra_skills_dirs = self.config.extra_skills_dirs.clone();
+
         let policy = sandbox_policy_for_mode(mode, &self.session.workspace);
         let mut ctx = ctx.with_elevated_sandbox_policy(policy);
         if matches!(mode, AppMode::Plan) {
@@ -1791,6 +1800,7 @@ impl Engine {
                 translation_enabled: self.config.translation_enabled,
             },
             self.session.approval_mode,
+            &self.config.extra_skills_dirs,
         );
         let stable_prompt =
             merge_system_prompts(Some(&base), self.session.compaction_summary_prompt.clone());

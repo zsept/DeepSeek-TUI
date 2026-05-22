@@ -385,17 +385,18 @@ pub fn resolve_skills_dir(workspace: &Path) -> PathBuf {
 /// 6. [`agents_global_skills_dir`] — agentskills.io global.
 /// 7. [`claude_global_skills_dir`] — Claude-ecosystem global (#902).
 /// 8. [`default_skills_dir`] — DeepSeek global, user-installed.
+/// 9. `extra_dirs` — user-configured extras (appended; lowest precedence).
 ///
 /// Only directories that exist on disk are returned — callers don't
 /// need to filter further. Returns an empty vec when nothing is
 /// installed (the system-prompt skills block is then suppressed).
 #[must_use]
-pub fn skills_directories(workspace: &Path) -> Vec<PathBuf> {
+pub fn skills_directories(workspace: &Path, extra_dirs: &[PathBuf]) -> Vec<PathBuf> {
     let home = dirs::home_dir();
-    skills_directories_with_home(workspace, home.as_deref())
+    skills_directories_with_home(workspace, home.as_deref(), extra_dirs)
 }
 
-fn skills_directories_with_home(workspace: &Path, home_dir: Option<&Path>) -> Vec<PathBuf> {
+fn skills_directories_with_home(workspace: &Path, home_dir: Option<&Path>, extra_dirs: &[PathBuf]) -> Vec<PathBuf> {
     let mut candidates = vec![
         workspace.join(".agents").join("skills"),
         workspace.join("skills"),
@@ -410,6 +411,8 @@ fn skills_directories_with_home(workspace: &Path, home_dir: Option<&Path>) -> Ve
     } else {
         candidates.push(PathBuf::from("/tmp/deepseek/skills"));
     }
+    // User-configured extra skill directories come last (lowest precedence).
+    candidates.extend(extra_dirs.iter().cloned());
     existing_skill_dirs(candidates)
 }
 
@@ -436,9 +439,9 @@ fn existing_skill_dirs(candidates: impl IntoIterator<Item = PathBuf>) -> Vec<Pat
 /// (and the user via `/skill list`) can see why a skill didn't
 /// load.
 #[must_use]
-pub fn discover_in_workspace(workspace: &Path) -> SkillRegistry {
+pub fn discover_in_workspace(workspace: &Path, extra_dirs: &[PathBuf]) -> SkillRegistry {
     let mut merged = SkillRegistry::default();
-    for dir in skills_directories(workspace) {
+    for dir in skills_directories(workspace, extra_dirs) {
         let registry = SkillRegistry::discover(&dir);
         for skill in registry.skills {
             if !merged.skills.iter().any(|s| s.name == skill.name) {
@@ -455,15 +458,24 @@ pub fn discover_in_workspace(workspace: &Path) -> SkillRegistry {
 /// Discover skills from the workspace search set plus the configured install
 /// directory. Workspace/global directories keep their normal precedence; a
 /// custom configured directory is appended when it is outside that set.
+/// `extra_dirs` are user-configured extras with lowest precedence.
 #[must_use]
-pub fn discover_for_workspace_and_dir(workspace: &Path, skills_dir: &Path) -> SkillRegistry {
-    let dirs = skills_directories(workspace);
-    discover_for_workspace_dirs_and_dir(dirs, skills_dir)
+pub fn discover_for_workspace_and_dir(workspace: &Path, skills_dir: &Path, extra_dirs: &[PathBuf]) -> SkillRegistry {
+    let dirs = skills_directories(workspace, extra_dirs);
+    discover_for_workspace_dirs_and_dir(dirs, skills_dir, extra_dirs)
 }
 
-fn discover_for_workspace_dirs_and_dir(mut dirs: Vec<PathBuf>, skills_dir: &Path) -> SkillRegistry {
+fn discover_for_workspace_dirs_and_dir(mut dirs: Vec<PathBuf>, skills_dir: &Path, extra_dirs: &[PathBuf]) -> SkillRegistry {
     if skills_dir.is_dir() && !dirs.iter().any(|p| p == skills_dir) {
         dirs.push(skills_dir.to_path_buf());
+    }
+    // Append extra dirs not already in the list (usual case: they're already
+    // included via skills_directories, but a caller may pass a pre-built dirs
+    // list that doesn't contain them).
+    for extra in extra_dirs {
+        if !dirs.iter().any(|p| p == extra) {
+            dirs.push(extra.to_path_buf());
+        }
     }
 
     let mut merged = SkillRegistry::default();
@@ -487,8 +499,8 @@ fn discover_for_workspace_and_dir_with_home(
     skills_dir: &Path,
     home_dir: Option<&Path>,
 ) -> SkillRegistry {
-    let dirs = skills_directories_with_home(workspace, home_dir);
-    discover_for_workspace_dirs_and_dir(dirs, skills_dir)
+    let dirs = skills_directories_with_home(workspace, home_dir, &[]);
+    discover_for_workspace_dirs_and_dir(dirs, skills_dir, &[])
 }
 
 /// Render the system-prompt skills block from every workspace
@@ -496,8 +508,8 @@ fn discover_for_workspace_and_dir_with_home(
 /// [`discover_in_workspace`] for callers (e.g. `prompts.rs`) that
 /// only have the workspace path to hand.
 #[must_use]
-pub fn render_available_skills_context_for_workspace(workspace: &Path) -> Option<String> {
-    let registry = discover_in_workspace(workspace);
+pub fn render_available_skills_context_for_workspace(workspace: &Path, extra_dirs: &[PathBuf]) -> Option<String> {
+    let registry = discover_in_workspace(workspace, extra_dirs);
     render_skills_block(&registry)
 }
 
@@ -861,7 +873,7 @@ mod tests {
         std::fs::create_dir_all(workspace.join(".claude").join("skills")).unwrap();
         std::fs::create_dir_all(workspace.join(".cursor").join("skills")).unwrap();
 
-        let dirs = super::skills_directories(workspace);
+        let dirs = super::skills_directories(workspace, &[]);
         // We don't assert on the global default position because it's
         // host-dependent (may not exist on the test machine).
         let mut idx = 0;
@@ -968,7 +980,7 @@ mod tests {
             "claude-only",
         );
 
-        let registry = super::discover_in_workspace(workspace);
+        let registry = super::discover_in_workspace(workspace, &[]);
         let names: Vec<&str> = registry.list().iter().map(|s| s.name.as_str()).collect();
         assert!(
             names.contains(&"shared"),
@@ -999,7 +1011,7 @@ mod tests {
             "body",
         );
 
-        let registry = super::discover_in_workspace(workspace);
+        let registry = super::discover_in_workspace(workspace, &[]);
         assert!(
             registry.get("opencode-only").is_some(),
             ".opencode/skills must be scanned (#432)"
@@ -1017,7 +1029,7 @@ mod tests {
             "body",
         );
 
-        let registry = super::discover_in_workspace(workspace);
+        let registry = super::discover_in_workspace(workspace, &[]);
         assert!(
             registry.get("cursor-only").is_some(),
             ".cursor/skills must be scanned"
@@ -1075,7 +1087,7 @@ mod tests {
             "body",
         );
         let rendered =
-            super::render_available_skills_context_for_workspace(workspace).expect("non-empty");
+            super::render_available_skills_context_for_workspace(workspace, &[]).expect("non-empty");
         assert!(rendered.contains("from-claude"));
     }
 

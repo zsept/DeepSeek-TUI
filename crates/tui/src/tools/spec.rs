@@ -163,6 +163,10 @@ pub struct ToolContext {
     /// API key for Tavily or Bocha. `None` for Bing or DuckDuckGo.
     pub search_api_key: Option<String>,
 
+    /// Extra skill directories from user config. Used by `load_skill` tool
+    /// so it searches the same directories shown in the system prompt.
+    pub extra_skills_dirs: Vec<PathBuf>,
+
     /// Per-session workshop variable store (#548). Holds the raw content of
     /// the most recent large-tool routing event so the parent can call
     /// `promote_to_context` later. `None` when the router is disabled.
@@ -201,6 +205,7 @@ impl ToolContext {
             large_output_router: None,
             search_provider: crate::config::SearchProvider::default(),
             search_api_key: None,
+            extra_skills_dirs: Vec::new(),
             workshop_vars: None,
         }
     }
@@ -237,6 +242,7 @@ impl ToolContext {
             large_output_router: None,
             search_provider: crate::config::SearchProvider::default(),
             search_api_key: None,
+            extra_skills_dirs: Vec::new(),
             workshop_vars: None,
         }
     }
@@ -273,6 +279,7 @@ impl ToolContext {
             large_output_router: None,
             search_provider: crate::config::SearchProvider::default(),
             search_api_key: None,
+            extra_skills_dirs: Vec::new(),
             workshop_vars: None,
         }
     }

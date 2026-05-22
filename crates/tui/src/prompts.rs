@@ -550,6 +550,7 @@ pub fn system_prompt_for_mode_with_context_and_skills(
             locale_tag: "en",
             translation_enabled: false,
         },
+        &[],
     )
 }
 
@@ -560,6 +561,7 @@ pub fn system_prompt_for_mode_with_context_skills_and_session(
     skills_dir: Option<&Path>,
     instructions: Option<&[PathBuf]>,
     session_context: PromptSessionContext<'_>,
+    extra_skills_dirs: &[PathBuf],
 ) -> SystemPrompt {
     system_prompt_for_mode_with_context_skills_session_and_approval(
         mode,
@@ -569,6 +571,7 @@ pub fn system_prompt_for_mode_with_context_skills_and_session(
         instructions,
         session_context,
         default_approval_mode_for_mode(mode),
+        extra_skills_dirs,
     )
 }
 
@@ -580,6 +583,7 @@ pub fn system_prompt_for_mode_with_context_skills_session_and_approval(
     instructions: Option<&[PathBuf]>,
     session_context: PromptSessionContext<'_>,
     approval_mode: ApprovalMode,
+    extra_skills_dirs: &[PathBuf],
 ) -> SystemPrompt {
     let mode_prompt = compose_mode_prompt_with_approval(mode, approval_mode);
 
@@ -650,7 +654,7 @@ pub fn system_prompt_for_mode_with_context_skills_session_and_approval(
     // honoured as a fallback for callers that don't supply a
     // workspace-aware view; it falls through to the same merged
     // registry when available.
-    let skills_block = crate::skills::render_available_skills_context_for_workspace(workspace)
+    let skills_block = crate::skills::render_available_skills_context_for_workspace(workspace, extra_skills_dirs)
         .or_else(|| skills_dir.and_then(crate::skills::render_available_skills_context));
     if let Some(block) = skills_block {
         full_prompt = format!("{full_prompt}\n\n{block}");

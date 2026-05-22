@@ -896,6 +896,12 @@ pub struct Config {
     pub reasoning_effort: Option<String>,
     pub tools_file: Option<String>,
     pub skills_dir: Option<String>,
+    /// Additional skill directories scanned at session time. Paths are
+    /// expanded via `expand_path` so `~` and env vars work. Extra
+    /// directories are appended after the built-in workspace/global
+    /// candidates — name conflicts resolve first-wins, so the built-in
+    /// directories take precedence over extras.
+    pub extra_skills_dirs: Option<Vec<String>>,
     pub mcp_config_path: Option<String>,
     pub notes_path: Option<String>,
     pub memory_path: Option<String>,
@@ -1680,6 +1686,25 @@ impl Config {
             .map(expand_path)
             .or_else(default_skills_dir)
             .unwrap_or_else(|| PathBuf::from("./skills"))
+    }
+
+    /// Resolve extra skill directories from config.
+    ///
+    /// Each path is expanded via `expand_path`. Only existing directories
+    /// are returned; missing or unreadable directories are quietly skipped.
+    #[must_use]
+    pub fn extra_skills_dirs(&self) -> Vec<PathBuf> {
+        let Some(ref entries) = self.extra_skills_dirs else {
+            return Vec::new();
+        };
+        let mut out = Vec::with_capacity(entries.len());
+        for raw in entries {
+            let path = expand_path(raw);
+            if path.is_dir() {
+                out.push(path);
+            }
+        }
+        out
     }
 
     /// Resolve the MCP config path.
@@ -2768,6 +2793,7 @@ fn merge_config(base: Config, override_cfg: Config) -> Config {
         reasoning_effort: override_cfg.reasoning_effort.or(base.reasoning_effort),
         tools_file: override_cfg.tools_file.or(base.tools_file),
         skills_dir: override_cfg.skills_dir.or(base.skills_dir),
+        extra_skills_dirs: override_cfg.extra_skills_dirs.or(base.extra_skills_dirs),
         mcp_config_path: override_cfg.mcp_config_path.or(base.mcp_config_path),
         notes_path: override_cfg.notes_path.or(base.notes_path),
         memory_path: override_cfg.memory_path.or(base.memory_path),

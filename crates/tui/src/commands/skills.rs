@@ -14,7 +14,7 @@ use crate::tui::history::HistoryCell;
 use super::CommandResult;
 
 fn discover_visible_skills(app: &App) -> SkillRegistry {
-    crate::skills::discover_for_workspace_and_dir(&app.workspace, &app.skills_dir)
+    crate::skills::discover_for_workspace_and_dir(&app.workspace, &app.skills_dir, &app.extra_skills_dirs)
 }
 
 fn render_skill_warnings(registry: &SkillRegistry) -> String {

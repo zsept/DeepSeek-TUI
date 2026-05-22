@@ -91,11 +91,11 @@ impl ToolSpec for LoadSkillTool {
         // tool's lookup mirrors what the system-prompt skills block
         // already lists, so the model never asks for a name it
         // can't find.
-        let registry = discover_in_workspace(&context.workspace);
+        let registry = discover_in_workspace(&context.workspace, &context.extra_skills_dirs);
         let Some(skill) = registry.get(name) else {
             let available: Vec<&str> = registry.list().iter().map(|s| s.name.as_str()).collect();
             let hint = if available.is_empty() {
-                let dirs: Vec<String> = skills_directories(&context.workspace)
+                let dirs: Vec<String> = skills_directories(&context.workspace, &context.extra_skills_dirs)
                     .iter()
                     .map(|p| p.display().to_string())
                     .collect();

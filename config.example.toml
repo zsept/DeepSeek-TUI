@@ -63,6 +63,13 @@ cost_currency = "usd" # usd | cny
 # Paths
 # ─────────────────────────────────────────────────────────────────────────────────
 skills_dir = "~/.deepseek/skills"
+# extra_skills_dirs = ["/opt/shared-skills", "~/.config/custom-skills"]
+# #
+# # Optional list of additional skill directories scanned at session time
+# # on top of the built-in workspace/global candidates. Each path is
+# # expanded so `~` and env vars work; missing directories are skipped.
+# # Name conflicts resolve first-wins — built-in candidates take
+# # precedence over extra directories.
 mcp_config_path = "~/.deepseek/mcp.json"
 notes_path = "~/.deepseek/notes.txt"
 

@@ -811,6 +811,9 @@ pub struct App {
     pub config_profile: Option<String>,
     pub mcp_config_path: PathBuf,
     pub skills_dir: PathBuf,
+    /// Extra skill directories from user config. Appended to the
+    /// built-in workspace/global candidate list at session time.
+    pub extra_skills_dirs: Vec<PathBuf>,
     /// Path to the user-memory file (#489). Always populated; only
     /// consulted when `use_memory` is `true`.
     pub memory_path: PathBuf,
@@ -1421,7 +1424,8 @@ impl App {
         let plan_state = new_shared_plan_state();
 
         let skills_dir = resolve_skills_dir(&workspace, &global_skills_dir, config);
-        let cached_skills = Self::discover_cached_skills(&workspace);
+        let extra_skills_dirs = config.extra_skills_dirs();
+        let cached_skills = Self::discover_cached_skills(&workspace, &extra_skills_dirs);
 
         let input_history = crate::composer_history::load_history();
         let (initial_input_text, initial_input_cursor) = match initial_input {
@@ -1483,6 +1487,7 @@ impl App {
             config_profile,
             mcp_config_path: mcp_config_path.clone(),
             skills_dir,
+            extra_skills_dirs,
             memory_path,
             use_memory,
             use_alt_screen,
@@ -1634,8 +1639,8 @@ impl App {
         }
     }
 
-    fn discover_cached_skills(workspace: &std::path::Path) -> Vec<(String, String)> {
-        crate::skills::discover_in_workspace(workspace)
+    fn discover_cached_skills(workspace: &std::path::Path, extra_dirs: &[PathBuf]) -> Vec<(String, String)> {
+        crate::skills::discover_in_workspace(workspace, extra_dirs)
             .list()
             .iter()
             .map(|s| (s.name.clone(), s.description.clone()))
@@ -1643,7 +1648,7 @@ impl App {
     }
 
     pub fn refresh_skill_cache(&mut self) {
-        self.cached_skills = Self::discover_cached_skills(&self.workspace);
+        self.cached_skills = Self::discover_cached_skills(&self.workspace, &self.extra_skills_dirs);
     }
 
     pub fn submit_api_key(&mut self) -> Result<SavedCredential, ApiKeyError> {

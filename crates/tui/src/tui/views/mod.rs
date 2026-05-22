@@ -1922,13 +1922,12 @@ fn agent_type_order(agent_type: &SubAgentType) -> u8 {
         SubAgentType::Verifier => 4,
         SubAgentType::Review => 5,
         SubAgentType::Custom => 6,
+        SubAgentType::Named(_) => 7,
     }
 }
 
-fn format_agent_type(agent_type: &SubAgentType) -> &'static str {
-    // Source of truth lives on the enum so any new role lands in both
-    // the user-visible label and the sort order via the as_str() helper.
-    agent_type.as_str()
+fn format_agent_type(agent_type: &SubAgentType) -> String {
+    agent_type.as_str().to_string()
 }
 
 fn format_agent_status(

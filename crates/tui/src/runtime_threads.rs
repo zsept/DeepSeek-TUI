@@ -1931,6 +1931,7 @@ impl RuntimeThreadManager {
             mcp_config_path: self.config.mcp_config_path(),
             skills_dir: self.config.skills_dir(),
             extra_skills_dirs: self.config.extra_skills_dirs(),
+            subagent_custom_types: self.config.subagent_custom_types(),
             instructions: self.config.instructions_paths(),
             project_context_pack_enabled: self.config.project_context_pack_enabled(),
             translation_enabled: false,

@@ -241,10 +241,17 @@ pub enum SubAgentType {
     Verifier,
     /// Custom tool access defined at spawn time.
     Custom,
+    /// User-defined custom type from `[subagents.types.<name>]` in config.
+    /// Carries the type name so the spawn path can look up system prompt,
+    /// allowed tools, model, and knowledge paths from config.
+    Named(String),
 }
 
 impl SubAgentType {
     /// Parse a sub-agent type from user input.
+    ///
+    /// Returns `None` only for the empty string. All unrecognised names
+    /// are treated as user-defined custom types (`Named`).
     #[must_use]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
@@ -257,12 +264,13 @@ impl SubAgentType {
             "implementer" | "implement" | "implementation" | "builder" => Some(Self::Implementer),
             "verifier" | "verify" | "verification" | "validator" | "tester" => Some(Self::Verifier),
             "custom" => Some(Self::Custom),
-            _ => None,
+            "" => None,
+            other => Some(Self::Named(other.to_string())),
         }
     }
 
     #[must_use]
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::General => "general",
             Self::Explore => "explore",
@@ -271,10 +279,31 @@ impl SubAgentType {
             Self::Implementer => "implementer",
             Self::Verifier => "verifier",
             Self::Custom => "custom",
+            Self::Named(name) => name.as_str(),
+        }
+    }
+
+    /// Return the canonical string for display. For `Named` types
+    /// this returns the config-defined name.
+    #[must_use]
+    pub fn display_name(&self) -> std::borrow::Cow<'static, str> {
+        match self {
+            Self::General => "General".into(),
+            Self::Explore => "Explore".into(),
+            Self::Plan => "Plan".into(),
+            Self::Review => "Review".into(),
+            Self::Implementer => "Implementer".into(),
+            Self::Verifier => "Verifier".into(),
+            Self::Custom => "Custom".into(),
+            Self::Named(name) => name.clone().into(),
         }
     }
 
     /// Get the system prompt for this agent type.
+    ///
+    /// For `Named` types this returns a placeholder — the real
+    /// prompt is resolved from `SubAgentCustomType` config at
+    /// spawn time by `build_subagent_system_prompt`.
     #[must_use]
     pub fn system_prompt(&self) -> String {
         let role_intro = match self {
@@ -285,6 +314,7 @@ impl SubAgentType {
             Self::Implementer => IMPLEMENTER_AGENT_INTRO,
             Self::Verifier => VERIFIER_AGENT_INTRO,
             Self::Custom => CUSTOM_AGENT_INTRO,
+            Self::Named(_) => CUSTOM_AGENT_INTRO,
         };
         format!("{role_intro}{SUBAGENT_OUTPUT_FORMAT}")
     }
@@ -397,6 +427,7 @@ impl SubAgentType {
                 "note",
             ],
             Self::Custom => vec![], // Must be provided by caller.
+            Self::Named(_) => vec![], // Must be provided by caller (config).
         }
     }
 }
@@ -640,6 +671,10 @@ pub struct SubAgentRuntime {
     pub parent_completion_tx: Option<mpsc::UnboundedSender<SubAgentCompletion>>,
     /// Snapshot of the request prefix visible to an opt-in forked child.
     pub fork_context: Option<SubAgentForkContext>,
+    /// User-defined custom type definitions from `[subagents.types]`.
+    /// Used at spawn time to resolve system prompts, allowed tools,
+    /// model, reasoning effort, and knowledge paths for `Named` types.
+    pub custom_type_configs: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
 }
 
 impl SubAgentRuntime {
@@ -673,6 +708,7 @@ impl SubAgentRuntime {
             mailbox: None,
             parent_completion_tx: None,
             fork_context: None,
+            custom_type_configs: HashMap::new(),
         }
     }
 
@@ -730,6 +766,16 @@ impl SubAgentRuntime {
     #[must_use]
     pub fn with_role_models(mut self, role_models: HashMap<String, String>) -> Self {
         self.role_models = role_models;
+        self
+    }
+
+    /// Attach user-defined custom type definitions from `[subagents.types]`.
+    #[must_use]
+    pub fn with_custom_type_configs(
+        mut self,
+        configs: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
+    ) -> Self {
+        self.custom_type_configs = configs;
         self
     }
 
@@ -794,6 +840,7 @@ impl SubAgentRuntime {
             max_spawn_depth: self.max_spawn_depth,
             cancel_token: self.cancel_token.child_token(),
             mailbox: self.mailbox.clone(),
+            custom_type_configs: self.custom_type_configs.clone(),
             parent_completion_tx: self.parent_completion_tx.clone(),
             fork_context: self.fork_context.clone(),
         }
@@ -1914,7 +1961,7 @@ impl ToolSpec for AgentSpawnTool {
                 },
                 "type": {
                     "type": "string",
-                    "description": "Sub-agent type: general, explore, plan, review, implementer, verifier, custom. See docs/SUBAGENTS.md for posture per role."
+                    "description": "Sub-agent type: general, explore, plan, review, implementer, verifier, custom, or a user-defined name from [subagents.types] in config. See docs/SUBAGENTS.md for posture per role."
                 },
                 "agent_type": {
                     "type": "string",
@@ -3081,8 +3128,18 @@ impl ToolSpec for DelegateToAgentTool {
 fn build_subagent_system_prompt(
     agent_type: &SubAgentType,
     assignment: &SubAgentAssignment,
+    custom_type_configs: &HashMap<String, crate::config::SubAgentCustomType>,
 ) -> String {
-    let base = agent_type.system_prompt();
+    let base = if let SubAgentType::Named(name) = agent_type {
+        if let Some(ct) = custom_type_configs.get(name) {
+            format!("{}\n\n{}", ct.system_prompt.trim(), SUBAGENT_OUTPUT_FORMAT)
+        } else {
+            // Named type not found in config — fall back to generic custom intro.
+            agent_type.system_prompt()
+        }
+    } else {
+        agent_type.system_prompt()
+    };
     match assignment.role.as_deref() {
         Some(role) if !role.trim().is_empty() => {
             format!(
@@ -3108,6 +3165,7 @@ fn build_initial_subagent_messages(
     assignment: &SubAgentAssignment,
     agent_type: &SubAgentType,
     fork_context: Option<&SubAgentForkContext>,
+    custom_type_configs: &HashMap<String, crate::config::SubAgentCustomType>,
 ) -> Vec<Message> {
     let mut messages = fork_context
         .map(|context| context.messages.clone())
@@ -3127,7 +3185,7 @@ fn build_initial_subagent_messages(
 
         messages.push(system_text_message(format!(
             "<deepseek:subagent_context>\n{}\n</deepseek:subagent_context>",
-            build_subagent_system_prompt(agent_type, assignment)
+            build_subagent_system_prompt(agent_type, assignment, custom_type_configs)
         )));
     }
 
@@ -3305,14 +3363,26 @@ async fn run_subagent(
     max_steps: u32,
     mut input_rx: mpsc::UnboundedReceiver<SubAgentInput>,
 ) -> Result<SubAgentResult> {
-    let system_prompt = build_subagent_system_prompt(&agent_type, &assignment);
+    let system_prompt = build_subagent_system_prompt(&agent_type, &assignment, &runtime.custom_type_configs);
     let fork_context_enabled = fork_context;
     let fork_context = fork_context_enabled
         .then_some(runtime.fork_context.as_ref())
         .flatten();
     let request_system = subagent_request_system_prompt(&system_prompt, fork_context);
+
+    // Load knowledge reference files for user-defined custom types.
+    let prompt_with_knowledge = if let SubAgentType::Named(ref name) = agent_type {
+        if let Some(ct) = runtime.custom_type_configs.get(name) {
+            augment_prompt_with_knowledge(&prompt, ct)
+        } else {
+            prompt.clone()
+        }
+    } else {
+        prompt.clone()
+    };
+
     let mut messages =
-        build_initial_subagent_messages(&prompt, &assignment, &agent_type, fork_context);
+        build_initial_subagent_messages(&prompt_with_knowledge, &assignment, &agent_type, fork_context, &runtime.custom_type_configs);
     let runtime_for_tools = runtime.clone().with_fork_context(SubAgentForkContext {
         system: Some(request_system.clone()),
         messages: messages.clone(),
@@ -4502,6 +4572,47 @@ fn truncate_preview(text: &str) -> String {
     } else {
         format!("{}...", text.chars().take(MAX_LEN).collect::<String>())
     }
+}
+
+/// Prepend knowledge reference files to the sub-agent prompt.
+///
+/// Each `knowledge_paths` entry is expanded with `expand_path` so `~`
+/// and env vars work. File contents are wrapped in a markdown block with
+/// the path as label, then prepended before the user prompt.
+fn augment_prompt_with_knowledge(prompt: &str, ct: &crate::config::SubAgentCustomType) -> String {
+    let Some(ref paths) = ct.knowledge_paths else {
+        return prompt.to_string();
+    };
+    let mut knowledge_blocks = Vec::new();
+    for raw_path in paths {
+        let path = crate::config::expand_path(raw_path);
+        match std::fs::read_to_string(&path) {
+            Ok(content) => {
+                let label = path.display();
+                // Truncate per-file to 50 KiB to avoid blowing the prompt budget.
+                let cap = 50 * 1024;
+                let body = if content.len() > cap {
+                    let truncated: String = content.chars().take(cap).collect();
+                    format!("{truncated}\n\n[truncated to {cap} chars]")
+                } else {
+                    content
+                };
+                knowledge_blocks.push(format!(
+                    "## Knowledge: {label}\n\n```\n{body}\n```"
+                ));
+            }
+            Err(err) => {
+                knowledge_blocks.push(format!(
+                    "<!-- Failed to read knowledge file {}: {err} -->",
+                    path.display()
+                ));
+            }
+        }
+    }
+    if knowledge_blocks.is_empty() {
+        return prompt.to_string();
+    }
+    format!("{navigation}\n\n{prompt}", navigation = knowledge_blocks.join("\n\n"))
 }
 
 const SUBAGENT_OUTPUT_FORMAT: &str = include_str!("../../prompts/subagent_output_format.md");

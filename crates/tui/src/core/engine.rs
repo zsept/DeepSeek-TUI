@@ -93,6 +93,8 @@ pub struct EngineConfig {
     /// Extra skill directories from config. Appended after
     /// built-in workspace/global candidates.
     pub extra_skills_dirs: Vec<PathBuf>,
+    /// User-defined custom sub-agent type definitions.
+    pub subagent_custom_types: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
     /// Additional instruction files concatenated into the system
     /// prompt (#454). Loaded in declared order from the user's
     /// `instructions = [...]` config (or the per-project override).
@@ -182,6 +184,7 @@ impl Default for EngineConfig {
             mcp_config_path: PathBuf::from("mcp.json"),
             skills_dir: crate::skills::default_skills_dir(),
             extra_skills_dirs: Vec::new(),
+            subagent_custom_types: HashMap::new(),
             instructions: Vec::new(),
             project_context_pack_enabled: true,
             translation_enabled: false,
@@ -660,6 +663,7 @@ impl Engine {
                         self.session.reasoning_effort_auto,
                     )
                     .with_max_spawn_depth(self.config.max_spawn_depth)
+                    .with_custom_type_configs(self.config.subagent_custom_types.clone())
                     .background_runtime();
                     let route = resolve_subagent_assignment_route(&runtime, None, &prompt).await;
                     runtime.model = route.model;
@@ -1064,6 +1068,7 @@ impl Engine {
                             self.session.reasoning_effort_auto,
                         )
                         .with_max_spawn_depth(self.config.max_spawn_depth)
+                        .with_custom_type_configs(self.config.subagent_custom_types.clone())
                         .with_parent_completion_tx(self.tx_subagent_completion.clone());
                         if let Some(context) = fork_context_for_runtime.clone() {
                             rt = rt.with_fork_context(context);

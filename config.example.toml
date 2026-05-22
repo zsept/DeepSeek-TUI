@@ -151,6 +151,24 @@ max_subagents = 10 # optional (1-20)
 # Optional sub-agent tuning. max_concurrent overrides top-level max_subagents.
 # [subagents]
 # max_concurrent = 10
+#
+# # User-defined custom sub-agent types referenced via `type="<name>"` in
+# # `agent_open`. Each entry defines a system prompt, optional tool
+# # allowlist, model, reasoning effort, and knowledge reference paths.
+# [subagents.types.security-auditor]
+# system_prompt = """
+# You are a security auditor. Focus on OWASP Top 10 vulnerabilities.
+# Always check: input validation, authentication, authorization,
+# SQL injection, XSS, CSRF.
+# """
+# allowed_tools = ["read_file", "grep_files", "list_dir", "web_search"]
+# model = "deepseek-v4-pro"
+# reasoning_effort = "high"
+# knowledge_paths = ["~/.deepseek/knowledge/security.md"]
+#
+# [subagents.types.doc-reviewer]
+# system_prompt = "You review documentation for clarity, accuracy, and completeness."
+# allowed_tools = ["read_file", "list_dir", "grep_files"]
 
 # Optional managed policy paths (defaults to /etc/deepseek/*.toml on unix):
 # managed_config_path = "/etc/deepseek/managed_config.toml"

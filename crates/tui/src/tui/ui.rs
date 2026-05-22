@@ -673,6 +673,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         mcp_config_path: config.mcp_config_path(),
         skills_dir: app.skills_dir.clone(),
         extra_skills_dirs: app.extra_skills_dirs.clone(),
+        subagent_custom_types: config.subagent_custom_types(),
         instructions: config.instructions_paths(),
         project_context_pack_enabled: config.project_context_pack_enabled(),
         translation_enabled: app.translation_enabled,

@@ -868,6 +868,44 @@ pub struct SubagentsConfig {
     /// setting. Clamped to [1, MAX_SUBAGENTS].
     #[serde(default)]
     pub max_concurrent: Option<usize>,
+    /// User-defined custom agent types. Keys are type names (e.g.
+    /// `"security-auditor"`); the model references them via
+    /// `type="security-auditor"` in `agent_open`. Each entry defines
+    /// a system prompt, optional tool allowlist, model, reasoning
+    /// effort, and knowledge reference paths.
+    #[serde(default)]
+    pub types: Option<HashMap<String, SubAgentCustomType>>,
+}
+
+/// User-defined custom sub-agent type definition.
+///
+/// Named entries under `[subagents.types.<name>]` override
+/// the built-in `SubAgentType::Custom` posture on a per-name basis.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SubAgentCustomType {
+    /// System prompt injected at the top of the sub-agent prompt.
+    /// Replaces the built-in `CUSTOM_AGENT_INTRO`. The mandatory
+    /// output-format contract (`subagent_output_format.md`) is
+    /// still appended automatically.
+    pub system_prompt: String,
+    /// Optional tool allowlist. When set, the sub-agent sees only
+    /// these tools. When absent, the agent inherits the full
+    /// parent toolset (equivalent to `type="custom"` without
+    /// `allowed_tools`).
+    #[serde(default)]
+    pub allowed_tools: Option<Vec<String>>,
+    /// Optional model override.
+    #[serde(default)]
+    pub model: Option<String>,
+    /// Optional reasoning effort: "off" | "high" | "max".
+    #[serde(default)]
+    pub reasoning_effort: Option<String>,
+    /// Optional knowledge reference paths. Each path is expanded
+    /// via `expand_path`. File contents are prepended to the
+    /// sub-agent's initial prompt so the model has the reference
+    /// material in-context without needing to `read_file` it.
+    #[serde(default)]
+    pub knowledge_paths: Option<Vec<String>>,
 }
 
 /// `[auto]` table — knobs for the `--model auto` / `/model auto` router.
@@ -1807,7 +1845,18 @@ impl Config {
 
     /// Raw sub-agent model override map. Values are validated at spawn time
     /// so an invalid role/type model fails before any partial agent spawn.
+    /// Return user-defined custom sub-agent types from config.
+    ///
+    /// Keys are type names the model can reference in `agent_open`.
+    /// Returns an empty map when no custom types are defined.
     #[must_use]
+    pub fn subagent_custom_types(&self) -> std::collections::HashMap<String, SubAgentCustomType> {
+        self.subagents
+            .as_ref()
+            .and_then(|s| s.types.clone())
+            .unwrap_or_default()
+    }
+
     pub fn subagent_model_overrides(&self) -> HashMap<String, String> {
         let mut overrides = HashMap::new();
         let Some(cfg) = self.subagents.as_ref() else {

@@ -95,6 +95,8 @@ pub struct EngineConfig {
     pub extra_skills_dirs: Vec<PathBuf>,
     /// User-defined custom sub-agent type definitions.
     pub subagent_custom_types: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
+    /// Custom parent system prompt from `Config::system_prompt`.
+    pub system_prompt: Option<String>,
     /// Additional instruction files concatenated into the system
     /// prompt (#454). Loaded in declared order from the user's
     /// `instructions = [...]` config (or the per-project override).
@@ -185,6 +187,7 @@ impl Default for EngineConfig {
             skills_dir: crate::skills::default_skills_dir(),
             extra_skills_dirs: Vec::new(),
             subagent_custom_types: HashMap::new(),
+            system_prompt: None,
             instructions: Vec::new(),
             project_context_pack_enabled: true,
             translation_enabled: false,
@@ -441,6 +444,7 @@ impl Engine {
                     project_context_pack_enabled: config.project_context_pack_enabled,
                     locale_tag: &config.locale_tag,
                     translation_enabled: config.translation_enabled,
+                    parent_system_prompt: config.system_prompt.as_deref(),
                 },
                 session.approval_mode,
                 &config.extra_skills_dirs,
@@ -1803,6 +1807,7 @@ impl Engine {
                 project_context_pack_enabled: self.config.project_context_pack_enabled,
                 locale_tag: &self.config.locale_tag,
                 translation_enabled: self.config.translation_enabled,
+                parent_system_prompt: self.config.system_prompt.as_deref(),
             },
             self.session.approval_mode,
             &self.config.extra_skills_dirs,

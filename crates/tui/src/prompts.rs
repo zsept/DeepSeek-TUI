@@ -28,6 +28,10 @@ pub struct PromptSessionContext<'a> {
     /// to the system prompt instructing the model to respond in
     /// the resolved session locale.
     pub translation_enabled: bool,
+    /// Custom parent system prompt from `Config::system_prompt`.
+    /// Injected immediately after the mode prompt, before project
+    /// context. `None` when the user hasn't set one.
+    pub parent_system_prompt: Option<&'a str>,
 }
 
 /// Conventional location for the structured session relay artifact (#32).
@@ -549,6 +553,7 @@ pub fn system_prompt_for_mode_with_context_and_skills(
             project_context_pack_enabled: true,
             locale_tag: "en",
             translation_enabled: false,
+            parent_system_prompt: None,
         },
         &[],
     )
@@ -620,6 +625,15 @@ pub fn system_prompt_for_mode_with_context_skills_session_and_approval(
         && let Some(pack) = crate::project_context::generate_project_context_pack(workspace)
     {
         full_prompt = format!("{full_prompt}\n\n{pack}");
+    }
+
+    // 2.22. Custom parent system prompt — injected after project
+    // context and before the environment block so it sits in the
+    // workspace-static cache layer.
+    if let Some(custom) = session_context.parent_system_prompt
+        && !custom.trim().is_empty()
+    {
+        full_prompt = format!("{full_prompt}\n\n{custom}");
     }
 
     // 2.25. Environment block — locale, platform, shell, pwd. All
@@ -885,6 +899,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "zh-Hans",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
             ApprovalMode::Suggest,
         ) {
@@ -954,6 +969,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "zh-Hans",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
             ApprovalMode::Suggest,
         ) {
@@ -998,6 +1014,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
             ApprovalMode::Suggest,
         ) {
@@ -1087,6 +1104,7 @@ mod tests {
                 project_context_pack_enabled: true,
                 locale_tag: "ja",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1122,6 +1140,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1149,6 +1168,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1178,6 +1198,7 @@ mod tests {
                 project_context_pack_enabled: false,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1205,6 +1226,7 @@ mod tests {
                 project_context_pack_enabled: true,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1399,6 +1421,7 @@ mod tests {
                 project_context_pack_enabled: true,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,
@@ -1432,6 +1455,7 @@ mod tests {
                 project_context_pack_enabled: true,
                 locale_tag: "en",
                 translation_enabled: false,
+                parent_system_prompt: None,
             },
         ) {
             SystemPrompt::Text(text) => text,

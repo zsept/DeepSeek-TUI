@@ -956,6 +956,12 @@ pub struct Config {
     /// at 100 KiB, and skipped (with a warning) on read errors so a
     /// missing optional file doesn't fail the launch.
     pub instructions: Option<Vec<String>>,
+    /// Custom system-prompt text injected immediately after the mode
+    /// prompt and before the project context block. Use for persistent
+    /// posture tuning (e.g. "always use Chinese", "prefer short
+    /// answers"). For file-based layered instructions, use
+    /// `instructions = [...]` instead.
+    pub system_prompt: Option<String>,
     pub allow_shell: Option<bool>,
     pub approval_policy: Option<String>,
     pub sandbox_mode: Option<String>,
@@ -2851,6 +2857,7 @@ fn merge_config(base: Config, override_cfg: Config) -> Config {
         // wholesale. The typical "merge" pattern is for users who want
         // both — they list `~/global.md` inside the project array.
         instructions: override_cfg.instructions.or(base.instructions),
+        system_prompt: override_cfg.system_prompt.or(base.system_prompt),
         allow_shell: override_cfg.allow_shell.or(base.allow_shell),
         yolo: override_cfg.yolo.or(base.yolo),
         approval_policy: override_cfg.approval_policy.or(base.approval_policy),

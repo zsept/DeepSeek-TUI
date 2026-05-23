@@ -88,6 +88,12 @@ memory_path = "~/.deepseek/memory.md"
 # inside the project array if you want both. An explicit empty array
 # (`instructions = []`) clears the user list for the current repo.
 
+# system_prompt = """
+# Custom system-prompt text injected after the mode prompt and before
+# the project context block. Use for persistent posture tuning
+# (e.g. "always use Chinese", "prefer short answers").
+# """
+
 # ─────────────────────────────────────────────────────────────────────────────────
 # User memory (#489) — opt-in. When enabled, the TUI reads memory_path on
 # startup and injects its contents into the system prompt as a

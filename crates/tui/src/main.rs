@@ -4634,6 +4634,7 @@ async fn run_exec_agent(
         skills_dir: config.skills_dir(),
         extra_skills_dirs: config.extra_skills_dirs(),
         subagent_custom_types: config.subagent_custom_types(),
+        system_prompt: config.system_prompt.clone(),
         instructions: config.instructions_paths(),
         project_context_pack_enabled: config.project_context_pack_enabled(),
         translation_enabled: false,

@@ -1932,6 +1932,7 @@ impl RuntimeThreadManager {
             skills_dir: self.config.skills_dir(),
             extra_skills_dirs: self.config.extra_skills_dirs(),
             subagent_custom_types: self.config.subagent_custom_types(),
+            system_prompt: self.config.system_prompt.clone(),
             instructions: self.config.instructions_paths(),
             project_context_pack_enabled: self.config.project_context_pack_enabled(),
             translation_enabled: false,

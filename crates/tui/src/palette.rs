@@ -25,18 +25,6 @@ pub const LIGHT_TEXT_HINT_RGB: (u8, u8, u8) = (100, 116, 139); // #64748B
 pub const LIGHT_TEXT_SOFT_RGB: (u8, u8, u8) = (30, 41, 59); // #1E293B
 pub const LIGHT_BORDER_RGB: (u8, u8, u8) = (139, 161, 184); // #8BA1B8
 pub const LIGHT_SELECTION_RGB: (u8, u8, u8) = (207, 224, 247); // #CFE0F7
-pub const GRAYSCALE_SURFACE_RGB: (u8, u8, u8) = (10, 10, 10); // #0A0A0A
-pub const GRAYSCALE_PANEL_RGB: (u8, u8, u8) = (18, 18, 18); // #121212
-pub const GRAYSCALE_ELEVATED_RGB: (u8, u8, u8) = (31, 31, 31); // #1F1F1F
-pub const GRAYSCALE_REASONING_RGB: (u8, u8, u8) = (38, 38, 38); // #262626
-pub const GRAYSCALE_SUCCESS_RGB: (u8, u8, u8) = (34, 34, 34); // #222222
-pub const GRAYSCALE_ERROR_RGB: (u8, u8, u8) = (42, 42, 42); // #2A2A2A
-pub const GRAYSCALE_TEXT_BODY_RGB: (u8, u8, u8) = (236, 236, 236); // #ECECEC
-pub const GRAYSCALE_TEXT_MUTED_RGB: (u8, u8, u8) = (180, 180, 180); // #B4B4B4
-pub const GRAYSCALE_TEXT_HINT_RGB: (u8, u8, u8) = (138, 138, 138); // #8A8A8A
-pub const GRAYSCALE_TEXT_SOFT_RGB: (u8, u8, u8) = (220, 220, 220); // #DCDCDC
-pub const GRAYSCALE_BORDER_RGB: (u8, u8, u8) = (96, 96, 96); // #606060
-pub const GRAYSCALE_SELECTION_RGB: (u8, u8, u8) = (62, 62, 62); // #3E3E3E
 
 // New semantic colors
 pub const BORDER_COLOR_RGB: (u8, u8, u8) = (42, 74, 127); // #2A4A7F
@@ -119,66 +107,6 @@ pub const LIGHT_SELECTION_BG: Color = Color::Rgb(
     LIGHT_SELECTION_RGB.1,
     LIGHT_SELECTION_RGB.2,
 );
-pub const GRAYSCALE_SURFACE: Color = Color::Rgb(
-    GRAYSCALE_SURFACE_RGB.0,
-    GRAYSCALE_SURFACE_RGB.1,
-    GRAYSCALE_SURFACE_RGB.2,
-);
-pub const GRAYSCALE_PANEL: Color = Color::Rgb(
-    GRAYSCALE_PANEL_RGB.0,
-    GRAYSCALE_PANEL_RGB.1,
-    GRAYSCALE_PANEL_RGB.2,
-);
-pub const GRAYSCALE_ELEVATED: Color = Color::Rgb(
-    GRAYSCALE_ELEVATED_RGB.0,
-    GRAYSCALE_ELEVATED_RGB.1,
-    GRAYSCALE_ELEVATED_RGB.2,
-);
-pub const GRAYSCALE_REASONING: Color = Color::Rgb(
-    GRAYSCALE_REASONING_RGB.0,
-    GRAYSCALE_REASONING_RGB.1,
-    GRAYSCALE_REASONING_RGB.2,
-);
-pub const GRAYSCALE_SUCCESS: Color = Color::Rgb(
-    GRAYSCALE_SUCCESS_RGB.0,
-    GRAYSCALE_SUCCESS_RGB.1,
-    GRAYSCALE_SUCCESS_RGB.2,
-);
-pub const GRAYSCALE_ERROR: Color = Color::Rgb(
-    GRAYSCALE_ERROR_RGB.0,
-    GRAYSCALE_ERROR_RGB.1,
-    GRAYSCALE_ERROR_RGB.2,
-);
-pub const GRAYSCALE_TEXT_BODY: Color = Color::Rgb(
-    GRAYSCALE_TEXT_BODY_RGB.0,
-    GRAYSCALE_TEXT_BODY_RGB.1,
-    GRAYSCALE_TEXT_BODY_RGB.2,
-);
-pub const GRAYSCALE_TEXT_MUTED: Color = Color::Rgb(
-    GRAYSCALE_TEXT_MUTED_RGB.0,
-    GRAYSCALE_TEXT_MUTED_RGB.1,
-    GRAYSCALE_TEXT_MUTED_RGB.2,
-);
-pub const GRAYSCALE_TEXT_HINT: Color = Color::Rgb(
-    GRAYSCALE_TEXT_HINT_RGB.0,
-    GRAYSCALE_TEXT_HINT_RGB.1,
-    GRAYSCALE_TEXT_HINT_RGB.2,
-);
-pub const GRAYSCALE_TEXT_SOFT: Color = Color::Rgb(
-    GRAYSCALE_TEXT_SOFT_RGB.0,
-    GRAYSCALE_TEXT_SOFT_RGB.1,
-    GRAYSCALE_TEXT_SOFT_RGB.2,
-);
-pub const GRAYSCALE_BORDER: Color = Color::Rgb(
-    GRAYSCALE_BORDER_RGB.0,
-    GRAYSCALE_BORDER_RGB.1,
-    GRAYSCALE_BORDER_RGB.2,
-);
-pub const GRAYSCALE_SELECTION_BG: Color = Color::Rgb(
-    GRAYSCALE_SELECTION_RGB.0,
-    GRAYSCALE_SELECTION_RGB.1,
-    GRAYSCALE_SELECTION_RGB.2,
-);
 
 pub const TEXT_BODY: Color = Color::Rgb(226, 232, 240); // #E2E8F0
 pub const TEXT_SECONDARY: Color = Color::Rgb(177, 190, 207); // #B1BECF
@@ -250,7 +178,6 @@ pub const COMPOSER_BG: Color = DEEPSEEK_SLATE;
 pub enum PaletteMode {
     Dark,
     Light,
-    Grayscale,
 }
 
 impl PaletteMode {
@@ -282,12 +209,6 @@ pub fn normalize_theme_name(value: &str) -> Option<&'static str> {
         "" | "auto" | "system" | "default" => Some("system"),
         "dark" | "whale" | "whale-dark" => Some("dark"),
         "light" | "whale-light" => Some("light"),
-        "grayscale" | "greyscale" | "gray" | "grey" | "mono" | "monochrome" | "black-white"
-        | "black_and_white" | "blackwhite" | "bw" | "b&w" => Some("grayscale"),
-        "catppuccin-mocha" | "catppuccin" | "mocha" => Some("catppuccin-mocha"),
-        "tokyo-night" | "tokyonight" | "tokyo" => Some("tokyo-night"),
-        "dracula" => Some("dracula"),
-        "gruvbox-dark" | "gruvbox" => Some("gruvbox-dark"),
         _ => None,
     }
 }
@@ -297,7 +218,6 @@ pub fn theme_label_for_mode(mode: PaletteMode) -> &'static str {
     match mode {
         PaletteMode::Dark => "dark",
         PaletteMode::Light => "light",
-        PaletteMode::Grayscale => "grayscale",
     }
 }
 
@@ -343,7 +263,6 @@ pub fn adapt_fg_for_palette_mode(color: Color, _bg: Color, mode: PaletteMode) ->
     match mode {
         PaletteMode::Dark => color,
         PaletteMode::Light => adapt_fg_for_light_palette(color),
-        PaletteMode::Grayscale => adapt_fg_for_grayscale_palette(color),
     }
 }
 
@@ -352,7 +271,6 @@ pub fn adapt_bg_for_palette_mode(color: Color, mode: PaletteMode) -> Color {
     match mode {
         PaletteMode::Dark => color,
         PaletteMode::Light => adapt_bg_for_light_palette(color),
-        PaletteMode::Grayscale => adapt_bg_for_grayscale_palette(color),
     }
 }
 
@@ -417,295 +335,20 @@ fn adapt_bg_for_light_palette(color: Color) -> Color {
 //
 // The vast majority of render sites in this crate reach for `palette::TEXT_*`,
 // `palette::DEEPSEEK_INK`, `palette::BORDER_COLOR`, etc. directly rather than
-// looking up `app.ui_theme`. To make community theme presets (Catppuccin,
-// Tokyo Night, …) actually move the needle visually we intercept colors at
-// the backend layer (see `tui::color_compat::ColorCompatBackend`) and remap
-// every well-known dark-palette constant to the equivalent UiTheme slot for
-// the active preset. For `System`, `Whale`, and `WhaleLight` the remap is a
-// no-op — the existing dark/light pipeline handles those.
+// Community theme presets have been removed. The adapt_fg_for_theme and
+// adapt_bg_for_theme functions remain as no-ops to keep the backend layer's
+// cell-level remap contract intact without requiring call-site changes.
 
-/// Per-preset green accent used for things that semantically *should* stay
-/// green even after theming (diff "+" lines, user-input body). Mapping these
-/// to `ui.status_working` would lose the green/cyan distinction the UI
-/// relies on, so we keep a small dedicated table.
+/// No-op — community presets have been removed.
 #[must_use]
-const fn theme_green(theme: ThemeId) -> Color {
-    match theme {
-        ThemeId::CatppuccinMocha => Color::Rgb(0xa6, 0xe3, 0xa1),
-        ThemeId::TokyoNight => Color::Rgb(0x9e, 0xce, 0x6a),
-        ThemeId::Dracula => Color::Rgb(0x50, 0xfa, 0x7b),
-        ThemeId::GruvboxDark => Color::Rgb(0xb8, 0xbb, 0x26),
-        _ => USER_BODY,
-    }
+pub fn adapt_fg_for_theme(color: Color, _ui: &Theme) -> Color {
+    color
 }
 
-/// Per-preset red accent, used for diff "−" line foreground when present.
+/// No-op — community presets have been removed.
 #[must_use]
-const fn theme_red(theme: ThemeId) -> Color {
-    match theme {
-        ThemeId::CatppuccinMocha => Color::Rgb(0xf3, 0x8b, 0xa8),
-        ThemeId::TokyoNight => Color::Rgb(0xf7, 0x76, 0x8e),
-        ThemeId::Dracula => Color::Rgb(0xff, 0x55, 0x55),
-        ThemeId::GruvboxDark => Color::Rgb(0xfb, 0x49, 0x34),
-        _ => DEEPSEEK_RED,
-    }
-}
-
-/// Per-preset dark-green diff-added background tint.
-#[must_use]
-const fn theme_diff_added_bg(theme: ThemeId) -> Color {
-    match theme {
-        ThemeId::CatppuccinMocha => Color::Rgb(0x1f, 0x33, 0x29),
-        ThemeId::TokyoNight => Color::Rgb(0x1b, 0x2b, 0x1f),
-        ThemeId::Dracula => Color::Rgb(0x21, 0x3a, 0x2a),
-        ThemeId::GruvboxDark => Color::Rgb(0x29, 0x32, 0x16),
-        _ => DIFF_ADDED_BG,
-    }
-}
-
-/// Per-preset dark-red diff-deleted background tint.
-#[must_use]
-const fn theme_diff_deleted_bg(theme: ThemeId) -> Color {
-    match theme {
-        ThemeId::CatppuccinMocha => Color::Rgb(0x3a, 0x1f, 0x2a),
-        ThemeId::TokyoNight => Color::Rgb(0x33, 0x1c, 0x24),
-        ThemeId::Dracula => Color::Rgb(0x3a, 0x1f, 0x22),
-        ThemeId::GruvboxDark => Color::Rgb(0x35, 0x1c, 0x18),
-        _ => DIFF_DELETED_BG,
-    }
-}
-
-/// Returns `true` if the preset participates in the cell-level remap. The
-/// default Whale and System themes pass through unchanged so this whole
-// theme_remap_active → Theme::is_community_preset()
-/// Remap a foreground color for a community theme preset. Mirrors the
-/// structure of [`adapt_fg_for_palette_mode`] — same source set, different
-/// destinations sourced from the preset's [`UiTheme`].
-///
-/// The `ui` argument is the *active* UiTheme as carried on `App` —
-/// `ThemeId.ui_theme()` with the user's `background_color` override
-/// already applied. Passing it through (rather than re-resolving from
-/// `theme` inside this function) preserves that override; otherwise a
-/// user combining `background_color = "#..."` with a community theme
-/// would see their override silently overwritten by the preset's
-/// surface_bg on every cell remap.
-#[must_use]
-pub fn adapt_fg_for_theme(color: Color, ui: &Theme) -> Color {
-    if !ui.is_community_preset() {
-        return color;
-    }
-
-    if color == TEXT_BODY || color == SELECTION_TEXT || color == Color::White {
-        ui.text_body
-    } else if color == TEXT_SECONDARY || color == TEXT_MUTED {
-        ui.text_muted
-    } else if color == TEXT_HINT || color == TEXT_DIM {
-        ui.text_hint
-    } else if color == TEXT_SOFT || color == TEXT_TOOL_OUTPUT {
-        ui.text_soft
-    } else if color == BORDER_COLOR {
-        ui.border_color
-    } else if color == TEXT_ACCENT || color == DEEPSEEK_SKY || color == ACCENT_TOOL_LIVE {
-        ui.status_working
-    } else if color == TEXT_REASONING || color == ACCENT_REASONING_LIVE {
-        ui.mode_plan
-    } else if color == ACCENT_TOOL_ISSUE {
-        ui.mode_yolo
-    } else if color == STATUS_WARNING {
-        ui.status_warning
-    } else if color == DEEPSEEK_RED {
-        theme_red(ui.theme_id())
-    } else if color == DIFF_ADDED || color == USER_BODY {
-        theme_green(ui.theme_id())
-    } else if color == DEEPSEEK_BLUE {
-        // The default mode_agent accent — keep it in the preset's blue family.
-        ui.mode_agent
-    } else {
-        color
-    }
-}
-
-/// Remap a background color for a community theme preset. See the
-/// `ui` note on [`adapt_fg_for_theme`] — same contract here.
-#[must_use]
-pub fn adapt_bg_for_theme(color: Color, ui: &Theme) -> Color {
-    if !ui.is_community_preset() {
-        return color;
-    }
-
-    if color == DEEPSEEK_INK || color == BACKGROUND_DARK {
-        ui.surface_bg
-    } else if color == DEEPSEEK_SLATE
-        || color == COMPOSER_BG
-        || color == SURFACE_PANEL
-        || color == SURFACE_TOOL
-    {
-        ui.panel_bg
-    } else if color == SURFACE_ELEVATED || color == SURFACE_TOOL_ACTIVE {
-        ui.elevated_bg
-    } else if color == SURFACE_REASONING
-        || color == SURFACE_REASONING_TINT
-        || color == SURFACE_REASONING_ACTIVE
-        || color == SURFACE_SUCCESS
-        || color == SURFACE_ERROR
-    {
-        // Reasoning/success/error backgrounds are subtle tints that don't have
-        // a dedicated theme slot. Collapse them onto the panel surface so they
-        // read as recessed rather than a stray default-blue tint.
-        ui.panel_bg
-    } else if color == SELECTION_BG {
-        ui.selection_bg
-    } else if color == DIFF_ADDED_BG {
-        theme_diff_added_bg(ui.theme_id())
-    } else if color == DIFF_DELETED_BG {
-        theme_diff_deleted_bg(ui.theme_id())
-    } else {
-        color
-    }
-}
-
-fn adapt_fg_for_grayscale_palette(color: Color) -> Color {
-    if color == Color::Reset {
-        return color;
-    }
-    if color == TEXT_BODY
-        || color == SELECTION_TEXT
-        || color == LIGHT_TEXT_BODY
-        || color == Color::White
-        || color == DEEPSEEK_RED
-        || color == STATUS_ERROR
-        || color == MODE_YOLO
-    {
-        GRAYSCALE_TEXT_BODY
-    } else if color == TEXT_SOFT
-        || color == TEXT_TOOL_OUTPUT
-        || color == LIGHT_TEXT_SOFT
-        || color == TEXT_ACCENT
-        || color == DEEPSEEK_SKY
-        || color == DEEPSEEK_BLUE
-        || color == ACCENT_TOOL_LIVE
-        || color == STATUS_SUCCESS
-        || color == STATUS_INFO
-        || color == MODE_AGENT
-    {
-        GRAYSCALE_TEXT_SOFT
-    } else if color == TEXT_SECONDARY
-        || color == TEXT_MUTED
-        || color == LIGHT_TEXT_MUTED
-        || color == TEXT_REASONING
-        || color == ACCENT_REASONING_LIVE
-        || color == STATUS_WARNING
-        || color == MODE_PLAN
-        || color == USER_BODY
-        || color == LIGHT_USER_BODY
-        || color == DIFF_ADDED
-    {
-        GRAYSCALE_TEXT_MUTED
-    } else if color == TEXT_HINT
-        || color == TEXT_DIM
-        || color == LIGHT_TEXT_HINT
-        || color == BORDER_COLOR
-        || color == LIGHT_BORDER
-        || color == ACCENT_TOOL_ISSUE
-    {
-        GRAYSCALE_TEXT_HINT
-    } else {
-        match color {
-            Color::Black => GRAYSCALE_TEXT_BODY,
-            Color::Gray | Color::DarkGray => GRAYSCALE_TEXT_HINT,
-            Color::Red
-            | Color::LightRed
-            | Color::Green
-            | Color::LightGreen
-            | Color::Yellow
-            | Color::LightYellow
-            | Color::Blue
-            | Color::LightBlue
-            | Color::Magenta
-            | Color::LightMagenta
-            | Color::Cyan
-            | Color::LightCyan => GRAYSCALE_TEXT_SOFT,
-            Color::Rgb(r, g, b) => grayscale_fg_from_luma(luma(r, g, b)),
-            Color::Indexed(_) => color,
-            _ => color,
-        }
-    }
-}
-
-fn adapt_bg_for_grayscale_palette(color: Color) -> Color {
-    if color == Color::Reset {
-        return color;
-    }
-    if color == DEEPSEEK_INK || color == BACKGROUND_DARK || color == LIGHT_SURFACE {
-        GRAYSCALE_SURFACE
-    } else if color == DEEPSEEK_SLATE
-        || color == COMPOSER_BG
-        || color == SURFACE_PANEL
-        || color == SURFACE_TOOL
-        || color == LIGHT_PANEL
-    {
-        GRAYSCALE_PANEL
-    } else if color == SURFACE_ELEVATED
-        || color == SURFACE_TOOL_ACTIVE
-        || color == LIGHT_ELEVATED
-        || color == SELECTION_BG
-        || color == LIGHT_SELECTION_BG
-    {
-        GRAYSCALE_ELEVATED
-    } else if color == SURFACE_REASONING
-        || color == SURFACE_REASONING_TINT
-        || color == SURFACE_REASONING_ACTIVE
-        || color == LIGHT_REASONING
-    {
-        GRAYSCALE_REASONING
-    } else if color == SURFACE_SUCCESS || color == DIFF_ADDED_BG || color == LIGHT_SUCCESS {
-        GRAYSCALE_SUCCESS
-    } else if color == SURFACE_ERROR || color == DIFF_DELETED_BG || color == LIGHT_ERROR {
-        GRAYSCALE_ERROR
-    } else {
-        match color {
-            Color::Black => GRAYSCALE_SURFACE,
-            Color::White | Color::Gray => GRAYSCALE_ELEVATED,
-            Color::DarkGray => GRAYSCALE_PANEL,
-            Color::Red
-            | Color::LightRed
-            | Color::Green
-            | Color::LightGreen
-            | Color::Yellow
-            | Color::LightYellow
-            | Color::Blue
-            | Color::LightBlue
-            | Color::Magenta
-            | Color::LightMagenta
-            | Color::Cyan
-            | Color::LightCyan => GRAYSCALE_ELEVATED,
-            Color::Rgb(r, g, b) => grayscale_bg_from_luma(luma(r, g, b)),
-            Color::Indexed(_) => color,
-            _ => color,
-        }
-    }
-}
-
-fn grayscale_fg_from_luma(luma: u8) -> Color {
-    match luma {
-        0..=95 => GRAYSCALE_TEXT_HINT,
-        96..=155 => GRAYSCALE_TEXT_MUTED,
-        156..=215 => GRAYSCALE_TEXT_SOFT,
-        _ => GRAYSCALE_TEXT_BODY,
-    }
-}
-
-fn grayscale_bg_from_luma(luma: u8) -> Color {
-    match luma {
-        0..=28 => GRAYSCALE_SURFACE,
-        29..=95 => GRAYSCALE_PANEL,
-        96..=185 => GRAYSCALE_ELEVATED,
-        _ => GRAYSCALE_REASONING,
-    }
-}
-
-fn luma(r: u8, g: u8, b: u8) -> u8 {
-    ((u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114) / 1000) as u8
+pub fn adapt_bg_for_theme(color: Color, _ui: &Theme) -> Color {
+    color
 }
 // === Color depth + brightness helpers (v0.6.6 UI redesign) ===
 
@@ -965,8 +608,7 @@ fn rgb_to_ansi256(r: u8, g: u8, b: u8) -> u8 {
 mod tests {
     use super::{
         ACCENT_REASONING_LIVE, ColorDepth, DEEPSEEK_INK, DEEPSEEK_RED, DEEPSEEK_SKY,
-        DEEPSEEK_SLATE, GRAYSCALE_PANEL, GRAYSCALE_REASONING, GRAYSCALE_SURFACE,
-        GRAYSCALE_TEXT_BODY, GRAYSCALE_TEXT_HINT, GRAYSCALE_TEXT_SOFT, LIGHT_BORDER,
+        DEEPSEEK_SLATE, LIGHT_BORDER,
         LIGHT_ELEVATED, LIGHT_PANEL, LIGHT_REASONING, LIGHT_SURFACE, LIGHT_TEXT_BODY,
         LIGHT_TEXT_HINT, PaletteMode, SURFACE_REASONING, SURFACE_REASONING_TINT, TEXT_BODY,
         TEXT_HINT, TEXT_REASONING, TEXT_TOOL_OUTPUT, adapt_bg, adapt_bg_for_palette_mode,
@@ -974,7 +616,7 @@ mod tests {
         normalize_theme_name, parse_hex_rgb_color, pulse_brightness, reasoning_surface_tint,
         rgb_to_ansi256, theme_label_for_mode,
     };
-    use crate::tui::theme::{DARK_THEME, GRAYSCALE_THEME, LIGHT_THEME, Theme};
+    use crate::tui::theme::{DARK_THEME, LIGHT_THEME, Theme};
     use ratatui::style::Color;
 
     #[test]
@@ -1000,23 +642,13 @@ mod tests {
     }
 
     #[test]
-    fn ui_theme_selects_grayscale_variant() {
-        let theme = Theme::for_mode(PaletteMode::Grayscale);
-        assert_eq!(theme, GRAYSCALE_THEME);
-        assert_eq!(theme.surface_bg, GRAYSCALE_SURFACE);
-        assert_eq!(theme.panel_bg, GRAYSCALE_PANEL);
-        assert_eq!(theme.text_body, GRAYSCALE_TEXT_BODY);
-    }
-
-    #[test]
-    fn theme_names_normalize_common_grayscale_aliases() {
+    fn theme_names_normalize_common_aliases() {
         assert_eq!(normalize_theme_name("system"), Some("system"));
         assert_eq!(normalize_theme_name("default"), Some("system"));
         assert_eq!(normalize_theme_name("whale"), Some("dark"));
-        assert_eq!(normalize_theme_name("black-white"), Some("grayscale"));
-        assert_eq!(normalize_theme_name("mono"), Some("grayscale"));
         assert_eq!(normalize_theme_name("solarized"), None);
-        assert_eq!(theme_label_for_mode(PaletteMode::Grayscale), "grayscale");
+        assert_eq!(theme_label_for_mode(PaletteMode::Dark), "dark");
+        assert_eq!(theme_label_for_mode(PaletteMode::Light), "light");
     }
 
     #[test]
@@ -1085,31 +717,9 @@ mod tests {
     }
 
     #[test]
-    fn grayscale_palette_maps_brand_hues_to_neutral_roles() {
-        assert_eq!(
-            adapt_bg_for_palette_mode(DEEPSEEK_INK, PaletteMode::Grayscale),
-            GRAYSCALE_SURFACE
-        );
-        assert_eq!(
-            adapt_bg_for_palette_mode(DEEPSEEK_SLATE, PaletteMode::Grayscale),
-            GRAYSCALE_PANEL
-        );
-        assert_eq!(
-            adapt_bg_for_palette_mode(SURFACE_REASONING, PaletteMode::Grayscale),
-            GRAYSCALE_REASONING
-        );
-        assert_eq!(
-            adapt_fg_for_palette_mode(DEEPSEEK_SKY, GRAYSCALE_SURFACE, PaletteMode::Grayscale),
-            GRAYSCALE_TEXT_SOFT
-        );
-        assert_eq!(
-            adapt_fg_for_palette_mode(DEEPSEEK_RED, GRAYSCALE_SURFACE, PaletteMode::Grayscale),
-            GRAYSCALE_TEXT_BODY
-        );
-        assert_eq!(
-            adapt_fg_for_palette_mode(TEXT_HINT, GRAYSCALE_SURFACE, PaletteMode::Grayscale),
-            GRAYSCALE_TEXT_HINT
-        );
+    fn dark_palette_exists() {
+        let theme = Theme::for_mode(PaletteMode::Dark);
+        assert_eq!(theme, DARK_THEME);
     }
 
     // ui_theme_from_settings test moved to crate::tui::theme

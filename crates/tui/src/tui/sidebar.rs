@@ -2040,16 +2040,25 @@ mod tests {
                     id: 1,
                     content: "Plan it out".to_string(),
                     status: TodoStatus::Completed,
+                    depends_on: vec![],
+                    agent_id: None,
+                    agent_name: None,
                 },
                 SidebarWorkChecklistItem {
                     id: 2,
                     content: "Wire the thing".to_string(),
                     status: TodoStatus::InProgress,
+                    depends_on: vec![1],
+                    agent_id: None,
+                    agent_name: None,
                 },
                 SidebarWorkChecklistItem {
                     id: 3,
                     content: "Run gates".to_string(),
                     status: TodoStatus::Pending,
+                    depends_on: vec![2],
+                    agent_id: None,
+                    agent_name: None,
                 },
             ],
             strategy_explanation: Some("Keep the UI unified".to_string()),
@@ -2097,6 +2106,9 @@ mod tests {
                 .map(|id| SidebarWorkChecklistItem {
                     id,
                     content: format!("Release task {id}"),
+                    depends_on: vec![],
+                    agent_id: None,
+                    agent_name: None,
                     status: if id <= 3 {
                         TodoStatus::Completed
                     } else if id == 5 {

@@ -32,7 +32,7 @@ pub struct PromptSessionContext<'a> {
     /// Injected immediately after the mode prompt, before project
     /// context. `None` when the user hasn't set one.
     pub parent_system_prompt: Option<&'a str>,
-    /// System prompt override from `/agent` command. Injected after
+    /// System prompt override from `/role` command. Injected after
     /// `parent_system_prompt` in a labeled "Active Role" section.
     pub agent_system_prompt_override: Option<&'a str>,
 }
@@ -640,7 +640,7 @@ pub fn system_prompt_for_mode_with_context_skills_session_and_approval(
         full_prompt = format!("{full_prompt}\n\n{custom}");
     }
 
-    // 2.23. Active agent role from /agent command.
+    // 2.23. Active agent role from /role command.
     if let Some(role_prompt) = session_context.agent_system_prompt_override
         && !role_prompt.trim().is_empty()
     {
@@ -916,6 +916,7 @@ mod tests {
                 agent_system_prompt_override: None,
             },
             ApprovalMode::Suggest,
+            &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -987,6 +988,7 @@ mod tests {
                 agent_system_prompt_override: None,
             },
             ApprovalMode::Suggest,
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1033,6 +1035,7 @@ mod tests {
                 agent_system_prompt_override: None,
             },
             ApprovalMode::Suggest,
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1123,6 +1126,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1160,6 +1164,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1189,6 +1194,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1220,6 +1226,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1249,6 +1256,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1445,6 +1453,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1480,6 +1489,7 @@ mod tests {
                 parent_system_prompt: None,
                 agent_system_prompt_override: None,
             },
+        &[],
         ) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),

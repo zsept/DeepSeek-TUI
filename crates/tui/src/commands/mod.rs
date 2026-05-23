@@ -209,10 +209,10 @@ pub const COMMANDS: &[CommandInfo] = &[
         description_id: MessageId::CmdSubagentsDescription,
     },
     CommandInfo {
-        name: "agent",
-        aliases: &["daili"],
-        usage: "/agent [N] <task>",
-        description_id: MessageId::CmdAgentDescription,
+        name: "role",
+        aliases: &["juese"],
+        usage: "/role [type] <task>",
+        description_id: MessageId::CmdRoleDescription,
     },
     CommandInfo {
         name: "links",
@@ -551,7 +551,7 @@ pub fn execute(cmd: &str, app: &mut App) -> CommandResult {
     // Match command or alias
     match command {
         // Core commands
-        "agent" | "zhinengti" | "智能体" => agent::agent(app, arg),
+        "role" | "juese" | "角色" => agent::agent(app, arg),
         "anchor" | "maodian" => anchor::anchor(app, arg),
         "help" | "?" | "bangzhu" | "帮助" => core::help(app, arg),
         "clear" | "qingping" => core::clear(app),
@@ -1110,7 +1110,7 @@ mod tests {
     #[test]
     fn agent_slash_command_routes_to_persistent_tool_instruction() {
         let mut app = create_test_app();
-        let result = execute("/agent 0 inspect the parser", &mut app);
+        let result = execute("/role 0 inspect the parser", &mut app);
         assert!(!result.is_error);
         let Some(AppAction::SendMessage(message)) = result.action else {
             panic!("expected SendMessage action");

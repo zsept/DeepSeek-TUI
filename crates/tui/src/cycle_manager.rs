@@ -991,6 +991,8 @@ mod tests {
                 items: vec![crate::tools::todo::TodoItem {
                     id: 1,
                     content: "Run focused tests".to_string(),
+                    depends_on: vec![],
+                    agent_id: None,
                     status: crate::tools::todo::TodoStatus::InProgress,
                 }],
                 completion_pct: 0,

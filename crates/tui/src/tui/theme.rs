@@ -101,7 +101,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CustomThemeFile {
-    /// Built-in theme to inherit from (e.g. `"tokyo-night"`, `"dark"`).
+    /// Built-in theme to inherit from (e.g. `"dark"`, `"light"`).
     pub base: String,
     /// Main TUI background colour (`#RRGGBB`).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -323,7 +323,7 @@ pub fn themes_dir() -> std::path::PathBuf {
 /// custom theme file from `~/.config/deepseek/themes/`.
 #[derive(Debug, Clone)]
 pub enum ThemePickerEntry {
-    /// A built-in named theme (System, Dark, Light, Grayscale, Catppuccin, …).
+    /// A built-in named theme (System, Dark, Light).
     Builtin(ThemeId),
     /// A custom theme file loaded from disk.  The string is the file stem
     /// (e.g. `"midnight"` for `midnight.toml`).
@@ -440,11 +440,6 @@ pub enum ThemeId {
     System,
     Whale,
     WhaleLight,
-    Grayscale,
-    CatppuccinMocha,
-    TokyoNight,
-    Dracula,
-    GruvboxDark,
 }
 
 impl ThemeId {
@@ -455,11 +450,6 @@ impl ThemeId {
             "system" => Some(Self::System),
             "dark" => Some(Self::Whale),
             "light" => Some(Self::WhaleLight),
-            "grayscale" => Some(Self::Grayscale),
-            "catppuccin-mocha" => Some(Self::CatppuccinMocha),
-            "tokyo-night" => Some(Self::TokyoNight),
-            "dracula" => Some(Self::Dracula),
-            "gruvbox-dark" => Some(Self::GruvboxDark),
             _ => None,
         }
     }
@@ -470,11 +460,6 @@ impl ThemeId {
             Self::System => "system",
             Self::Whale => "dark",
             Self::WhaleLight => "light",
-            Self::Grayscale => "grayscale",
-            Self::CatppuccinMocha => "catppuccin-mocha",
-            Self::TokyoNight => "tokyo-night",
-            Self::Dracula => "dracula",
-            Self::GruvboxDark => "gruvbox-dark",
         }
     }
 
@@ -484,11 +469,6 @@ impl ThemeId {
             Self::System => "System",
             Self::Whale => "Whale (Dark)",
             Self::WhaleLight => "Whale Light",
-            Self::Grayscale => "Grayscale",
-            Self::CatppuccinMocha => "Catppuccin Mocha",
-            Self::TokyoNight => "Tokyo Night",
-            Self::Dracula => "Dracula",
-            Self::GruvboxDark => "Gruvbox Dark",
         }
     }
 
@@ -498,11 +478,6 @@ impl ThemeId {
             Self::System => "Follow terminal background (COLORFGBG)",
             Self::Whale => "Default DeepSeek dark blue",
             Self::WhaleLight => "DeepSeek light, paper-ish",
-            Self::Grayscale => "Color-minimal high contrast",
-            Self::CatppuccinMocha => "Soft pastels on warm dark",
-            Self::TokyoNight => "Deep blue/violet night palette",
-            Self::Dracula => "Classic high-contrast purple",
-            Self::GruvboxDark => "Vintage warm earth tones",
         }
     }
 
@@ -514,11 +489,6 @@ impl ThemeId {
             Self::System => Theme::detect(),
             Self::Whale => DARK_THEME,
             Self::WhaleLight => LIGHT_THEME,
-            Self::Grayscale => GRAYSCALE_THEME,
-            Self::CatppuccinMocha => CATPPUCCIN_MOCHA_THEME,
-            Self::TokyoNight => TOKYO_NIGHT_THEME,
-            Self::Dracula => DRACULA_THEME,
-            Self::GruvboxDark => GRUVBOX_DARK_THEME,
         }
     }
 }
@@ -528,11 +498,6 @@ pub const SELECTABLE_THEMES: &[ThemeId] = &[
     ThemeId::System,
     ThemeId::Whale,
     ThemeId::WhaleLight,
-    ThemeId::Grayscale,
-    ThemeId::CatppuccinMocha,
-    ThemeId::TokyoNight,
-    ThemeId::Dracula,
-    ThemeId::GruvboxDark,
 ];
 
 // ── Built-in Theme constants ─────────────────────────────────────────────────
@@ -641,260 +606,6 @@ pub const LIGHT_THEME: Theme = Theme {
     reasoning_bg: None,
 };
 
-/// Grayscale / high-contrast neutral theme.
-pub const GRAYSCALE_THEME: Theme = Theme {
-    name: "grayscale",
-    mode: PaletteMode::Grayscale,
-    surface_bg: palette::GRAYSCALE_SURFACE,
-    panel_bg: palette::GRAYSCALE_PANEL,
-    sidebar_bg: palette::GRAYSCALE_PANEL,
-    elevated_bg: palette::GRAYSCALE_ELEVATED,
-    composer_bg: palette::GRAYSCALE_PANEL,
-    selection_bg: palette::GRAYSCALE_SELECTION_BG,
-    header_bg: palette::GRAYSCALE_SURFACE,
-    footer_bg: palette::GRAYSCALE_SURFACE,
-    mode_agent: palette::GRAYSCALE_TEXT_SOFT,
-    mode_yolo: palette::GRAYSCALE_TEXT_BODY,
-    mode_plan: palette::GRAYSCALE_TEXT_MUTED,
-    status_ready: palette::GRAYSCALE_TEXT_MUTED,
-    status_working: palette::GRAYSCALE_TEXT_SOFT,
-    status_warning: palette::GRAYSCALE_TEXT_BODY,
-    text_dim: palette::GRAYSCALE_TEXT_HINT,
-    text_hint: palette::GRAYSCALE_TEXT_HINT,
-    text_muted: palette::GRAYSCALE_TEXT_MUTED,
-    text_body: palette::GRAYSCALE_TEXT_BODY,
-    text_soft: palette::GRAYSCALE_TEXT_SOFT,
-    border_color: palette::GRAYSCALE_BORDER,
-    border_type: BorderType::Plain,
-    section_border_type: BorderType::Plain,
-    section_borders: SECT_BORDERS,
-    section_border_color: palette::GRAYSCALE_BORDER,
-    section_title_color: palette::GRAYSCALE_TEXT_SOFT,
-    section_padding: SECT_PAD,
-    tool_title_color: palette::GRAYSCALE_TEXT_SOFT,
-    tool_value_color: palette::GRAYSCALE_TEXT_MUTED,
-    tool_label_color: palette::GRAYSCALE_TEXT_HINT,
-    tool_running_accent: palette::GRAYSCALE_TEXT_SOFT,
-    tool_success_accent: palette::GRAYSCALE_TEXT_HINT,
-    tool_failed_accent: palette::GRAYSCALE_TEXT_BODY,
-    plan_progress_color: palette::GRAYSCALE_TEXT_SOFT,
-    plan_summary_color: palette::GRAYSCALE_TEXT_MUTED,
-    plan_explanation_color: palette::GRAYSCALE_TEXT_HINT,
-    plan_pending_color: palette::GRAYSCALE_TEXT_MUTED,
-    plan_in_progress_color: palette::GRAYSCALE_TEXT_BODY,
-    plan_completed_color: palette::GRAYSCALE_TEXT_SOFT,
-    work_pending_symbol: "[ ]",
-    work_in_progress_symbol: "[~]",
-    work_completed_symbol: "[x]",
-    work_failed_symbol: "[!]",
-    work_canceled_symbol: "[-]",
-    reasoning_bg: None,
-};
-
-pub const CATPPUCCIN_MOCHA_THEME: Theme = {
-    Theme {
-        name: "catppuccin-mocha",
-        mode: PaletteMode::Dark,
-        surface_bg: Color::Rgb(0x1e, 0x1e, 0x2e),
-        panel_bg: Color::Rgb(0x18, 0x18, 0x25),
-        sidebar_bg: Color::Rgb(0x18, 0x18, 0x25),
-        elevated_bg: Color::Rgb(0x31, 0x32, 0x44),
-        composer_bg: Color::Rgb(0x18, 0x18, 0x25),
-        selection_bg: Color::Rgb(0x45, 0x47, 0x5a),
-        header_bg: Color::Rgb(0x11, 0x11, 0x1b),
-        footer_bg: Color::Rgb(0x11, 0x11, 0x1b),
-        mode_agent: Color::Rgb(0x89, 0xb4, 0xfa),
-        mode_yolo: Color::Rgb(0xf3, 0x8b, 0xa8),
-        mode_plan: Color::Rgb(0xfa, 0xb3, 0x87),
-        status_ready: Color::Rgb(0x7f, 0x84, 0x9c),
-        status_working: Color::Rgb(0x74, 0xc7, 0xec),
-        status_warning: Color::Rgb(0xf9, 0xe2, 0xaf),
-        text_dim: Color::Rgb(0x6c, 0x70, 0x86),
-        text_hint: Color::Rgb(0x7f, 0x84, 0x9c),
-        text_muted: Color::Rgb(0xa6, 0xad, 0xc8),
-        text_body: Color::Rgb(0xcd, 0xd6, 0xf4),
-        text_soft: Color::Rgb(0xba, 0xc2, 0xde),
-        border_color: Color::Rgb(0x45, 0x47, 0x5a),
-        border_type: BorderType::Plain,
-        section_border_type: BorderType::Plain,
-        section_borders: Borders::ALL,
-        section_border_color: Color::Rgb(0x45, 0x47, 0x5a),
-        section_title_color: Color::Rgb(0xba, 0xc2, 0xde),
-        section_padding: Padding::horizontal(1),
-        tool_title_color: Color::Rgb(0xba, 0xc2, 0xde),
-        tool_value_color: Color::Rgb(0xa6, 0xad, 0xc8),
-        tool_label_color: Color::Rgb(0x7f, 0x84, 0x9c),
-        tool_running_accent: Color::Rgb(0x74, 0xc7, 0xec),
-        tool_success_accent: Color::Rgb(0x7f, 0x84, 0x9c),
-        tool_failed_accent: Color::Rgb(0xf3, 0x8b, 0xa8),
-        plan_progress_color: Color::Rgb(0x74, 0xc7, 0xec),
-        plan_summary_color: Color::Rgb(0xa6, 0xad, 0xc8),
-        plan_explanation_color: Color::Rgb(0x7f, 0x84, 0x9c),
-        plan_pending_color: Color::Rgb(0xa6, 0xad, 0xc8),
-        plan_in_progress_color: Color::Rgb(0xf9, 0xe2, 0xaf),
-        plan_completed_color: Color::Rgb(0x74, 0xc7, 0xec),
-        work_pending_symbol: "[ ]",
-        work_in_progress_symbol: "[~]",
-        work_completed_symbol: "[x]",
-        work_failed_symbol: "[!]",
-        work_canceled_symbol: "[-]",
-        reasoning_bg: None,
-    }
-};
-
-pub const TOKYO_NIGHT_THEME: Theme = {
-    Theme {
-        name: "tokyo-night",
-        mode: PaletteMode::Dark,
-        surface_bg: Color::Rgb(0x1a, 0x1b, 0x26),
-        panel_bg: Color::Rgb(0x16, 0x16, 0x1e),
-        sidebar_bg: Color::Rgb(0x16, 0x16, 0x1e),
-        elevated_bg: Color::Rgb(0x29, 0x2e, 0x42),
-        composer_bg: Color::Rgb(0x16, 0x16, 0x1e),
-        selection_bg: Color::Rgb(0x28, 0x34, 0x57),
-        header_bg: Color::Rgb(0x16, 0x16, 0x1e),
-        footer_bg: Color::Rgb(0x16, 0x16, 0x1e),
-        mode_agent: Color::Rgb(0x7a, 0xa2, 0xf7),
-        mode_yolo: Color::Rgb(0xf7, 0x76, 0x8e),
-        mode_plan: Color::Rgb(0xff, 0x9e, 0x64),
-        status_ready: Color::Rgb(0x56, 0x5f, 0x89),
-        status_working: Color::Rgb(0x7d, 0xcf, 0xff),
-        status_warning: Color::Rgb(0xe0, 0xaf, 0x68),
-        text_dim: Color::Rgb(0x56, 0x5f, 0x89),
-        text_hint: Color::Rgb(0x73, 0x7a, 0xa2),
-        text_muted: Color::Rgb(0xa9, 0xb1, 0xd6),
-        text_body: Color::Rgb(0xc0, 0xca, 0xf5),
-        text_soft: Color::Rgb(0xbb, 0xc2, 0xe0),
-        border_color: Color::Rgb(0x41, 0x48, 0x68),
-        border_type: BorderType::Plain,
-        section_border_type: BorderType::Plain,
-        section_borders: Borders::ALL,
-        section_border_color: Color::Rgb(0x41, 0x48, 0x68),
-        section_title_color: Color::Rgb(0xbb, 0xc2, 0xe0),
-        section_padding: Padding::horizontal(1),
-        tool_title_color: Color::Rgb(0xbb, 0xc2, 0xe0),
-        tool_value_color: Color::Rgb(0xa9, 0xb1, 0xd6),
-        tool_label_color: Color::Rgb(0x73, 0x7a, 0xa2),
-        tool_running_accent: Color::Rgb(0x7d, 0xcf, 0xff),
-        tool_success_accent: Color::Rgb(0x73, 0x7a, 0xa2),
-        tool_failed_accent: Color::Rgb(0xf7, 0x76, 0x8e),
-        plan_progress_color: Color::Rgb(0x7d, 0xcf, 0xff),
-        plan_summary_color: Color::Rgb(0xa9, 0xb1, 0xd6),
-        plan_explanation_color: Color::Rgb(0x73, 0x7a, 0xa2),
-        plan_pending_color: Color::Rgb(0xa9, 0xb1, 0xd6),
-        plan_in_progress_color: Color::Rgb(0xe0, 0xaf, 0x68),
-        plan_completed_color: Color::Rgb(0x7d, 0xcf, 0xff),
-        work_pending_symbol: "[ ]",
-        work_in_progress_symbol: "[~]",
-        work_completed_symbol: "[x]",
-        work_failed_symbol: "[!]",
-        work_canceled_symbol: "[-]",
-        reasoning_bg: None,
-    }
-};
-
-pub const DRACULA_THEME: Theme = {
-    Theme {
-        name: "dracula",
-        mode: PaletteMode::Dark,
-        surface_bg: Color::Rgb(0x28, 0x2a, 0x36),
-        panel_bg: Color::Rgb(0x21, 0x22, 0x2c),
-        sidebar_bg: Color::Rgb(0x21, 0x22, 0x2c),
-        elevated_bg: Color::Rgb(0x34, 0x37, 0x46),
-        composer_bg: Color::Rgb(0x21, 0x22, 0x2c),
-        selection_bg: Color::Rgb(0x44, 0x47, 0x5a),
-        header_bg: Color::Rgb(0x21, 0x22, 0x2c),
-        footer_bg: Color::Rgb(0x21, 0x22, 0x2c),
-        mode_agent: Color::Rgb(0xbd, 0x93, 0xf9),
-        mode_yolo: Color::Rgb(0xff, 0x55, 0x55),
-        mode_plan: Color::Rgb(0xff, 0xb8, 0x6c),
-        status_ready: Color::Rgb(0x62, 0x72, 0xa4),
-        status_working: Color::Rgb(0x8b, 0xe9, 0xfd),
-        status_warning: Color::Rgb(0xf1, 0xfa, 0x8c),
-        text_dim: Color::Rgb(0x62, 0x72, 0xa4),
-        text_hint: Color::Rgb(0x8a, 0x8e, 0xaa),
-        text_muted: Color::Rgb(0xc0, 0xc4, 0xd6),
-        text_body: Color::Rgb(0xf8, 0xf8, 0xf2),
-        text_soft: Color::Rgb(0xe2, 0xe2, 0xdc),
-        border_color: Color::Rgb(0x44, 0x47, 0x5a),
-        border_type: BorderType::Plain,
-        section_border_type: BorderType::Plain,
-        section_borders: Borders::ALL,
-        section_border_color: Color::Rgb(0x44, 0x47, 0x5a),
-        section_title_color: Color::Rgb(0xe2, 0xe2, 0xdc),
-        section_padding: Padding::horizontal(1),
-        tool_title_color: Color::Rgb(0xe2, 0xe2, 0xdc),
-        tool_value_color: Color::Rgb(0xc0, 0xc4, 0xd6),
-        tool_label_color: Color::Rgb(0x8a, 0x8e, 0xaa),
-        tool_running_accent: Color::Rgb(0x8b, 0xe9, 0xfd),
-        tool_success_accent: Color::Rgb(0x8a, 0x8e, 0xaa),
-        tool_failed_accent: Color::Rgb(0xff, 0x55, 0x55),
-        plan_progress_color: Color::Rgb(0x8b, 0xe9, 0xfd),
-        plan_summary_color: Color::Rgb(0xc0, 0xc4, 0xd6),
-        plan_explanation_color: Color::Rgb(0x8a, 0x8e, 0xaa),
-        plan_pending_color: Color::Rgb(0xc0, 0xc4, 0xd6),
-        plan_in_progress_color: Color::Rgb(0xf1, 0xfa, 0x8c),
-        plan_completed_color: Color::Rgb(0x8b, 0xe9, 0xfd),
-        work_pending_symbol: "[ ]",
-        work_in_progress_symbol: "[~]",
-        work_completed_symbol: "[x]",
-        work_failed_symbol: "[!]",
-        work_canceled_symbol: "[-]",
-        reasoning_bg: None,
-    }
-};
-
-pub const GRUVBOX_DARK_THEME: Theme = {
-    Theme {
-        name: "gruvbox-dark",
-        mode: PaletteMode::Dark,
-        surface_bg: Color::Rgb(0x28, 0x28, 0x28),
-        panel_bg: Color::Rgb(0x3c, 0x38, 0x36),
-        sidebar_bg: Color::Rgb(0x3c, 0x38, 0x36),
-        elevated_bg: Color::Rgb(0x50, 0x49, 0x45),
-        composer_bg: Color::Rgb(0x3c, 0x38, 0x36),
-        selection_bg: Color::Rgb(0x66, 0x5c, 0x54),
-        header_bg: Color::Rgb(0x1d, 0x20, 0x21),
-        footer_bg: Color::Rgb(0x1d, 0x20, 0x21),
-        mode_agent: Color::Rgb(0x83, 0xa5, 0x98),
-        mode_yolo: Color::Rgb(0xfb, 0x49, 0x34),
-        mode_plan: Color::Rgb(0xfe, 0x80, 0x19),
-        status_ready: Color::Rgb(0x92, 0x83, 0x74),
-        status_working: Color::Rgb(0x8e, 0xc0, 0x7c),
-        status_warning: Color::Rgb(0xfa, 0xbd, 0x2f),
-        text_dim: Color::Rgb(0x92, 0x83, 0x74),
-        text_hint: Color::Rgb(0xa8, 0x99, 0x84),
-        text_muted: Color::Rgb(0xbd, 0xae, 0x93),
-        text_body: Color::Rgb(0xeb, 0xdb, 0xb2),
-        text_soft: Color::Rgb(0xd5, 0xc4, 0xa1),
-        border_color: Color::Rgb(0x66, 0x5c, 0x54),
-        border_type: BorderType::Plain,
-        section_border_type: BorderType::Plain,
-        section_borders: Borders::ALL,
-        section_border_color: Color::Rgb(0x66, 0x5c, 0x54),
-        section_title_color: Color::Rgb(0xd5, 0xc4, 0xa1),
-        section_padding: Padding::horizontal(1),
-        tool_title_color: Color::Rgb(0xd5, 0xc4, 0xa1),
-        tool_value_color: Color::Rgb(0xbd, 0xae, 0x93),
-        tool_label_color: Color::Rgb(0xa8, 0x99, 0x84),
-        tool_running_accent: Color::Rgb(0x8e, 0xc0, 0x7c),
-        tool_success_accent: Color::Rgb(0xa8, 0x99, 0x84),
-        tool_failed_accent: Color::Rgb(0xfb, 0x49, 0x34),
-        plan_progress_color: Color::Rgb(0x8e, 0xc0, 0x7c),
-        plan_summary_color: Color::Rgb(0xbd, 0xae, 0x93),
-        plan_explanation_color: Color::Rgb(0xa8, 0x99, 0x84),
-        plan_pending_color: Color::Rgb(0xbd, 0xae, 0x93),
-        plan_in_progress_color: Color::Rgb(0xfa, 0xbd, 0x2f),
-        plan_completed_color: Color::Rgb(0x8e, 0xc0, 0x7c),
-        work_pending_symbol: "[ ]",
-        work_in_progress_symbol: "[~]",
-        work_completed_symbol: "[x]",
-        work_failed_symbol: "[!]",
-        work_canceled_symbol: "[-]",
-        reasoning_bg: None,
-    }
-};
-
 /// Apply a single hex-colour override from a `CustomThemeFile` field.
 /// If the field is `Some` and parses to a valid colour, calls the
 /// corresponding `with_<field>` builder method.
@@ -916,7 +627,6 @@ impl Theme {
         match mode {
             PaletteMode::Dark => DARK_THEME,
             PaletteMode::Light => LIGHT_THEME,
-            PaletteMode::Grayscale => GRAYSCALE_THEME,
         }
     }
 
@@ -929,25 +639,6 @@ impl Theme {
     #[allow(dead_code)] // kept for backward compatibility with palette.rs callers
     pub fn from_setting(value: &str) -> Option<Self> {
         ThemeId::from_name(value).map(ThemeId::ui_theme)
-    }
-
-    /// Returns `true` for community presets (Catppuccin, Tokyo Night,
-    /// Dracula, Gruvbox) that need per-cell colour remapping at the
-    /// backend layer.  Replaces the former `palette::theme_remap_active`.
-    #[must_use]
-    pub fn is_community_preset(&self) -> bool {
-        matches!(
-            self.name,
-            "catppuccin-mocha" | "tokyo-night" | "dracula" | "gruvbox-dark"
-        )
-    }
-
-    /// Derive the `ThemeId` this instance corresponds to.
-    /// For `System` the result is not meaningful — callers should use
-    /// `is_community_preset()` first.
-    #[must_use]
-    pub fn theme_id(&self) -> ThemeId {
-        ThemeId::from_name(self.name).unwrap_or(ThemeId::System)
     }
 
     #[must_use]
@@ -1418,18 +1109,6 @@ mod tests {
     }
 
     #[test]
-    fn grayscale_theme_uses_neutral_tokens() {
-        let theme = Theme::for_mode(PaletteMode::Grayscale);
-        assert_eq!(theme.mode, PaletteMode::Grayscale);
-        assert_eq!(theme.panel_bg, palette::GRAYSCALE_PANEL);
-        assert_eq!(theme.sidebar_bg, palette::GRAYSCALE_PANEL);
-        assert_eq!(theme.border_color, palette::GRAYSCALE_BORDER);
-        assert_eq!(theme.tool_running_accent, palette::GRAYSCALE_TEXT_SOFT);
-        assert_eq!(theme.tool_failed_accent, palette::GRAYSCALE_TEXT_BODY);
-        assert_eq!(theme.plan_summary_color, palette::GRAYSCALE_TEXT_MUTED);
-    }
-
-    #[test]
     fn tool_status_color_maps_each_status() {
         let theme = DARK_THEME;
         assert_eq!(
@@ -1448,14 +1127,14 @@ mod tests {
 
     #[test]
     fn ui_theme_from_settings_applies_theme_and_background() {
-        let theme = ui_theme_from_settings("grayscale", Some("#111111"));
-        assert_eq!(theme.mode, PaletteMode::Grayscale);
+        let theme = ui_theme_from_settings("dark", Some("#111111"));
+        assert_eq!(theme.mode, PaletteMode::Dark);
         assert_eq!(theme.surface_bg, Color::Rgb(17, 17, 17));
     }
 
     #[test]
     fn from_settings_with_overrides() {
-        let theme = Theme::from_settings("tokyo-night", Some("rounded"), None);
+        let theme = Theme::from_settings("dark", Some("rounded"), None);
         assert_eq!(theme.border_type, BorderType::Rounded);
     }
 
@@ -1472,10 +1151,10 @@ mod tests {
 
     #[test]
     fn custom_theme_file_parses_reasoning_bg() {
-        let toml_str = "base = \"tokyo-night\"\nreasoning_bg = \"#362C1A\"\n";
+        let toml_str = "base = \"dark\"\nreasoning_bg = \"#362C1A\"\n";
         let custom: crate::tui::theme::CustomThemeFile =
             toml::from_str(toml_str).expect("parse custom theme");
-        assert_eq!(custom.base, "tokyo-night");
+        assert_eq!(custom.base, "dark");
         assert_eq!(custom.reasoning_bg, Some("#362C1A".to_string()));
 
         let theme = Theme::from_custom_theme(&custom);
@@ -1505,10 +1184,6 @@ mod tests {
         assert_eq!(ThemeId::from_name("whale"), Some(ThemeId::Whale));
         assert_eq!(ThemeId::from_name("light"), Some(ThemeId::WhaleLight));
         assert_eq!(ThemeId::from_name("system"), Some(ThemeId::System));
-        assert_eq!(
-            ThemeId::from_name("catppuccin-mocha"),
-            Some(ThemeId::CatppuccinMocha)
-        );
         assert_eq!(ThemeId::from_name("nonexistent"), None);
     }
 }

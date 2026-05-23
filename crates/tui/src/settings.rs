@@ -1133,19 +1133,17 @@ mod tests {
         let mut settings = Settings::default();
         assert_eq!(settings.theme, "system");
 
-        settings.set("theme", "grayscale").expect("set grayscale");
-        assert_eq!(settings.theme, "grayscale");
+        settings.set("theme", "dark").expect("set dark");
+        assert_eq!(settings.theme, "dark");
 
-        settings.set("ui_theme", "black-white").expect("set alias");
-        assert_eq!(settings.theme, "grayscale");
+        settings.set("ui_theme", "light").expect("set light");
+        assert_eq!(settings.theme, "light");
 
         settings.set("theme", "whale").expect("set dark alias");
         assert_eq!(settings.theme, "dark");
 
-        settings
-            .set("theme", "tokyonight")
-            .expect("set community theme alias");
-        assert_eq!(settings.theme, "tokyo-night");
+        settings.set("theme", "whale-light").expect("set light alias");
+        assert_eq!(settings.theme, "light");
 
         let err = settings
             .set("theme", "solarized")
@@ -1903,11 +1901,6 @@ mod tests {
             "dark",
             "light",
             "system",
-            "grayscale",
-            "catppuccin-mocha",
-            "tokyo-night",
-            "dracula",
-            "gruvbox-dark",
         ] {
             let mut prefs = TuiPrefs {
                 theme: theme.to_string(),
@@ -1923,13 +1916,13 @@ mod tests {
     #[test]
     fn tui_prefs_validate_normalises_theme_case() {
         let mut prefs = TuiPrefs {
-            theme: "MONO".to_string(),
+            theme: "DARK".to_string(),
             ..TuiPrefs::default()
         };
         prefs
             .validate()
-            .expect("MONO should normalise to grayscale");
-        assert_eq!(prefs.theme, "grayscale");
+            .expect("DARK should normalise to dark");
+        assert_eq!(prefs.theme, "dark");
     }
 
     #[test]

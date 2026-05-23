@@ -267,7 +267,7 @@ pub enum MessageId {
     CmdHelpDescription,
     CmdHomeDescription,
     CmdHooksDescription,
-    CmdAgentDescription,
+    CmdRoleDescription,
     CmdGoalDescription,
     CmdInitDescription,
     CmdJobsDescription,
@@ -501,7 +501,7 @@ pub const ALL_MESSAGE_IDS: &[MessageId] = &[
     MessageId::CmdHelpDescription,
     MessageId::CmdHomeDescription,
     MessageId::CmdHooksDescription,
-    MessageId::CmdAgentDescription,
+    MessageId::CmdRoleDescription,
     MessageId::CmdInitDescription,
     MessageId::CmdJobsDescription,
     MessageId::CmdLinksDescription,
@@ -930,8 +930,8 @@ fn english(id: MessageId) -> &'static str {
         MessageId::CmdHelpDescription => "Show help information",
         MessageId::CmdHomeDescription => "Show home dashboard with stats and quick actions",
         MessageId::CmdHooksDescription => "List configured lifecycle hooks (read-only)",
-        MessageId::CmdAgentDescription => {
-            "Open a persistent sub-agent session: /agent [0-3] <task>"
+        MessageId::CmdRoleDescription => {
+            "Switch parent agent role or open picker: /role [type] <task>"
         }
         MessageId::CmdGoalDescription => "Set a session goal with optional token budget",
         MessageId::CmdInitDescription => "Generate AGENTS.md for project",
@@ -1312,8 +1312,8 @@ fn japanese(id: MessageId) -> Option<&'static str> {
         MessageId::CmdHooksDescription => {
             "設定済みのライフサイクルフックを一覧表示（読み取り専用）"
         }
-        MessageId::CmdAgentDescription => {
-            "永続サブエージェントセッションを開く: /agent [0-3] <task>"
+        MessageId::CmdRoleDescription => {
+            "親エージェントロールの切り替えまたは選択: /role [type] <task>"
         }
         MessageId::CmdGoalDescription => "トークンバジェット付きのセッション目標を設定",
         MessageId::CmdInitDescription => "プロジェクト用に AGENTS.md を生成",
@@ -1663,7 +1663,7 @@ fn chinese_simplified(id: MessageId) -> Option<&'static str> {
         MessageId::CmdHelpDescription => "显示帮助信息",
         MessageId::CmdHomeDescription => "显示主页面板，含统计与快捷操作",
         MessageId::CmdHooksDescription => "列出已配置的生命周期钩子（只读）",
-        MessageId::CmdAgentDescription => "打开持久子代理会话：/agent [0-3] <task>",
+        MessageId::CmdRoleDescription => "切换父代理角色或打开选择器：/role [type] <task>",
         MessageId::CmdGoalDescription => "设置带有可选令牌预算的会话目标",
         MessageId::CmdInitDescription => "为项目生成 AGENTS.md",
         MessageId::CmdLspDescription => "切换 LSP 诊断的开启或关闭",
@@ -1982,8 +1982,8 @@ fn portuguese_brazil(id: MessageId) -> Option<&'static str> {
         MessageId::CmdHooksDescription => {
             "Listar hooks de ciclo de vida configurados (somente leitura)"
         }
-        MessageId::CmdAgentDescription => {
-            "Abrir uma sessão persistente de sub-agente: /agent [0-3] <task>"
+        MessageId::CmdRoleDescription => {
+            "Alternar papel do agente pai ou abrir seletor: /role [type] <task>"
         }
         MessageId::CmdGoalDescription => {
             "Definir uma meta de sessão com orçamento de tokens opcional"
@@ -2367,8 +2367,8 @@ fn spanish_latin_america(id: MessageId) -> Option<&'static str> {
         MessageId::CmdHooksDescription => {
             "Listar hooks de ciclo de vida configurados (solo lectura)"
         }
-        MessageId::CmdAgentDescription => {
-            "Abrir una sesión persistente de sub-agente: /agent [0-3] <tarea>"
+        MessageId::CmdRoleDescription => {
+            "Alternar rol de agente padre o abrir selector: /role [type] <tarea>"
         }
         MessageId::CmdGoalDescription => {
             "Definir una meta de sesión con presupuesto de tokens opcional"

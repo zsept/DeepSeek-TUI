@@ -816,7 +816,7 @@ pub struct App {
     pub extra_skills_dirs: Vec<PathBuf>,
     /// User-defined custom sub-agent types from config.
     pub subagent_custom_types: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
-    /// Currently active agent role set via /agent command.
+    /// Currently active agent role set via /role command.
     pub active_agent_type: Option<String>,
     /// System prompt override from active agent role.
     pub agent_system_prompt_override: Option<String>,

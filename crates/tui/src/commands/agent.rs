@@ -1,4 +1,4 @@
-//! Agent command: list and switch parent agent roles.
+//! Role command: list and switch parent agent roles.
 
 use crate::tui::app::App;
 
@@ -40,7 +40,7 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
 
     CommandResult::error(format!(
         "Unknown agent type: {input}\n\
-         Use /agent to list available types, or define a custom type in [subagents.types.{input}]."
+         Use /role to list available types, or define a custom type in [subagents.types.{input}]."
     ))
 }
 
@@ -84,7 +84,7 @@ fn list_agents(app: &App) -> CommandResult {
             ));
         }
         if app.active_agent_type.is_some() {
-            out.push_str("Use /agent reset to restore default parent behavior.\n");
+            out.push_str("Use /role reset to restore default parent behavior.\n");
         }
     } else {
         out.push_str("\nNo custom types defined. Add them in [subagents.types] to create switchable parent roles.\n");

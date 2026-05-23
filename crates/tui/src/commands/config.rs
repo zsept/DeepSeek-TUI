@@ -1750,7 +1750,7 @@ mod tests {
     }
 
     #[test]
-    fn theme_command_accepts_grayscale_arg() {
+    fn theme_command_accepts_dark_arg() {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -1764,10 +1764,10 @@ mod tests {
         let _guard = EnvGuard::new(&temp_root);
 
         let mut app = create_test_app();
-        let result = theme(&mut app, Some("grayscale"));
+        let result = theme(&mut app, Some("dark"));
 
-        assert_eq!(result.message.unwrap(), "theme = grayscale (saved)");
-        assert_eq!(app.theme.mode, crate::palette::PaletteMode::Grayscale);
+        assert_eq!(result.message.unwrap(), "theme = dark (saved)");
+        assert_eq!(app.theme.mode, crate::palette::PaletteMode::Dark);
         assert!(app.needs_redraw);
     }
 
@@ -1786,15 +1786,15 @@ mod tests {
         let _guard = EnvGuard::new(&temp_root);
 
         let mut app = create_test_app();
-        let result = set_config(&mut app, Some("theme grayscale --save"));
+        let result = set_config(&mut app, Some("theme dark --save"));
         let msg = result.message.unwrap();
 
-        assert_eq!(msg, "theme = grayscale (saved)");
-        assert_eq!(app.theme.mode, crate::palette::PaletteMode::Grayscale);
+        assert_eq!(msg, "theme = dark (saved)");
+        assert_eq!(app.theme.mode, crate::palette::PaletteMode::Dark);
 
         let settings_path = Settings::path().unwrap();
         let saved = fs::read_to_string(settings_path).unwrap();
-        assert!(saved.contains("theme = \"grayscale\""));
+        assert!(saved.contains("theme = \"dark\""));
     }
 
     #[test]

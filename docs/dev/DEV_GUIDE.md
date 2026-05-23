@@ -15,10 +15,77 @@
 
 ### 原则
 
-1. **别名保持语义一致**：中文别名和中文化名应同步更新（`"智能体"` → `"角色"`，`"daili"` → `"juese"`）
+1. **别名保持语义一致**：中文别名和中文化名应同步更新
 2. **MessageId 跟随语义**：如果命令语义变了（不只是改名），enum 变体也重命名；否则可以只改文本
 3. **usage 字符串同时更新**：`CommandInfo.usage` 在 `/help` 输出中直接显示
 4. **测试中的命令字符串**：`execute("/agent ...")` 需要同步更新
+
+---
+
+## 拼音别名批量删除
+
+删除所有斜杠命令的拼音别名，仅保留英文原名和中文 CJK 字符。
+
+### 影响范围
+
+| 文件 | 位置 | 变更 |
+|------|------|------|
+| `commands/mod.rs` | `COMMANDS` 数组 → 各 `aliases` 行 | 移除拼音字符串 |
+| `commands/mod.rs` | `execute()` dispatch match 块 | 移除拼音匹配项 |
+| 测试文件 | 引用拼音的断言 | 更新预期值 |
+
+### 拼音别名清单（32 个）
+
+`maodian`、`bangzhu`、`qingping`、`tuichu`、`moxing`、`moxingliebiao`、
+`gouzi`、`zhinengti`、`juese`、`lianjie`、`zhuye`、`shouye`、
+`fujian`、`zuoye`、`gaiming`、`chongmingming`、`jiazai`、`yasuo`、
+`zhouqi`、`daochu`、`qiehuan`、`xinren`、`xitong`、`chongshi`、
+`mubiao`、`jinengliebiao`、`jineng`、`shencha`、`dangan`、`digui`、
+`jihua`、`zidong`
+
+### 正则清理风险
+
+Python 脚本可批量删除 `aliases: &[...]` 行和 dispatch match arm 中的拼音字面量，但 Rust 闭包语法 `|m|` 和 match 臂中的 `|` 或模式与拼音别名中的 `|` 分隔符共享同一个 `|` 字符。例如：
+
+```rust
+// 误伤前
+if result.message.as_deref().is_none_or(|m| {
+    m.starts_with("No snapshots")
+        | m.starts_with("No tool")
+}) { ... }
+
+// 误伤后 — 闭包参数 |m| 变成 m|，逻辑或 | 消失
+if result.message.as_deref().is_none_or(m| {
+    m.starts_with("No snapshots")
+        m.starts_with("No tool")
+}) { ... }
+```
+
+**安全策略**：
+1. 用脚本做第一轮删除
+2. 编译 → 修复误伤（闭包参数、逻辑或）
+3. 编译通过后用 `grep -rn` 搜索残留拼音字面量
+
+### 特殊处理：mode 的 jihua/zidong
+
+`/mode` 有两个拼音别名 `jihua`（计划）和 `zidong`（自动），它们在 dispatch 块中有独立的 match arm：
+
+```rust
+"jihua" => config::mode(app, Some("plan")),
+"zidong" => config::mode(app, Some("yolo")),
+```
+
+删除时需同时处理 `CommandInfo.aliases` 中的字符串和这两个独立的 dispatch arm。
+
+### 验证残留
+
+```bash
+grep -rn '"\(maodian\|bangzhu\|...\|zidong\)"' crates/tui/src/
+```
+
+常见测试残留模式：
+- `assert_eq!(cmd.aliases, &["dashboard", "api", "lianjie"])` — 断言含已删别名
+- `for cmd in ["/links", "/dashboard", "/api", "/lianjie"]` — 遍历含已删别名
 
 ---
 
@@ -151,6 +218,47 @@ git commit -m 'feat(scope): imperative summary'
 
 ---
 
+## 通知系统速查
+
+`crates/tui/src/tui/notifications.rs`（888 行）负责桌面通知。
+
+### 协议选择
+
+| Method | 序列 | 终端 |
+|--------|------|------|
+| Osc9 | `\x1b]9;<msg>\x07` | iTerm2, WezTerm, Cmux |
+| Kitty | OSC 99 + ST `\x1b\\` | Kitty |
+| Ghostty | `\x1b]777;notify;…\x07` | Ghostty |
+| Bel | `\x07` | 未知 Unix |
+| Off | — | Windows / 手动关闭 |
+
+自动检测链：`$TERM_PROGRAM` → `$LC_TERMINAL` → `$TERM`。
+tmux 内包裹 DCS passthrough `\x1bPtmux;…\x1b\\`。
+
+### 触发流程
+
+```
+turn Completed
+  → settings(&config) → (method, threshold, include_summary)
+  → elapsed >= threshold ? 通知 : 跳过
+  → completed_turn_message() 拼正文（360 字符截断 + 耗时/费用行）
+  → build_escape() → stdout
+```
+
+### 配置
+
+```toml
+[notifications]
+method = "auto"
+threshold_secs = 30
+include_summary = true
+
+[tui]
+notification_condition = "always"  # 忽略阈值 | "never" 禁用
+```
+
+---
+
 ## 文件关系速查
 
 ```
@@ -170,6 +278,7 @@ git commit -m 'feat(scope): imperative summary'
 ├── theme.rs        — ThemeId、Theme struct、所有主题常量
 ├── color_compat.rs — 终端颜色适配层
 ├── sidebar.rs      — 侧边栏 Work 面板渲染
+├── notifications.rs — 桌面通知（OSC 9 / Kitty / Ghostty / Bel）
 └── widgets/        — 各 UI 组件的具体绘制
 
 /palette.rs         — 颜色常量、PaletteMode、adapt_* 函数

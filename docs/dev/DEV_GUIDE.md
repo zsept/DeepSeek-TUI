@@ -283,3 +283,67 @@ notification_condition = "always"  # 忽略阈值 | "never" 禁用
 
 /palette.rs         — 颜色常量、PaletteMode、adapt_* 函数
 ```
+
+
+---
+
+## 模式重命名 (Agent → Limited)
+
+将 `AppMode::Agent` 改为 `AppMode::Limited` 涉及多层引用。
+
+### 全量替换清单
+
+| 层级 | 模式 | 位置 |
+|------|------|------|
+| 枚举定义 | `Agent → Limited` | `tui/app.rs` `AppMode` enum |
+| 所有 match 臂 | `AppMode::Agent → Limited` | ~30 个文件的 80+ 处 |
+| impl Self | `Self::Agent → Self::Limited` | `app.rs` `as_setting()`、`label()` |
+| 字符串 "agent" | `"agent" → "limited"` | `parse_mode_arg`、config、JSON schema、`default_mode` |
+| 显示名 "Agent" | `"Agent" → "Limited"` | `mode_display_name` |
+| 大写标签 "AGENT" | `"AGENT" → "LIMITED"` | `label()` |
+| 配置枚举 | `DefaultModeValue::Agent → Limited` | `config_ui.rs` |
+| Mode prompt 文件 | `agent.md → limited.md` | + `include_str!` 路径 + `AGENT_MODE` 常量 |
+
+### Python 脚本风险
+
+枚举变体的简单 `AppMode::Agent → Limited` 替换是安全的。但字符串 `"agent"` 的替换需要**上下文感知**：
+- **改**：`parse_mode_arg` 中的 `"agent" | "1"`、`default_mode = "agent"`、JSON 中的 `"mode": "agent"`
+- **不改**：`agent_open`、`agent_spawn`、`agent_close` 工具名；`active_agent_type`、`agent_id` 字段名
+
+策略：先替换 `AppMode::Agent`（安全），再手动逐处审计 `"agent"` 字符串。
+
+### 残留检查
+
+```bash
+grep -rn '"agent"' crates/tui/src/ | grep -v agent_open | grep -v agent_spawn | grep -v agent_close | grep -v agent_id | grep -v agent_name
+```
+
+---
+
+## Composer 标题栏添加模式标识
+
+在 `widgets/mod.rs` 的 composer Block 标题中追加当前模式。
+
+### 实现
+
+```rust
+// 获取模式颜色
+let mode_color = match self.app.mode {
+    AppMode::Limited => self.app.theme.mode_agent,
+    AppMode::Yolo => self.app.theme.mode_yolo,
+    AppMode::Plan => self.app.theme.mode_plan,
+};
+// 构建标题行
+let mut title_line = Line::from(Span::styled("Composer", ...));
+if !history_search && !draft_mode {
+    title_line.push_span(Span::styled(" · ", ...));
+    title_line.push_span(Span::styled(mode_label, mode_color.bold()));
+}
+```
+
+### 关键点
+
+- 使用 `Line::push_span()` 而非在 `if` 表达式内构造 `Line::from(...)`，因为 `if` 表达式要求各分支类型一致
+- 模式色来自 `app.theme.mode_agent` / `mode_yolo` / `mode_plan`（Theme struct 字段名仍是 `mode_agent`，未随 Agent→Limited 改名）
+- 历史搜索和 draft 模式不追加模式标识
+- `·` 中间点使用 `TEXT_DIM` 颜色，模式标签加粗 + 对应颜色

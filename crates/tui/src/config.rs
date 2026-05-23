@@ -17,8 +17,8 @@ use crate::audit::log_sensitive_event;
 use crate::features::{Features, FeaturesToml, is_known_feature_key};
 use crate::hooks::HooksConfig;
 
-pub const DEFAULT_MAX_SUBAGENTS: usize = 10;
-pub const MAX_SUBAGENTS: usize = 20;
+pub const DEFAULT_MAX_CONCURRENT_AGENTS: usize = 10;
+pub const MAX_CONCURRENT_AGENTS: usize = 20;
 pub const DEFAULT_TEXT_MODEL: &str = "deepseek-v4-pro";
 pub const DEFAULT_DEEPSEEK_BASE_URL: &str = "https://api.deepseek.com/beta";
 pub const DEFAULT_NVIDIA_NIM_MODEL: &str = "deepseek-ai/deepseek-v4-pro";
@@ -849,7 +849,7 @@ pub struct ContextConfig {
 /// `explorer`, `awaiter`) or type names (`general`, `explore`, `plan`,
 /// `review`, `custom`). Per-call explicit model choices still win.
 #[derive(Debug, Clone, Deserialize, Default)]
-pub struct SubagentsConfig {
+pub struct AgentsConfig {
     #[serde(default)]
     pub default_model: Option<String>,
     #[serde(default)]
@@ -864,8 +864,8 @@ pub struct SubagentsConfig {
     pub custom_model: Option<String>,
     #[serde(default)]
     pub models: Option<HashMap<String, String>>,
-    /// Maximum concurrent sub-agents. Overrides the top-level max_subagents
-    /// setting. Clamped to [1, MAX_SUBAGENTS].
+    /// Maximum concurrent sub-agents. Overrides the top-level max_concurrent_agents
+    /// setting. Clamped to [1, MAX_CONCURRENT_AGENTS].
     #[serde(default)]
     pub max_concurrent: Option<usize>,
     /// User-defined custom agent types. Keys are type names (e.g.
@@ -874,24 +874,24 @@ pub struct SubagentsConfig {
     /// a system prompt, optional tool allowlist, model, reasoning
     /// effort, and knowledge reference paths.
     #[serde(default)]
-    pub types: Option<HashMap<String, SubAgentCustomType>>,
+    pub types: Option<HashMap<String, AgentRoleConfig>>,
 }
 
-/// User-defined custom sub-agent type definition.
+/// User-defined agent role definition loaded from `role.toml`.
 ///
-/// Named entries under `[subagents.types.<name>]` override
-/// the built-in `SubAgentType::Custom` posture on a per-name basis.
+/// Roles are defined in `~/.deepseek/roles/<name>/role.toml`.
+/// Each entry overrides the built-in `AgentRole::Custom` posture
+/// on a per-name basis.
 #[derive(Debug, Clone, Deserialize)]
-pub struct SubAgentCustomType {
-    /// System prompt injected at the top of the sub-agent prompt.
+pub struct AgentRoleConfig {
+    /// System prompt injected at the top of the agent prompt.
     /// Replaces the built-in `CUSTOM_AGENT_INTRO`. The mandatory
     /// output-format contract (`subagent_output_format.md`) is
     /// still appended automatically.
     pub system_prompt: String,
-    /// Optional tool allowlist. When set, the sub-agent sees only
+    /// Optional tool allowlist. When set, the agent sees only
     /// these tools. When absent, the agent inherits the full
-    /// parent toolset (equivalent to `type="custom"` without
-    /// `allowed_tools`).
+    /// parent toolset.
     #[serde(default)]
     pub allowed_tools: Option<Vec<String>>,
     /// Optional model override.
@@ -902,8 +902,7 @@ pub struct SubAgentCustomType {
     pub reasoning_effort: Option<String>,
     /// Optional knowledge reference paths. Each path is expanded
     /// via `expand_path`. File contents are prepended to the
-    /// sub-agent's initial prompt so the model has the reference
-    /// material in-context without needing to `read_file` it.
+    /// agent's initial prompt.
     #[serde(default)]
     pub knowledge_paths: Option<Vec<String>>,
 }
@@ -976,7 +975,7 @@ pub struct Config {
     pub sandbox_api_key: Option<String>,
     pub managed_config_path: Option<String>,
     pub requirements_path: Option<String>,
-    pub max_subagents: Option<usize>,
+    pub max_concurrent_agents: Option<usize>,
     pub retry: Option<RetryConfig>,
     pub capacity: Option<CapacityConfig>,
     pub features: Option<FeaturesToml>,
@@ -1039,9 +1038,9 @@ pub struct Config {
     #[serde(default)]
     pub context: ContextConfig,
 
-    /// Sub-agent model overrides.
-    #[serde(default)]
-    pub subagents: Option<SubagentsConfig>,
+    /// Agent role model overrides. Accepts "subagents" as a compatibility alias.
+    #[serde(default, alias = "subagents")]
+    pub agent_roles: Option<AgentsConfig>,
 
     /// Runtime API server tuning (`deepseek serve --http`). Currently only
     /// hosts the CORS allow-list extension (whalescale#255 / #561). When the
@@ -1833,39 +1832,77 @@ impl Config {
     }
 
     /// Return the maximum number of concurrent sub-agents.
-    /// Checks `[subagents] max_concurrent` first, then top-level `max_subagents`,
-    /// then falls back to `DEFAULT_MAX_SUBAGENTS`.
+    /// Checks `[agents] max_concurrent` first, then top-level `max_concurrent_agents`,
+    /// then falls back to `DEFAULT_MAX_CONCURRENT_AGENTS`.
     #[must_use]
-    pub fn max_subagents(&self) -> usize {
-        // Check [subagents] max_concurrent first
-        if let Some(subagents_cfg) = self.subagents.as_ref()
+    pub fn max_concurrent_agents(&self) -> usize {
+        // Check [agents] max_concurrent first
+        if let Some(subagents_cfg) = self.agent_roles.as_ref()
             && let Some(max) = subagents_cfg.max_concurrent
         {
-            return max.clamp(1, MAX_SUBAGENTS);
+            return max.clamp(1, MAX_CONCURRENT_AGENTS);
         }
-        // Fall back to top-level max_subagents
-        self.max_subagents
-            .unwrap_or(DEFAULT_MAX_SUBAGENTS)
-            .clamp(1, MAX_SUBAGENTS)
+        // Fall back to top-level max_concurrent_agents
+        self.max_concurrent_agents
+            .unwrap_or(DEFAULT_MAX_CONCURRENT_AGENTS)
+            .clamp(1, MAX_CONCURRENT_AGENTS)
     }
 
     /// Raw sub-agent model override map. Values are validated at spawn time
     /// so an invalid role/type model fails before any partial agent spawn.
-    /// Return user-defined custom sub-agent types from config.
+    /// Return user-defined agent role configs from config and roles directory.
     ///
-    /// Keys are type names the model can reference in `agent_open`.
-    /// Returns an empty map when no custom types are defined.
+    /// Merges `[agents.types.<name>]` from config.toml with
+    /// `~/.deepseek/roles/<name>/role.toml` entries. Directory-based
+    /// roles take precedence over config-based entries with the same name.
+    /// Keys are role names the model can reference in `agent_open`.
     #[must_use]
-    pub fn subagent_custom_types(&self) -> std::collections::HashMap<String, SubAgentCustomType> {
-        self.subagents
-            .as_ref()
-            .and_then(|s| s.types.clone())
-            .unwrap_or_default()
+    pub fn agent_role_configs(&self) -> std::collections::HashMap<String, AgentRoleConfig> {
+        let mut roles = self.load_roles_from_directory();
+        // Config-based roles merged in (directory roles take precedence)
+        if let Some(cfg) = self.agent_roles.as_ref()
+            && let Some(types) = &cfg.types
+        {
+            for (name, config) in types {
+                roles.entry(name.clone()).or_insert_with(|| config.clone());
+            }
+        }
+        roles
     }
 
-    pub fn subagent_model_overrides(&self) -> HashMap<String, String> {
+    /// Scan `~/.deepseek/roles/<name>/role.toml` for agent role definitions.
+    fn load_roles_from_directory(&self) -> std::collections::HashMap<String, AgentRoleConfig> {
+        let mut roles = std::collections::HashMap::new();
+        let roles_dir = match dirs::home_dir() {
+            Some(home) => home.join(".deepseek").join("roles"),
+            None => return roles,
+        };
+        let Ok(entries) = std::fs::read_dir(&roles_dir) else {
+            return roles;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let role_file = path.join("role.toml");
+            let Ok(content) = std::fs::read_to_string(&role_file) else {
+                continue;
+            };
+            let Ok(config) = toml::from_str::<AgentRoleConfig>(&content) else {
+                tracing::warn!(path=%role_file.display(), "failed to parse role.toml");
+                continue;
+            };
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                roles.insert(name.to_string(), config);
+            }
+        }
+        roles
+    }
+
+    pub fn agent_role_model_overrides(&self) -> HashMap<String, String> {
         let mut overrides = HashMap::new();
-        let Some(cfg) = self.subagents.as_ref() else {
+        let Some(cfg) = self.agent_roles.as_ref() else {
             return overrides;
         };
 
@@ -2501,10 +2538,10 @@ fn apply_env_overrides(config: &mut Config) {
     if let Ok(value) = std::env::var("DEEPSEEK_REQUIREMENTS_PATH") {
         config.requirements_path = Some(value);
     }
-    if let Ok(value) = std::env::var("DEEPSEEK_MAX_SUBAGENTS")
+    if let Ok(value) = std::env::var("DEEPSEEK_MAX_CONCURRENT_AGENTS")
         && let Ok(parsed) = value.parse::<usize>()
     {
-        config.max_subagents = Some(parsed.clamp(1, MAX_SUBAGENTS));
+        config.max_concurrent_agents = Some(parsed.clamp(1, MAX_CONCURRENT_AGENTS));
     }
 
     let capacity = config.capacity.get_or_insert(CapacityConfig {
@@ -2869,7 +2906,7 @@ fn merge_config(base: Config, override_cfg: Config) -> Config {
             .managed_config_path
             .or(base.managed_config_path),
         requirements_path: override_cfg.requirements_path.or(base.requirements_path),
-        max_subagents: override_cfg.max_subagents.or(base.max_subagents),
+        max_concurrent_agents: override_cfg.max_concurrent_agents.or(base.max_concurrent_agents),
         retry: override_cfg.retry.or(base.retry),
         capacity: override_cfg.capacity.or(base.capacity),
         tui: override_cfg.tui.or(base.tui),
@@ -2912,7 +2949,7 @@ fn merge_config(base: Config, override_cfg: Config) -> Config {
                 .or(base.context.cycle_threshold),
             seam_model: override_cfg.context.seam_model.or(base.context.seam_model),
         },
-        subagents: override_cfg.subagents.or(base.subagents),
+        agent_roles: override_cfg.agent_roles.or(base.agent_roles),
         strict_tool_mode: override_cfg.strict_tool_mode.or(base.strict_tool_mode),
         runtime_api: override_cfg.runtime_api.or(base.runtime_api),
         workshop: override_cfg.workshop.or(base.workshop),
@@ -3851,44 +3888,44 @@ mod tests {
     }
 
     #[test]
-    fn max_subagents_defaults_to_ten() {
-        assert_eq!(Config::default().max_subagents(), DEFAULT_MAX_SUBAGENTS);
-        assert_eq!(DEFAULT_MAX_SUBAGENTS, 10);
+    fn max_concurrent_agents_defaults_to_ten() {
+        assert_eq!(Config::default().max_concurrent_agents(), DEFAULT_MAX_CONCURRENT_AGENTS);
+        assert_eq!(DEFAULT_MAX_CONCURRENT_AGENTS, 10);
     }
 
     #[test]
     fn subagents_max_concurrent_overrides_top_level_cap() {
         let config = Config {
-            max_subagents: Some(3),
-            subagents: Some(SubagentsConfig {
+            max_concurrent_agents: Some(3),
+            agent_roles: Some(AgentsConfig {
                 max_concurrent: Some(12),
-                ..SubagentsConfig::default()
+                ..AgentsConfig::default()
             }),
             ..Config::default()
         };
 
-        assert_eq!(config.max_subagents(), 12);
+        assert_eq!(config.max_concurrent_agents(), 12);
     }
 
     #[test]
-    fn max_subagents_clamps_subagents_max_concurrent() {
+    fn max_concurrent_agents_clamps_subagents_max_concurrent() {
         let low = Config {
-            subagents: Some(SubagentsConfig {
+            agent_roles: Some(AgentsConfig {
                 max_concurrent: Some(0),
-                ..SubagentsConfig::default()
+                ..AgentsConfig::default()
             }),
             ..Config::default()
         };
-        assert_eq!(low.max_subagents(), 1);
+        assert_eq!(low.max_concurrent_agents(), 1);
 
         let high = Config {
-            subagents: Some(SubagentsConfig {
-                max_concurrent: Some(MAX_SUBAGENTS + 10),
-                ..SubagentsConfig::default()
+            agent_roles: Some(AgentsConfig {
+                max_concurrent: Some(MAX_CONCURRENT_AGENTS + 10),
+                ..AgentsConfig::default()
             }),
             ..Config::default()
         };
-        assert_eq!(high.max_subagents(), MAX_SUBAGENTS);
+        assert_eq!(high.max_concurrent_agents(), MAX_CONCURRENT_AGENTS);
     }
 
     #[test]

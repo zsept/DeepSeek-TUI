@@ -75,7 +75,7 @@ mod vision;
 mod working_set;
 mod workspace_trust;
 
-use crate::config::{Config, DEFAULT_TEXT_MODEL, MAX_SUBAGENTS};
+use crate::config::{Config, DEFAULT_TEXT_MODEL, MAX_CONCURRENT_AGENTS};
 use crate::eval::{EvalHarness, EvalHarnessConfig, ScenarioStepKind};
 use crate::features::{Feature, render_feature_table};
 use crate::llm_client::LlmClient;
@@ -125,7 +125,7 @@ struct Cli {
 
     /// Maximum number of concurrent sub-agents (1-20)
     #[arg(long)]
-    max_subagents: Option<usize>,
+    max_concurrent_agents: Option<usize>,
 
     /// Path to config file
     #[arg(long)]
@@ -777,9 +777,9 @@ async fn main() -> Result<()> {
                     || resume_session_id.is_some()
                     || args.output_format == ExecOutputFormat::StreamJson;
                 if needs_engine {
-                    let max_subagents = cli.max_subagents.map_or_else(
-                        || config.max_subagents(),
-                        |value| value.clamp(1, MAX_SUBAGENTS),
+                    let max_concurrent_agents = cli.max_concurrent_agents.map_or_else(
+                        || config.max_concurrent_agents(),
+                        |value| value.clamp(1, MAX_CONCURRENT_AGENTS),
                     );
                     let auto_mode = args.auto || cli.yolo;
                     run_exec_agent(
@@ -787,7 +787,7 @@ async fn main() -> Result<()> {
                         &model,
                         &prompt,
                         workspace,
-                        max_subagents,
+                        max_concurrent_agents,
                         auto_mode,
                         auto_mode,
                         args.json,
@@ -4234,10 +4234,10 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
     }
 
     // Numeric / bool fields that benefit from per-project overrides.
-    if let Some(v) = table.get("max_subagents").and_then(toml::Value::as_integer)
+    if let Some(v) = table.get("max_concurrent_agents").and_then(toml::Value::as_integer)
         && v > 0
     {
-        config.max_subagents = Some((v as usize).clamp(1, crate::config::MAX_SUBAGENTS));
+        config.max_concurrent_agents = Some((v as usize).clamp(1, crate::config::MAX_CONCURRENT_AGENTS));
     }
     if let Some(v) = table.get("allow_shell").and_then(toml::Value::as_bool) {
         config.allow_shell = Some(v);
@@ -4289,9 +4289,9 @@ async fn run_interactive(
     }
 
     let model = config.default_model();
-    let max_subagents = cli.max_subagents.map_or_else(
-        || config.max_subagents(),
-        |value| value.clamp(1, MAX_SUBAGENTS),
+    let max_concurrent_agents = cli.max_concurrent_agents.map_or_else(
+        || config.max_concurrent_agents(),
+        |value| value.clamp(1, MAX_CONCURRENT_AGENTS),
     );
     let use_alt_screen = should_use_alt_screen(cli, config);
     let use_mouse_capture = should_use_mouse_capture(cli, config, use_alt_screen);
@@ -4353,7 +4353,7 @@ async fn run_interactive(
             yolo: cli.yolo, // YOLO mode auto-approves all tool executions
             resume_session_id,
             initial_input,
-            max_subagents,
+            max_concurrent_agents,
         },
     )
     .await
@@ -4580,7 +4580,7 @@ async fn run_exec_agent(
     model: &str,
     prompt: &str,
     workspace: PathBuf,
-    max_subagents: usize,
+    max_concurrent_agents: usize,
     auto_approve: bool,
     trust_mode: bool,
     json_output: bool,
@@ -4633,13 +4633,13 @@ async fn run_exec_agent(
         mcp_config_path: config.mcp_config_path(),
         skills_dir: config.skills_dir(),
         extra_skills_dirs: config.extra_skills_dirs(),
-        subagent_custom_types: config.subagent_custom_types(),
+        agent_role_configs: config.agent_role_configs(),
         system_prompt: config.system_prompt.clone(),
         instructions: config.instructions_paths(),
         project_context_pack_enabled: config.project_context_pack_enabled(),
         translation_enabled: false,
         max_steps: 100,
-        max_subagents,
+        max_concurrent_agents,
         features: config.features(),
         compaction,
         cycle: crate::cycle_manager::CycleConfig::default(),
@@ -4655,7 +4655,7 @@ async fn run_exec_agent(
             .saturating_mul(1024 * 1024 * 1024),
         lsp_config,
         runtime_services: crate::tools::spec::RuntimeToolServices::default(),
-        subagent_model_overrides: config.subagent_model_overrides(),
+        agent_role_model_overrides: config.agent_role_model_overrides(),
         memory_enabled: config.memory_enabled(),
         memory_path: config.memory_path(),
         vision_config: config.vision_model_config(),
@@ -5693,45 +5693,45 @@ approval_policy = "auto"
     }
 
     #[test]
-    fn project_overlay_overrides_max_subagents_and_allow_shell() {
+    fn project_overlay_overrides_max_concurrent_agents_and_allow_shell() {
         let tmp = workspace_with_project_config(
             r#"
-max_subagents = 4
+max_concurrent_agents = 4
 allow_shell = false
 "#,
         );
         let mut config = Config::default();
         merge_project_config(&mut config, tmp.path());
-        assert_eq!(config.max_subagents, Some(4));
+        assert_eq!(config.max_concurrent_agents, Some(4));
         assert_eq!(config.allow_shell, Some(false));
     }
 
     #[test]
-    fn project_overlay_clamps_max_subagents_to_safe_range() {
+    fn project_overlay_clamps_max_concurrent_agents_to_safe_range() {
         let tmp = workspace_with_project_config(
             r#"
-max_subagents = 500
+max_concurrent_agents = 500
 "#,
         );
         let mut config = Config::default();
         merge_project_config(&mut config, tmp.path());
         assert_eq!(
-            config.max_subagents,
-            Some(crate::config::MAX_SUBAGENTS),
-            "should clamp to MAX_SUBAGENTS"
+            config.max_concurrent_agents,
+            Some(crate::config::MAX_CONCURRENT_AGENTS),
+            "should clamp to MAX_CONCURRENT_AGENTS"
         );
     }
 
     #[test]
-    fn project_overlay_ignores_negative_max_subagents() {
+    fn project_overlay_ignores_negative_max_concurrent_agents() {
         let tmp = workspace_with_project_config(
             r#"
-max_subagents = -3
+max_concurrent_agents = -3
 "#,
         );
         let mut config = Config::default();
         merge_project_config(&mut config, tmp.path());
-        assert_eq!(config.max_subagents, None, "negative should be ignored");
+        assert_eq!(config.max_concurrent_agents, None, "negative should be ignored");
     }
 
     #[test]

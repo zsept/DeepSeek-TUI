@@ -366,7 +366,7 @@ pub fn subagent_completion_message(
     let result_line = result
         .lines()
         .map(str::trim)
-        .find(|line| !line.is_empty() && !line.starts_with("<deepseek:subagent.done>"));
+        .find(|line| !line.is_empty() && !line.starts_with("<deepseek:agent.done>"));
     let mut msg = result_line
         .and_then(text_summary)
         .map(|summary| format!("sub-agent {id}: {summary}"))

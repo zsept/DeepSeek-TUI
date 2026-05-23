@@ -181,7 +181,7 @@ pub const FEATURES: &[FeatureSpec] = &[
     },
     FeatureSpec {
         id: Feature::Subagents,
-        key: "subagents",
+        key: "agents",
         stage: Stage::Experimental,
         default_enabled: true,
     },

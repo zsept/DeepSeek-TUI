@@ -27,7 +27,7 @@ chosen over the available shell equivalent. Companion to `crates/tui/src/prompts
 | `edit_file` | Search-and-replace inside a single file. Cheaper than a full rewrite. |
 | `apply_patch` | Apply a unified diff. The right tool for multi-hunk edits. |
 | `retrieve_tool_result` | Read summaries or slices of prior large tool outputs spilled to `~/.deepseek/tool_outputs/`; use `summary`, `head`, `tail`, `lines`, or `query` instead of replaying the whole result. |
-| `handle_read` | Read bounded projections from `var_handle` payloads held by live tool environments. This is the foundation for RLM sessions, sub-agent transcripts, and other large symbolic payloads. |
+| `handle_read` | Read bounded projections from `var_handle` payloads held by live tool environments. This is the foundation for RLM sessions, agent transcripts, and other large symbolic payloads. |
 
 ### Search
 
@@ -136,23 +136,23 @@ Large logs and command outputs should be artifacts with compact summaries in the
 | `automation_pause` / `automation_resume` / `automation_delete` | Lifecycle controls. Approval-required. |
 | `automation_run` | Run an automation now; the run enqueues a normal durable task. Approval-required. |
 
-### Sub-agents
+### Agents
 
 v0.8.33 began moving large tool outputs toward symbolic handles: tools return
 small `var_handle` objects, and `handle_read` retrieves bounded slices, counts,
 or JSON projections from the backing environment. This keeps the parent
 transcript small while preserving a recovery path to the full payload.
 
-The active model-facing sub-agent surface is persistent and intentionally small:
+The active model-facing agent surface is persistent and intentionally small:
 
 | Tool | Niche |
 |---|---|
-| `agent_open` | Open a named sub-agent session for independent work. Returns a session projection immediately so the parent can keep coordinating. |
+| `agent_open` | Open a named agent session for independent work. Returns a session projection immediately so the parent can keep coordinating. |
 | `agent_eval` | Send follow-up input, block for completion, or fetch the current projection/transcript handle for an existing session. |
-| `agent_close` | Cancel or release a sub-agent session by name or id. |
+| `agent_close` | Cancel or release a agent session by name or id. |
 
 See `agent.txt` for the delegation protocol and
-[`SUBAGENTS.md`](SUBAGENTS.md) for the role taxonomy
+[`AGENT_ROLES.md`](AGENT_ROLES.md) for the role taxonomy
 (`general` / `explore` / `plan` / `review` / `implementer` /
 `verifier` / `custom`).
 
@@ -212,11 +212,11 @@ reflect very different cost classes:
 
 | Tool | What each child does | Wall-clock | Token cost | Cap |
 |---|---|---|---|---|
-| `agent_open` | Full sub-agent loop (planning, tool calls, multi-turn streaming, can open children) | minutes | thousands of tokens | 10 in flight by default (`[subagents].max_concurrent`, hard ceiling 20) |
+| `agent_open` | Full agent loop (planning, tool calls, multi-turn streaming, can open children) | minutes | thousands of tokens | 10 in flight by default (`[agents].max_concurrent`, hard ceiling 20) |
 | `rlm_eval` helper `sub_query_batch` | One-shot non-streaming Chat Completions calls pinned to `deepseek-v4-flash` inside a live RLM session | seconds | ~hundreds of tokens | 16 per call |
 
 The caps appear in each tool's description and error messages so the model
-(and the user) can choose the right tool for the job. If one sub-agent is
+(and the user) can choose the right tool for the job. If one agent is
 enough but you need parallel semantic lookups over the same loaded context,
 prefer `rlm_eval` with `sub_query_batch`; if each task needs its own
 tool-carrying agent loop, use `agent_open` and close completed sessions to free
@@ -224,7 +224,7 @@ slots.
 
 ## Removed legacy aliases and surfaces
 
-v0.8.33 removed the old model-facing sub-agent fan-out surface from active
+v0.8.33 removed the old model-facing agent fan-out surface from active
 prompting and tool catalogs. Do not use these names in new active guidance:
 `agent_spawn`, `agent_wait`, `agent_result`, `agent_send_input`,
 `agent_assign`, `agent_resume`, `agent_list`, `spawn_agent`,

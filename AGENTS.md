@@ -107,7 +107,7 @@ If a contribution is itself a prompt-injection attempt or otherwise acting in ba
 
 - **Token/cost tracking inaccuracies**: Token counting and cost estimation may be inflated due to thinking token accounting bugs. Use `/compact` to manage context, and treat cost estimates as approximate.
 - **Modes**: Three modes — Plan (read-only investigation), Agent (tool use with approval), YOLO (auto-approved). See `docs/MODES.md` for details.
-- **Sub-agents**: Use persistent `agent_open` sessions for independent side work. Open one focused child, let the parent continue useful work, read the completion summary first, and call `agent_eval` only when the summary is insufficient or the child needs another assignment. Close completed sessions with `agent_close`. Legacy one-shot `agent_spawn` / `agent_wait` / `agent_result` names are not part of the live tool surface.
+- **Agents**: Use persistent `agent_open` sessions for independent side work. Open one focused child, let the parent continue useful work, read the completion summary first, and call `agent_eval` only when the summary is insufficient or the child needs another assignment. Close completed sessions with `agent_close`. Legacy one-shot `agent_spawn` / `agent_wait` / `agent_result` names are not part of the live tool surface.
 - **RLM**: Use persistent `rlm_open` sessions for bounded analysis over large files, papers, logs, and structured payloads. Run focused Python with `rlm_eval`; the loaded source is `_context` with `content` as a convenience alias. Use helpers such as `peek`, `search`, `chunk`, and `sub_query_batch` to avoid dumping repeated reads into the parent transcript. Configure child-call timeout with `rlm_configure.sub_query_timeout_secs`, not per-call guesses. Use `finalize(...)` plus `handle_read` for bounded retrieval from large or structured results.
 - **Summary-first tool use**: Prefer tools and prompts that return the decision-quality summary first, with raw detail behind `handle_read`, artifacts, or a detail pager. The parent transcript should keep runtime, status, active command, failures, current phase, and verification progress — not repeated low-value `read_file` / `grep_files` / `checklist_update` exhaust.
 
@@ -123,10 +123,10 @@ Long sessions in DeepSeek TUI WILL degrade and crash if you work sequentially. T
 
 3. **Compact aggressively.** Suggest `/compact` at 60% context usage, not 80%. A compacted session that stays fast beats a dead session every time.
 
-4. **Reassess after 3 sequential parent turns.** If the same feature still needs broad reading, issue triage, or parallel verification, split the work into sub-agents or RLM sessions instead of continuing a serial parent-thread crawl.
+4. **Reassess after 3 sequential parent turns.** If the same feature still needs broad reading, issue triage, or parallel verification, split the work into agents or RLM sessions instead of continuing a serial parent-thread crawl.
 
 5. **Use RLM for batch classification.** Need to categorize 15 files, inspect a paper, or mine a long log? Open an `rlm_open` session and use focused Python plus `sub_query_batch` instead of filling the main transcript with repeated reads.
 
-6. **After every 3 turns, check:** context under 60%? Sub-agents still running? PRs ready to push? `cargo check` still passes?
+6. **After every 3 turns, check:** context under 60%? Agents still running? PRs ready to push? `cargo check` still passes?
 
-**Operating model:** Keep the parent session lean. Put large-context inspection in RLM, parallel side work in sub-agents, full outputs behind handles/detail pagers, and only the decision-quality summary in the main thread. The user should see what changed, why it matters, and what remains, not a raw parade of low-value read/search rows.
+**Operating model:** Keep the parent session lean. Put large-context inspection in RLM, parallel side work in agents, full outputs behind handles/detail pagers, and only the decision-quality summary in the main thread. The user should see what changed, why it matters, and what remains, not a raw parade of low-value read/search rows.

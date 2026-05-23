@@ -27,7 +27,7 @@ use crate::settings::Settings;
 use crate::tools::plan::{SharedPlanState, new_shared_plan_state};
 use crate::tools::shell::new_shared_shell_manager;
 use crate::tools::spec::RuntimeToolServices;
-use crate::tools::subagent::SubAgentResult;
+use crate::tools::subagent::AgentResult;
 use crate::tools::todo::{SharedTodoList, new_shared_todo_list};
 use crate::tui::active_cell::ActiveCell;
 use crate::tui::approval::ApprovalMode;
@@ -288,7 +288,7 @@ impl SidebarFocus {
         match value.trim().to_ascii_lowercase().as_str() {
             "work" | "plan" | "todos" => Self::Work,
             "tasks" => Self::Tasks,
-            "agents" | "subagents" | "sub-agents" => Self::Agents,
+            "agents" => Self::Agents,
             "context" | "session" => Self::Context,
             "hidden" | "hide" | "closed" | "off" | "none" => Self::Hidden,
             _ => Self::Auto,
@@ -525,7 +525,7 @@ pub struct TuiOptions {
     /// rare terminal that mishandles it.
     pub use_bracketed_paste: bool,
     /// Maximum number of concurrent sub-agents.
-    pub max_subagents: usize,
+    pub max_concurrent_agents: usize,
     #[allow(dead_code)]
     pub skills_dir: PathBuf,
     #[allow(dead_code)]
@@ -715,9 +715,9 @@ pub struct GoalState {
 pub struct SessionState {
     pub session_cost: f64,
     pub session_cost_cny: f64,
-    pub subagent_cost: f64,
-    pub subagent_cost_cny: f64,
-    pub subagent_cost_event_seqs: HashSet<u64>,
+    pub agent_cost: f64,
+    pub agent_cost_cny: f64,
+    pub agent_cost_event_seqs: HashSet<u64>,
     pub displayed_cost_high_water: f64,
     pub displayed_cost_high_water_cny: f64,
     pub last_prompt_tokens: Option<u32>,
@@ -736,9 +736,9 @@ impl Default for SessionState {
         Self {
             session_cost: 0.0,
             session_cost_cny: 0.0,
-            subagent_cost: 0.0,
-            subagent_cost_cny: 0.0,
-            subagent_cost_event_seqs: HashSet::new(),
+            agent_cost: 0.0,
+            agent_cost_cny: 0.0,
+            agent_cost_event_seqs: HashSet::new(),
             displayed_cost_high_water: 0.0,
             displayed_cost_high_water_cny: 0.0,
             last_prompt_tokens: None,
@@ -815,7 +815,7 @@ pub struct App {
     /// built-in workspace/global candidate list at session time.
     pub extra_skills_dirs: Vec<PathBuf>,
     /// User-defined custom sub-agent types from config.
-    pub subagent_custom_types: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
+    pub agent_role_configs: std::collections::HashMap<String, crate::config::AgentRoleConfig>,
     /// Currently active agent role set via /role command.
     pub active_agent_type: Option<String>,
     /// System prompt override from active agent role.
@@ -886,16 +886,16 @@ pub struct App {
     pub compact_threshold: usize,
     pub max_input_history: usize,
     pub allow_shell: bool,
-    pub max_subagents: usize,
+    pub max_concurrent_agents: usize,
     /// Cached sub-agent snapshots for UI views.
-    pub subagent_cache: Vec<SubAgentResult>,
+    pub agent_cache: Vec<AgentResult>,
     /// Last known per-agent progress text for running sub-agents.
     pub agent_progress: HashMap<String, String>,
     /// In-transcript sub-agent card index by `agent_id` (issue #128).
-    /// Maps each live sub-agent to the `HistoryCell::SubAgent` it renders
+    /// Maps each live sub-agent to the `HistoryCell::Agent` it renders
     /// into, so successive mailbox envelopes mutate the same cell rather
     /// than spawning duplicates.
-    pub subagent_card_index: HashMap<String, usize>,
+    pub agent_card_index: HashMap<String, usize>,
     /// History index of the most recent FanoutCard. Sibling sub-agents
     /// spawned by the same `rlm` invocation route into this card; reset
     /// when a fresh fanout-family tool call starts.
@@ -903,7 +903,7 @@ pub struct App {
     /// Most recently observed sub-agent dispatch tool name (set on
     /// `ToolCallStarted` for `agent_spawn` / `rlm` / etc., cleared
     /// after the first `Started` mailbox envelope routes through it).
-    pub pending_subagent_dispatch: Option<String>,
+    pub pending_agent_dispatch: Option<String>,
     /// Animation anchor for status-strip active sub-agent spinner.
     pub agent_activity_started_at: Option<Instant>,
     /// Active theme driving every render site. Includes user overrides
@@ -1285,7 +1285,7 @@ impl App {
             use_alt_screen,
             use_mouse_capture,
             use_bracketed_paste,
-            max_subagents,
+            max_concurrent_agents,
             skills_dir: global_skills_dir,
             memory_path,
             notes_path: _,
@@ -1431,7 +1431,7 @@ impl App {
 
         let skills_dir = resolve_skills_dir(&workspace, &global_skills_dir, config);
         let extra_skills_dirs = config.extra_skills_dirs();
-        let subagent_custom_types = config.subagent_custom_types();
+        let agent_role_configs = config.agent_role_configs();
         let cached_skills = Self::discover_cached_skills(&workspace, &extra_skills_dirs);
 
         let input_history = crate::composer_history::load_history();
@@ -1495,7 +1495,7 @@ impl App {
             mcp_config_path: mcp_config_path.clone(),
             skills_dir,
             extra_skills_dirs,
-            subagent_custom_types,
+            agent_role_configs,
             active_agent_type: None,
             agent_system_prompt_override: None,
             memory_path,
@@ -1527,12 +1527,12 @@ impl App {
             compact_threshold,
             max_input_history,
             allow_shell,
-            max_subagents,
-            subagent_cache: Vec::new(),
+            max_concurrent_agents,
+            agent_cache: Vec::new(),
             agent_progress: HashMap::new(),
-            subagent_card_index: HashMap::new(),
+            agent_card_index: HashMap::new(),
             last_fanout_card_index: None,
-            pending_subagent_dispatch: None,
+            pending_agent_dispatch: None,
             agent_activity_started_at: None,
             theme,
             onboarding,
@@ -1854,14 +1854,14 @@ impl App {
     /// Add `delta` to the running sub-agent cost and bump the displayed
     /// high-water mark so the footer total never reverses (#244).
     #[allow(dead_code)]
-    pub fn accrue_subagent_cost(&mut self, delta: f64) {
-        self.accrue_subagent_cost_estimate(CostEstimate::usd_only(delta));
+    pub fn accrue_agent_cost(&mut self, delta: f64) {
+        self.accrue_agent_cost_estimate(CostEstimate::usd_only(delta));
     }
 
     /// Add a dual-currency sub-agent/background cost estimate.
-    pub fn accrue_subagent_cost_estimate(&mut self, estimate: CostEstimate) {
-        self.session.subagent_cost += estimate.usd;
-        self.session.subagent_cost_cny += estimate.cny;
+    pub fn accrue_agent_cost_estimate(&mut self, estimate: CostEstimate) {
+        self.session.agent_cost += estimate.usd;
+        self.session.agent_cost_cny += estimate.cny;
         self.refresh_displayed_cost_high_water();
     }
 
@@ -1870,8 +1870,8 @@ impl App {
     pub fn sync_cost_to_metadata(&self, metadata: &mut crate::session_manager::SessionMetadata) {
         metadata.cost.session_cost_usd = self.session.session_cost;
         metadata.cost.session_cost_cny = self.session.session_cost_cny;
-        metadata.cost.subagent_cost_usd = self.session.subagent_cost;
-        metadata.cost.subagent_cost_cny = self.session.subagent_cost_cny;
+        metadata.cost.agent_cost_usd = self.session.agent_cost;
+        metadata.cost.agent_cost_cny = self.session.agent_cost_cny;
         metadata.cost.displayed_cost_high_water_usd = self.session.displayed_cost_high_water;
         metadata.cost.displayed_cost_high_water_cny = self.session.displayed_cost_high_water_cny;
     }
@@ -1879,11 +1879,11 @@ impl App {
     /// Recompute the displayed cost high-water mark. Called any time a cost
     /// counter is mutated; never decreases.
     pub fn refresh_displayed_cost_high_water(&mut self) {
-        let current = self.session.session_cost + self.session.subagent_cost;
+        let current = self.session.session_cost + self.session.agent_cost;
         if current > self.session.displayed_cost_high_water {
             self.session.displayed_cost_high_water = current;
         }
-        let current_cny = self.session.session_cost_cny + self.session.subagent_cost_cny;
+        let current_cny = self.session.session_cost_cny + self.session.agent_cost_cny;
         if current_cny > self.session.displayed_cost_high_water_cny {
             self.session.displayed_cost_high_water_cny = current_cny;
         }
@@ -1901,11 +1901,11 @@ impl App {
     pub fn displayed_session_cost_for_currency(&self, currency: CostCurrency) -> f64 {
         match currency {
             CostCurrency::Usd => {
-                let current = self.session.session_cost + self.session.subagent_cost;
+                let current = self.session.session_cost + self.session.agent_cost;
                 current.max(self.session.displayed_cost_high_water)
             }
             CostCurrency::Cny => {
-                let current = self.session.session_cost_cny + self.session.subagent_cost_cny;
+                let current = self.session.session_cost_cny + self.session.agent_cost_cny;
                 current.max(self.session.displayed_cost_high_water_cny)
             }
         }
@@ -1918,10 +1918,10 @@ impl App {
         }
     }
 
-    pub fn subagent_cost_for_currency(&self, currency: CostCurrency) -> f64 {
+    pub fn agent_cost_for_currency(&self, currency: CostCurrency) -> f64 {
         match currency {
-            CostCurrency::Usd => self.session.subagent_cost,
-            CostCurrency::Cny => self.session.subagent_cost_cny,
+            CostCurrency::Usd => self.session.agent_cost,
+            CostCurrency::Cny => self.session.agent_cost_cny,
         }
     }
 
@@ -2021,8 +2021,8 @@ impl App {
             .collect();
         self.rebuild_session_context_references();
 
-        // subagent_card_index
-        self.subagent_card_index.retain(|_, idx| {
+        // agent_card_index
+        self.agent_card_index.retain(|_, idx| {
             if *idx >= n {
                 *idx -= n;
                 true
@@ -2179,7 +2179,7 @@ impl App {
         self.context_references_by_cell
             .retain(|idx, _| *idx < new_len);
         self.rebuild_session_context_references();
-        self.subagent_card_index.retain(|_, idx| *idx < new_len);
+        self.agent_card_index.retain(|_, idx| *idx < new_len);
         if self
             .last_fanout_card_index
             .is_some_and(|idx| idx >= new_len)
@@ -2260,7 +2260,7 @@ impl App {
         self.tool_detail_record_for_cell(index).is_some()
             || matches!(
                 self.cell_at_virtual_index(index),
-                Some(HistoryCell::Tool(_) | HistoryCell::SubAgent(_))
+                Some(HistoryCell::Tool(_) | HistoryCell::Agent(_))
             )
     }
 
@@ -4210,7 +4210,7 @@ mod tests {
             use_alt_screen: true,
             use_mouse_capture: false,
             use_bracketed_paste: true,
-            max_subagents: 1,
+            max_concurrent_agents: 1,
             skills_dir: PathBuf::from("."),
             memory_path: PathBuf::from("memory.md"),
             notes_path: PathBuf::from("notes.txt"),

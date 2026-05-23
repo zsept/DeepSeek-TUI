@@ -67,7 +67,7 @@ cargo install deepseek-tui     --locked --force
 
 ## 这是什么？
 
-DeepSeek TUI 是一个完全运行在终端里的编程智能体。它让 DeepSeek 前沿模型直接访问你的工作区：读写文件、运行 shell 命令、搜索浏览网页、管理 git、调度子智能体——全部通过快速、键盘驱动的 TUI 完成。
+DeepSeek TUI 是一个完全运行在终端里的编程智能体。它让 DeepSeek 前沿模型直接访问你的工作区：读写文件、运行 shell 命令、搜索浏览网页、管理 git、调度代理——全部通过快速、键盘驱动的 TUI 完成。
 
 它面向 **DeepSeek V4**（`deepseek-v4-pro` / `deepseek-v4-flash`）构建，原生支持 100 万 token 上下文窗口和思考模式流式输出。
 
@@ -76,7 +76,7 @@ DeepSeek TUI 是一个完全运行在终端里的编程智能体。它让 DeepSe
 - **Auto 模式** —— `--model auto` / `/model auto` 每轮自动选择模型和推理强度
 - **原生 RLM**（`rlm_open`/`rlm_eval`）—— 持久化 REPL 会话用于批量分析；使用带界面的辅助函数（`peek`、`search`、`chunk`、`sub_query_batch`）运行低成本 `deepseek-v4-flash` 子任务
 - **思考模式流式输出** —— 实时观察模型在解决问题时的思维链展开
-- **完整工具集** —— 文件操作、shell 执行、git、网页搜索/浏览、apply-patch、子智能体、MCP 服务器
+- **完整工具集** —— 文件操作、shell 执行、git、网页搜索/浏览、apply-patch、代理、MCP 服务器
 - **100 万 token 上下文** —— 上下文跟踪、手动或配置驱动的压缩，以及前缀缓存遥测
 - **前缀缓存稳定性跟踪** —— 可选 `/statusline` footer chip 显示最近轮次缓存前缀的稳定程度
 - **三种交互模式** —— Plan（只读探索）、Agent（带审批的默认交互）、YOLO（可信工作区自动批准）
@@ -98,17 +98,17 @@ DeepSeek TUI 是一个完全运行在终端里的编程智能体。它让 DeepSe
 
 ## 架构说明
 
-`deepseek`（调度器 CLI）→ `deepseek-tui`（伴随二进制）→ ratatui 界面 ↔ 异步引擎 ↔ OpenAI 兼容流式客户端。工具调用通过类型化注册表（shell、文件操作、git、web、子智能体、MCP、RLM）路由，结果流式返回对话记录。引擎管理会话状态、轮次追踪、持久化任务队列和 LSP 子系统——它在下一步推理前将编辑后诊断反馈到模型上下文中。
+`deepseek`（调度器 CLI）→ `deepseek-tui`（伴随二进制）→ ratatui 界面 ↔ 异步引擎 ↔ OpenAI 兼容流式客户端。工具调用通过类型化注册表（shell、文件操作、git、web、代理、MCP、RLM）路由，结果流式返回对话记录。引擎管理会话状态、轮次追踪、持久化任务队列和 LSP 子系统——它在下一步推理前将编辑后诊断反馈到模型上下文中。
 
 详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
-### 子智能体：并发后台执行
+### 代理：并发后台执行
 
-DeepSeek TUI 可以同时调度多个子智能体并行运行——类似于并发任务队列：
+DeepSeek TUI 可以同时调度多个代理并行运行——类似于并发任务队列：
 
-- **非阻塞启动。** `agent_open` 立即返回。子智能体获得独立的上下文和工具注册表，独立运行。父进程继续工作。
-- **后台执行。** 子智能体并发运行（默认上限 10，可配置至 20）。引擎管理线程池——无需轮询循环。
-- **完成通知。** 子智能体完成后，运行时发送结构化的 `<deepseek:subagent.done>` 事件，包含摘要、证据列表和执行指标。父模型读取 `summary` 字段并整合结果。
+- **非阻塞启动。** `agent_open` 立即返回。代理获得独立的上下文和工具注册表，独立运行。父进程继续工作。
+- **后台执行。** 代理并发运行（默认上限 10，可配置至 20）。引擎管理线程池——无需轮询循环。
+- **完成通知。** 代理完成后，运行时发送结构化的 `<deepseek:agent.done>` 事件，包含摘要、证据列表和执行指标。父模型读取 `summary` 字段并整合结果。
 - **按需读取结果。** 大型对话记录暂存为 `var_handle` 引用。模型通过 `handle_read` 按切片、范围或 JSONPath 投影读取——保持父上下文精简。
 
 详见 [docs/SUBAGENTS.md](docs/SUBAGENTS.md)。
@@ -162,7 +162,7 @@ Auto 模式同时控制两个设置：
 
 在真实请求发出之前，应用会先用关闭推理的 `deepseek-v4-flash` 进行一次小型路由调用。路由器审视最新请求和最近的上下文，然后为真实请求选定具体的模型和推理强度。简短/简单的轮次保持在 Flash + 关闭推理；编码、调试、发布、架构、安全审查或模糊的多步骤任务可升级到 Pro 和/或更高推理强度。
 
-`auto` 是 DeepSeek TUI 本地行为。上游 API 永远不会收到 `model: "auto"`，它只会收到为当前轮次选定的具体模型和推理强度设置。TUI 会显示选定的路由，成本跟踪按实际运行的模型计费。如果路由调用失败或返回无效答案，应用会回退到本地启发式规则。子智能体会继承 auto 模式，除非你为它们指定了显式模型。
+`auto` 是 DeepSeek TUI 本地行为。上游 API 永远不会收到 `model: "auto"`，它只会收到为当前轮次选定的具体模型和推理强度设置。TUI 会显示选定的路由，成本跟踪按实际运行的模型计费。如果路由调用失败或返回无效答案，应用会回退到本地启发式规则。代理会继承 auto 模式，除非你为它们指定了显式模型。
 
 需要可重复基准测试、严格控制成本上限或特定提供商/模型映射时，请使用固定模型或固定推理强度。
 
@@ -488,7 +488,7 @@ description: 当 DeepSeek 需要遵循我的自定义工作流时使用这个技
 | [TENCENT_CLOUD_REMOTE_FIRST.md](docs/TENCENT_CLOUD_REMOTE_FIRST.md) | 腾讯云/CNB/Lighthouse/飞书远程优先路径 |
 | [TENCENT_LIGHTHOUSE_HK.md](docs/TENCENT_LIGHTHOUSE_HK.md) | 腾讯云 Lighthouse 香港实例配置 |
 | [MEMORY.md](docs/MEMORY.md) | 用户记忆功能指南 |
-| [SUBAGENTS.md](docs/SUBAGENTS.md) | 子智能体角色分类与生命周期 |
+| [SUBAGENTS.md](docs/SUBAGENTS.md) | 代理角色分类与生命周期 |
 | [KEYBINDINGS.md](docs/KEYBINDINGS.md) | 完整快捷键目录 |
 | [RELEASE_RUNBOOK.md](docs/RELEASE_RUNBOOK.md) | 发布流程 |
 | [LOCALIZATION.md](docs/LOCALIZATION.md) | UI 语言矩阵与切换 |
@@ -527,7 +527,7 @@ description: 当 DeepSeek 需要遵循我的自定义工作流时使用这个技
 - **[reidliu41](https://github.com/reidliu41)** — 退出后的恢复提示、工作区信任持久化、Ollama provider 支持，以及思考块流式终结修复 (#863, #870, #921, #1078)
 - **[xieshutao](https://github.com/xieshutao)** — 纯 Markdown skill 兜底解析 (#869)
 - **[GK012](https://github.com/GK012)** — npm wrapper 的 `--version` 兜底 (#885)
-- **[y0sif](https://github.com/y0sif)** — 直接子智能体完成后唤醒父级 turn loop (#901)
+- **[y0sif](https://github.com/y0sif)** — 直接代理完成后唤醒父级 turn loop (#901)
 - **[mac119](https://github.com/mac119)** 和 **[leo119](https://github.com/leo119)** — `deepseek update` 命令文档 (#838, #917)
 - **[dumbjack](https://github.com/dumbjack)** / **浩淼的mac** — shell 命令空字节安全加固 (#706, #918)
 - **macworkers** — fork 完成后显示新 session id (#600, #919)

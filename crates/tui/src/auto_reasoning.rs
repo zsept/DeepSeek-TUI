@@ -9,7 +9,7 @@ use crate::tui::app::ReasoningEffort;
 /// Choose a concrete `ReasoningEffort` tier for the next API request.
 ///
 /// Rules:
-/// - Sub-agent contexts (`is_subagent == true`) → `Low`
+/// - Child-agent contexts (`is_child_agent == true`) → `Low`
 /// - Last user message contains a high-effort keyword
 ///   (English: `debug`, `error`; Chinese: 调试 / 错误 / 报错 / 出错 /
 ///   崩溃 / 調試 / 錯誤; Japanese: デバッグ / エラー / バグ) → `Max`
@@ -18,8 +18,8 @@ use crate::tui::app::ReasoningEffort;
 ///   Japanese: 検索) → `Low`
 /// - Everything else → `High`
 #[must_use]
-pub fn select(is_subagent: bool, last_msg: &str) -> ReasoningEffort {
-    if is_subagent {
+pub fn select(is_child_agent: bool, last_msg: &str) -> ReasoningEffort {
+    if is_child_agent {
         return ReasoningEffort::Low;
     }
 
@@ -78,7 +78,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn subagent_returns_low() {
+    fn child_agent_returns_low() {
         assert_eq!(select(true, "anything"), ReasoningEffort::Low);
         assert_eq!(select(true, "debug this"), ReasoningEffort::Low);
         assert_eq!(select(true, "search query"), ReasoningEffort::Low);

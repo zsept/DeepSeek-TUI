@@ -26,14 +26,14 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::compaction::CompactionConfig;
-use crate::config::{Config, DEFAULT_TEXT_MODEL, MAX_SUBAGENTS};
+use crate::config::{Config, DEFAULT_TEXT_MODEL, MAX_CONCURRENT_AGENTS};
 use crate::core::coherence::CoherenceState;
 use crate::core::engine::{EngineConfig, EngineHandle, spawn_engine};
 use crate::core::events::{Event as EngineEvent, TurnOutcomeStatus};
 use crate::core::ops::Op;
 use crate::models::{ContentBlock, Message, SystemPrompt, Usage, compaction_threshold_for_model};
 use crate::tools::plan::new_shared_plan_state;
-use crate::tools::subagent::SubAgentStatus;
+use crate::tools::subagent::AgentStatus;
 use crate::tools::todo::new_shared_todo_list;
 use crate::tui::app::AppMode;
 
@@ -1931,13 +1931,13 @@ impl RuntimeThreadManager {
             mcp_config_path: self.config.mcp_config_path(),
             skills_dir: self.config.skills_dir(),
             extra_skills_dirs: self.config.extra_skills_dirs(),
-            subagent_custom_types: self.config.subagent_custom_types(),
+            agent_role_configs: self.config.agent_role_configs(),
             system_prompt: self.config.system_prompt.clone(),
             instructions: self.config.instructions_paths(),
             project_context_pack_enabled: self.config.project_context_pack_enabled(),
             translation_enabled: false,
             max_steps: 100,
-            max_subagents: self.config.max_subagents().clamp(1, MAX_SUBAGENTS),
+            max_concurrent_agents: self.config.max_concurrent_agents().clamp(1, MAX_CONCURRENT_AGENTS),
             features: self.config.features(),
             compaction,
             cycle: crate::cycle_manager::CycleConfig::default(),
@@ -1966,7 +1966,7 @@ impl RuntimeThreadManager {
                 handle_store: crate::tools::handle::new_shared_handle_store(),
                 rlm_sessions: crate::rlm::session::new_shared_rlm_session_store(),
             },
-            subagent_model_overrides: self.config.subagent_model_overrides(),
+            agent_role_model_overrides: self.config.agent_role_model_overrides(),
             memory_enabled: self.config.memory_enabled(),
             memory_path: self.config.memory_path(),
             vision_config: self.config.vision_model_config(),
@@ -2599,15 +2599,15 @@ impl RuntimeThreadManager {
                 EngineEvent::AgentList { agents } => {
                     let running = agents
                         .iter()
-                        .filter(|agent| matches!(agent.status, SubAgentStatus::Running))
+                        .filter(|agent| matches!(agent.status, AgentStatus::Running))
                         .count();
                     let interrupted = agents
                         .iter()
-                        .filter(|agent| matches!(agent.status, SubAgentStatus::Interrupted(_)))
+                        .filter(|agent| matches!(agent.status, AgentStatus::Interrupted(_)))
                         .count();
                     let completed = agents
                         .iter()
-                        .filter(|agent| matches!(agent.status, SubAgentStatus::Completed))
+                        .filter(|agent| matches!(agent.status, AgentStatus::Completed))
                         .count();
                     let message = format!(
                         "Sub-agent list refreshed: {} total ({running} running, {interrupted} interrupted, {completed} completed)",

@@ -895,17 +895,17 @@ impl Engine {
                 // streaming with no tool calls — but if it has direct children
                 // still running (or completions queued from children that
                 // finished while we were inferring), surface their
-                // `<deepseek:subagent.done>` sentinels into the transcript and
+                // `<deepseek:agent.done>` sentinels into the transcript and
                 // resume instead of ending the turn. This fulfils the contract
                 // already documented in `prompts/base.md`: the parent is
                 // promised it'll see the sentinel when a child finishes.
-                let mut completions: Vec<crate::tools::subagent::SubAgentCompletion> = Vec::new();
+                let mut completions: Vec<crate::tools::subagent::AgentCompletion> = Vec::new();
                 while let Ok(c) = self.rx_subagent_completion.try_recv() {
                     completions.push(c);
                 }
                 if completions.is_empty() {
                     let running = {
-                        let mgr = self.subagent_manager.read().await;
+                        let mgr = self.agent_manager.read().await;
                         mgr.running_count()
                     };
                     if should_hold_turn_for_subagents(completions.len(), running) {
@@ -1990,15 +1990,15 @@ fn resolve_auto_effort(reasoning_effort: Option<&str>, messages: &[Message]) -> 
                 })
                 .unwrap_or_default();
 
-            // is_subagent is false here — handle_deepseek_turn runs in the
+            // is_child_agent is false here — handle_deepseek_turn runs in the
             // main engine (not a sub-agent's inner loop). Sub-agents have
-            // their own turn pass and can pass is_subagent=true when they
+            // their own turn pass and can pass is_child_agent=true when they
             // call this function directly.
             let tier = crate::auto_reasoning::select(false, &last_msg);
             let resolved = tier.as_setting().to_string();
             tracing::debug!(
                 reasoning_effort = %resolved,
-                is_subagent = false,
+                is_child_agent = false,
                 "auto_reasoning: resolved auto tier from user message"
             );
             Some(resolved)
@@ -2019,7 +2019,7 @@ mod tests {
     #[test]
     fn subagent_completion_handoff_is_internal_system_message() {
         let message = subagent_completion_runtime_message(
-            "Build passed\n<deepseek:subagent.done>{\"agent_id\":\"agent_a\"}</deepseek:subagent.done>",
+            "Build passed\n<deepseek:agent.done>{\"agent_id\":\"agent_a\"}</deepseek:agent.done>",
         );
 
         assert_eq!(message.role, "system");
@@ -2029,7 +2029,7 @@ mod tests {
         };
         assert!(text.contains("internal runtime event, not user input"));
         assert!(text.contains("Do not tell the user they pasted sentinels"));
-        assert!(text.contains("<deepseek:subagent.done>"));
+        assert!(text.contains("<deepseek:agent.done>"));
         assert!(text.contains("Build passed"));
     }
 

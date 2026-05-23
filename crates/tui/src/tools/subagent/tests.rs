@@ -1,17 +1,17 @@
 use super::*;
 use tempfile::tempdir;
 
-fn make_assignment() -> SubAgentAssignment {
-    SubAgentAssignment::new("prompt".to_string(), Some("worker".to_string()))
+fn make_assignment() -> AgentAssignment {
+    AgentAssignment::new("prompt".to_string(), Some("worker".to_string()))
 }
 
-fn make_snapshot(status: SubAgentStatus) -> SubAgentResult {
-    SubAgentResult {
+fn make_snapshot(status: AgentStatus) -> AgentResult {
+    AgentResult {
         name: "agent_test".to_string(),
         agent_id: "agent_test".to_string(),
         context_mode: "fresh".to_string(),
         fork_context: false,
-        agent_type: SubAgentType::General,
+        agent_type: AgentRole::General,
         assignment: make_assignment(),
         model: "deepseek-v4-flash".to_string(),
         nickname: None,
@@ -37,34 +37,34 @@ fn estimate_tool_description_tokens_conservative(text: &str) -> usize {
 #[test]
 fn test_agent_type_from_str() {
     assert_eq!(
-        SubAgentType::from_str("general"),
-        Some(SubAgentType::General)
+        AgentRole::from_str("general"),
+        Some(AgentRole::General)
     );
     assert_eq!(
-        SubAgentType::from_str("explore"),
-        Some(SubAgentType::Explore)
+        AgentRole::from_str("explore"),
+        Some(AgentRole::Explore)
     );
-    assert_eq!(SubAgentType::from_str("PLAN"), Some(SubAgentType::Plan));
+    assert_eq!(AgentRole::from_str("PLAN"), Some(AgentRole::Plan));
     assert_eq!(
-        SubAgentType::from_str("code-review"),
-        Some(SubAgentType::Review)
-    );
-    assert_eq!(
-        SubAgentType::from_str("worker"),
-        Some(SubAgentType::General)
+        AgentRole::from_str("code-review"),
+        Some(AgentRole::Review)
     );
     assert_eq!(
-        SubAgentType::from_str("default"),
-        Some(SubAgentType::General)
+        AgentRole::from_str("worker"),
+        Some(AgentRole::General)
     );
     assert_eq!(
-        SubAgentType::from_str("explorer"),
-        Some(SubAgentType::Explore)
+        AgentRole::from_str("default"),
+        Some(AgentRole::General)
     );
-    assert_eq!(SubAgentType::from_str("awaiter"), Some(SubAgentType::Plan));
     assert_eq!(
-        SubAgentType::from_str("invalid"),
-        Some(SubAgentType::Named("invalid".to_string()))
+        AgentRole::from_str("explorer"),
+        Some(AgentRole::Explore)
+    );
+    assert_eq!(AgentRole::from_str("awaiter"), Some(AgentRole::Plan));
+    assert_eq!(
+        AgentRole::from_str("invalid"),
+        Some(AgentRole::Named("invalid".to_string()))
     );
 }
 
@@ -74,15 +74,15 @@ fn test_agent_type_implementer_aliases() {
     // likely to reach for when the user says "build this".
     for alias in ["implementer", "implement", "implementation", "builder"] {
         assert_eq!(
-            SubAgentType::from_str(alias),
-            Some(SubAgentType::Implementer),
+            AgentRole::from_str(alias),
+            Some(AgentRole::Implementer),
             "alias {alias} should resolve to Implementer"
         );
     }
     // Case-insensitive.
     assert_eq!(
-        SubAgentType::from_str("IMPLEMENTER"),
-        Some(SubAgentType::Implementer)
+        AgentRole::from_str("IMPLEMENTER"),
+        Some(AgentRole::Implementer)
     );
 }
 
@@ -92,14 +92,14 @@ fn test_agent_type_verifier_aliases() {
     // Reviewer, which is for *grading* code rather than *running* it.
     for alias in ["verifier", "verify", "verification", "validator", "tester"] {
         assert_eq!(
-            SubAgentType::from_str(alias),
-            Some(SubAgentType::Verifier),
+            AgentRole::from_str(alias),
+            Some(AgentRole::Verifier),
             "alias {alias} should resolve to Verifier"
         );
     }
     assert_eq!(
-        SubAgentType::from_str("VERIFY"),
-        Some(SubAgentType::Verifier)
+        AgentRole::from_str("VERIFY"),
+        Some(AgentRole::Verifier)
     );
 }
 
@@ -109,16 +109,16 @@ fn test_agent_type_round_trips_via_as_str() {
     // through `from_str`. Catches missed variants when adding a new
     // role.
     for t in [
-        SubAgentType::General,
-        SubAgentType::Explore,
-        SubAgentType::Plan,
-        SubAgentType::Review,
-        SubAgentType::Implementer,
-        SubAgentType::Verifier,
-        SubAgentType::Custom,
+        AgentRole::General,
+        AgentRole::Explore,
+        AgentRole::Plan,
+        AgentRole::Review,
+        AgentRole::Implementer,
+        AgentRole::Verifier,
+        AgentRole::Custom,
     ] {
         let label = t.as_str();
-        let back = SubAgentType::from_str(label)
+        let back = AgentRole::from_str(label)
             .unwrap_or_else(|| panic!("as_str label {label:?} doesn't round-trip via from_str"));
         assert_eq!(back, t, "round-trip failed for {t:?} via {label:?}");
     }
@@ -129,9 +129,9 @@ fn test_implementer_and_verifier_have_distinct_prompts() {
     // The whole point of adding the types is that they carry distinct
     // posture. Defensive guard: catch the easy bug where copy-paste
     // leaves two new variants with the same prompt as `General`.
-    let implementer = SubAgentType::Implementer.system_prompt();
-    let verifier = SubAgentType::Verifier.system_prompt();
-    let general = SubAgentType::General.system_prompt();
+    let implementer = AgentRole::Implementer.system_prompt();
+    let verifier = AgentRole::Verifier.system_prompt();
+    let general = AgentRole::General.system_prompt();
     assert_ne!(
         implementer, general,
         "Implementer prompt must differ from General"
@@ -162,13 +162,13 @@ fn test_implementer_and_verifier_have_distinct_prompts() {
 #[test]
 fn test_agent_type_prompts_include_shared_output_contract_once() {
     for (agent_type, marker) in [
-        (SubAgentType::General, "general-purpose sub-agent"),
-        (SubAgentType::Explore, "exploration sub-agent"),
-        (SubAgentType::Plan, "planning sub-agent"),
-        (SubAgentType::Review, "code review sub-agent"),
-        (SubAgentType::Implementer, "implementation sub-agent"),
-        (SubAgentType::Verifier, "verification sub-agent"),
-        (SubAgentType::Custom, "custom sub-agent"),
+        (AgentRole::General, "general-purpose agent"),
+        (AgentRole::Explore, "exploration agent"),
+        (AgentRole::Plan, "planning agent"),
+        (AgentRole::Review, "code review agent"),
+        (AgentRole::Implementer, "implementation agent"),
+        (AgentRole::Verifier, "verification agent"),
+        (AgentRole::Custom, "custom agent"),
     ] {
         let prompt = agent_type.system_prompt();
         assert!(prompt.contains(marker));
@@ -183,7 +183,7 @@ fn test_agent_type_prompts_include_shared_output_contract_once() {
 
 #[test]
 fn explore_prompt_orients_before_searching() {
-    let prompt = SubAgentType::Explore.system_prompt();
+    let prompt = AgentRole::Explore.system_prompt();
     assert!(prompt.contains("role: `explore`"));
     assert!(prompt.contains("AGENTS.md/README"));
     assert!(prompt.contains("workspace/project root"));
@@ -193,7 +193,7 @@ fn explore_prompt_orients_before_searching() {
 #[test]
 fn agent_open_description_explains_fresh_vs_forked_context_and_trust_model() {
     let tmp = tempdir().expect("tempdir");
-    let manager = new_shared_subagent_manager(tmp.path().to_path_buf(), 1);
+    let manager = new_shared_agent_manager(tmp.path().to_path_buf(), 1);
     let tool = AgentOpenTool::new(manager, stub_runtime());
     let description = tool.description();
 
@@ -201,7 +201,7 @@ fn agent_open_description_explains_fresh_vs_forked_context_and_trust_model() {
     assert!(description.contains("fork_context=true"));
     assert!(description.contains("byte-identically"));
     assert!(description.contains("DeepSeek can reuse its prefix cache"));
-    assert!(description.contains("Sub-agent results are self-reports"));
+    assert!(description.contains("Agent results are self-reports"));
     assert!(
         estimate_tool_description_tokens_conservative(description) <= 1024,
         "agent_open description exceeds the conservative 1024-token budget"
@@ -210,7 +210,7 @@ fn agent_open_description_explains_fresh_vs_forked_context_and_trust_model() {
 
 #[test]
 fn new_session_tools_use_open_eval_close_names() {
-    let manager = Arc::new(RwLock::new(SubAgentManager::new(PathBuf::from("."), 1)));
+    let manager = Arc::new(RwLock::new(AgentManager::new(PathBuf::from("."), 1)));
     assert_eq!(
         AgentOpenTool::new(manager.clone(), stub_runtime()).name(),
         "agent_open"
@@ -226,7 +226,7 @@ fn test_implementer_allowed_tools_include_writes() {
     // can write/edit/patch even if today's runtime grants full
     // inheritance.
     #[allow(deprecated)]
-    let tools = SubAgentType::Implementer.allowed_tools();
+    let tools = AgentRole::Implementer.allowed_tools();
     assert!(tools.contains(&"write_file"));
     assert!(tools.contains(&"edit_file"));
     assert!(tools.contains(&"apply_patch"));
@@ -238,7 +238,7 @@ fn test_verifier_allowed_tools_include_test_runner_but_no_writes() {
     // its advisory list. The runtime will still gate writes through
     // approval, but the advisory list signals intent.
     #[allow(deprecated)]
-    let tools = SubAgentType::Verifier.allowed_tools();
+    let tools = AgentRole::Verifier.allowed_tools();
     assert!(tools.contains(&"run_tests"));
     assert!(tools.contains(&"diagnostics"));
     assert!(!tools.contains(&"write_file"));
@@ -253,7 +253,7 @@ fn test_parse_spawn_request_accepts_message_and_agent_type_aliases() {
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert_eq!(parsed.prompt, "Find references to Foo");
-    assert_eq!(parsed.agent_type, SubAgentType::Explore);
+    assert_eq!(parsed.agent_type, AgentRole::Explore);
     assert_eq!(parsed.assignment.role.as_deref(), Some("explorer"));
 }
 
@@ -265,7 +265,7 @@ fn test_parse_spawn_request_accepts_objective_and_role_alias() {
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert_eq!(parsed.prompt, "Coordinate and wait");
-    assert_eq!(parsed.agent_type, SubAgentType::Plan);
+    assert_eq!(parsed.agent_type, AgentRole::Plan);
     assert_eq!(parsed.assignment.role.as_deref(), Some("awaiter"));
 }
 
@@ -281,7 +281,7 @@ fn test_parse_spawn_request_accepts_items_payload() {
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert!(parsed.prompt.contains("Analyze module"));
     assert!(parsed.prompt.contains("[mention:$drive](app://drive)"));
-    assert_eq!(parsed.agent_type, SubAgentType::Explore);
+    assert_eq!(parsed.agent_type, AgentRole::Explore);
 }
 
 #[test]
@@ -341,13 +341,13 @@ fn test_parse_spawn_request_rejects_out_of_range_max_depth() {
 
 #[tokio::test]
 async fn session_projection_exposes_forked_prefix_cache_contract() {
-    let mut snapshot = make_snapshot(SubAgentStatus::Running);
+    let mut snapshot = make_snapshot(AgentStatus::Running);
     snapshot.name = "fanout_review".to_string();
     snapshot.context_mode = "forked".to_string();
     snapshot.fork_context = true;
 
     let ctx = ToolContext::new(".");
-    let projection = subagent_session_projection(snapshot, false, &ctx).await;
+    let projection = agent_session_projection(snapshot, false, &ctx).await;
 
     assert_eq!(projection.name, "fanout_review");
     assert_eq!(projection.context_mode, "forked");
@@ -385,7 +385,7 @@ fn forked_subagent_messages_preserve_parent_prefix_then_append_task() {
             cache_control: None,
         }],
     };
-    let fork_context = SubAgentForkContext {
+    let fork_context = AgentForkContext {
         system: Some(parent_system.clone()),
         messages: vec![parent_message.clone()],
         structured_state_block: Some(
@@ -393,17 +393,17 @@ fn forked_subagent_messages_preserve_parent_prefix_then_append_task() {
         ),
     };
 
-    let assignment = SubAgentAssignment::new("inspect parser".to_string(), Some("worker".into()));
-    let messages = build_initial_subagent_messages(
+    let assignment = AgentAssignment::new("inspect parser".to_string(), Some("worker".into()));
+    let messages = build_initial_agent_messages(
         "inspect parser",
         &assignment,
-        &SubAgentType::General,
+        &AgentRole::General,
         Some(&fork_context),
         &HashMap::new(),
     );
 
     assert_eq!(
-        subagent_request_system_prompt("child system", Some(&fork_context)),
+        agent_request_system_prompt("child system", Some(&fork_context)),
         parent_system
     );
     assert_eq!(messages.first(), Some(&parent_message));
@@ -411,16 +411,16 @@ fn forked_subagent_messages_preserve_parent_prefix_then_append_task() {
     assert_eq!(messages[1].role, "system");
     assert!(message_text(&messages[1]).contains("<deepseek:fork_state>"));
     assert_eq!(messages[2].role, "system");
-    assert!(message_text(&messages[2]).contains("<deepseek:subagent_context>"));
+    assert!(message_text(&messages[2]).contains("<deepseek:agent_context>"));
     assert_eq!(messages[3].role, "user");
     assert!(message_text(&messages[3]).contains("inspect parser"));
 }
 
 #[test]
 fn fresh_subagent_messages_keep_existing_single_turn_shape() {
-    let assignment = SubAgentAssignment::new("list files".to_string(), None);
+    let assignment = AgentAssignment::new("list files".to_string(), None);
     let messages =
-        build_initial_subagent_messages("list files", &assignment, &SubAgentType::Explore, None, &HashMap::new());
+        build_initial_agent_messages("list files", &assignment, &AgentRole::Explore, None, &HashMap::new());
 
     assert_eq!(messages.len(), 1);
     assert_eq!(messages[0].role, "user");
@@ -507,8 +507,8 @@ fn test_build_allowed_tools_independent_of_allow_shell() {
     // level — the registry builder controls shell-tool registration.
     // Both calls return None (full inheritance) for a default General
     // agent.
-    let with_shell = build_allowed_tools(&SubAgentType::General, None, true).unwrap();
-    let without_shell = build_allowed_tools(&SubAgentType::General, None, false).unwrap();
+    let with_shell = build_allowed_tools(&AgentRole::General, None, true).unwrap();
+    let without_shell = build_allowed_tools(&AgentRole::General, None, false).unwrap();
     assert!(with_shell.is_none());
     assert!(without_shell.is_none());
 }
@@ -516,7 +516,7 @@ fn test_build_allowed_tools_independent_of_allow_shell() {
 #[test]
 fn test_allowed_tools_are_deduplicated() {
     let tools = build_allowed_tools(
-        &SubAgentType::Custom,
+        &AgentRole::Custom,
         Some(vec![
             "read_file".to_string(),
             "read_file".to_string(),
@@ -534,19 +534,19 @@ fn test_allowed_tools_are_deduplicated() {
 
 #[test]
 fn test_custom_agent_requires_allowed_tools() {
-    let err = build_allowed_tools(&SubAgentType::Custom, None, true).unwrap_err();
+    let err = build_allowed_tools(&AgentRole::Custom, None, true).unwrap_err();
     assert!(err.to_string().contains("requires"));
 }
 
 #[test]
 fn test_wait_mode_condition_any_and_all() {
     let one_done = vec![
-        make_snapshot(SubAgentStatus::Running),
-        make_snapshot(SubAgentStatus::Completed),
+        make_snapshot(AgentStatus::Running),
+        make_snapshot(AgentStatus::Completed),
     ];
     let all_done = vec![
-        make_snapshot(SubAgentStatus::Completed),
-        make_snapshot(SubAgentStatus::Cancelled),
+        make_snapshot(AgentStatus::Completed),
+        make_snapshot(AgentStatus::Cancelled),
     ];
 
     assert!(WaitMode::Any.condition_met(&one_done));
@@ -587,14 +587,14 @@ fn test_parse_wait_ids_empty_when_omitted() {
 
 #[test]
 fn test_build_assignment_prompt_includes_metadata() {
-    let assignment = SubAgentAssignment::new(
+    let assignment = AgentAssignment::new(
         "Inspect parser behavior".to_string(),
         Some("explorer".to_string()),
     );
     let prompt = build_assignment_prompt(
         "Inspect parser behavior",
         &assignment,
-        &SubAgentType::Explore,
+        &AgentRole::Explore,
     );
     assert!(prompt.contains("Assignment metadata"));
     assert!(prompt.contains("resolved_type: explore"));
@@ -606,11 +606,11 @@ fn subagent_auto_model_routes_unconfigured_assignments() {
     let runtime = stub_runtime().with_auto_model(true);
 
     assert_eq!(
-        fallback_subagent_assignment_route(&runtime, None, "implement the release fix").model,
+        fallback_agent_assignment_route(&runtime, None, "implement the release fix").model,
         "deepseek-v4-pro"
     );
     assert_eq!(
-        fallback_subagent_assignment_route(&runtime, None, "say hello").model,
+        fallback_agent_assignment_route(&runtime, None, "say hello").model,
         "deepseek-v4-flash"
     );
 }
@@ -620,7 +620,7 @@ fn subagent_auto_route_respects_explicit_or_role_model() {
     let runtime = stub_runtime().with_auto_model(true);
 
     assert_eq!(
-        fallback_subagent_assignment_route(
+        fallback_agent_assignment_route(
             &runtime,
             Some("deepseek-v4-flash".to_string()),
             "implement the release fix"
@@ -635,11 +635,11 @@ fn subagent_auto_reasoning_resolves_to_distinct_v4_tiers() {
     let runtime = stub_runtime().with_reasoning_effort(Some("high".to_string()), true);
 
     assert_eq!(
-        fallback_subagent_assignment_route(&runtime, None, "quick lookup").reasoning_effort,
+        fallback_agent_assignment_route(&runtime, None, "quick lookup").reasoning_effort,
         Some("high".to_string())
     );
     assert_eq!(
-        fallback_subagent_assignment_route(&runtime, None, "debug this release failure")
+        fallback_agent_assignment_route(&runtime, None, "debug this release failure")
             .reasoning_effort,
         Some("max".to_string())
     );
@@ -650,7 +650,7 @@ fn fixed_model_subagent_auto_reasoning_skips_flash_router() {
     let runtime = stub_runtime().with_reasoning_effort(Some("high".to_string()), true);
 
     assert!(
-        !should_use_subagent_flash_router(&runtime),
+        !should_use_agent_flash_router(&runtime),
         "fixed-model auto thinking should resolve locally without a hidden router request"
     );
 }
@@ -660,17 +660,17 @@ fn auto_model_subagent_assignments_still_use_flash_router() {
     let runtime = stub_runtime().with_auto_model(true);
 
     assert!(
-        should_use_subagent_flash_router(&runtime),
+        should_use_agent_flash_router(&runtime),
         "auto-model sub-agent assignments still need router guidance"
     );
 }
 
 #[test]
-fn subagent_router_prompt_frames_assignment_as_auto_routing() {
+fn agent_router_prompt_frames_assignment_as_auto_routing() {
     let runtime = stub_runtime()
         .with_auto_model(true)
         .with_reasoning_effort(Some("high".to_string()), true);
-    let prompt = subagent_router_prompt(&runtime, "inspect one file");
+    let prompt = agent_router_prompt(&runtime, "inspect one file");
 
     assert!(prompt.contains("Parent selected model mode: auto"));
     assert!(prompt.contains("Parent selected thinking mode: auto"));
@@ -683,7 +683,7 @@ fn test_subagent_tool_registry_reports_unavailable_tools() {
     let mut runtime = stub_runtime();
     runtime.context = ToolContext::new(tmp.path().to_path_buf());
     runtime.allow_shell = false;
-    let registry = SubAgentToolRegistry::new(
+    let registry = AgentToolRegistry::new(
         runtime,
         Some(vec!["read_file".to_string(), "missing_tool".to_string()]),
         Arc::new(Mutex::new(TodoList::new())),
@@ -701,13 +701,13 @@ fn test_review_agent_tools_exclude_agent_spawn() {
     let mut runtime = stub_runtime();
     runtime.context = ToolContext::new(tmp.path().to_path_buf());
     // None = full parent tool inheritance (the default for builtin types).
-    let registry = SubAgentToolRegistry::new(
+    let registry = AgentToolRegistry::new(
         runtime,
         None,
         Arc::new(Mutex::new(TodoList::new())),
         Arc::new(Mutex::new(PlanState::default())),
     );
-    let tools = registry.tools_for_model(&SubAgentType::Review);
+    let tools = registry.tools_for_model(&AgentRole::Review);
     let names: Vec<_> = tools.iter().map(|t| t.name.as_str()).collect();
     assert!(
         !names.contains(&"agent_spawn"),
@@ -717,10 +717,10 @@ fn test_review_agent_tools_exclude_agent_spawn() {
 
 #[tokio::test]
 async fn test_wait_for_result_reports_timeout_when_still_running() {
-    let manager = Arc::new(RwLock::new(SubAgentManager::new(PathBuf::from("."), 2)));
+    let manager = Arc::new(RwLock::new(AgentManager::new(PathBuf::from("."), 2)));
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let agent = SubAgent::new(
-        SubAgentType::Explore,
+    let agent = Agent::new(
+        AgentRole::Explore,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -739,15 +739,15 @@ async fn test_wait_for_result_reports_timeout_when_still_running() {
         .await
         .expect("wait_for_result should succeed");
     assert!(timed_out);
-    assert_eq!(snapshot.status, SubAgentStatus::Running);
+    assert_eq!(snapshot.status, AgentStatus::Running);
 }
 
 #[tokio::test]
 async fn test_running_count_counts_only_agents_with_live_task_handles() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 1);
+    let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::Explore,
+    let mut agent = Agent::new(
+        AgentRole::Explore,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -756,7 +756,7 @@ async fn test_running_count_counts_only_agents_with_live_task_handles() {
         input_tx,
         "boot_test".to_string(),
     );
-    agent.status = SubAgentStatus::Running;
+    agent.status = AgentStatus::Running;
     let handle = tokio::spawn(async {
         tokio::time::sleep(Duration::from_secs(60)).await;
     });
@@ -775,10 +775,10 @@ async fn test_running_count_counts_only_agents_with_live_task_handles() {
 
 #[test]
 fn test_running_count_ignores_running_status_without_task_handle() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 1);
+    let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::Explore,
+    let mut agent = Agent::new(
+        AgentRole::Explore,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -787,7 +787,7 @@ fn test_running_count_ignores_running_status_without_task_handle() {
         input_tx,
         "boot_test".to_string(),
     );
-    agent.status = SubAgentStatus::Running;
+    agent.status = AgentStatus::Running;
     manager.agents.insert(agent.id.clone(), agent);
 
     assert_eq!(manager.running_count(), 0);
@@ -795,10 +795,10 @@ fn test_running_count_ignores_running_status_without_task_handle() {
 
 #[tokio::test]
 async fn test_running_count_ignores_finished_task_handles() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 1);
+    let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::Explore,
+    let mut agent = Agent::new(
+        AgentRole::Explore,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -807,7 +807,7 @@ async fn test_running_count_ignores_finished_task_handles() {
         input_tx,
         "boot_test".to_string(),
     );
-    agent.status = SubAgentStatus::Running;
+    agent.status = AgentStatus::Running;
     let handle = tokio::spawn(async {});
     handle.await.expect("dummy task should finish immediately");
     agent.task_handle = Some(tokio::spawn(async {}));
@@ -823,10 +823,10 @@ async fn test_running_count_ignores_finished_task_handles() {
 
 #[test]
 fn test_assign_updates_running_agent_and_sends_message() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 2);
+    let mut manager = AgentManager::new(PathBuf::from("."), 2);
     let (input_tx, mut input_rx) = mpsc::unbounded_channel();
-    let agent = SubAgent::new(
-        SubAgentType::General,
+    let agent = Agent::new(
+        AgentRole::General,
         "work".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -860,10 +860,10 @@ fn test_assign_updates_running_agent_and_sends_message() {
 
 #[test]
 fn test_assign_rejects_message_for_non_running_agent() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 1);
+    let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::Explore,
+    let mut agent = Agent::new(
+        AgentRole::Explore,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -872,7 +872,7 @@ fn test_assign_rejects_message_for_non_running_agent() {
         input_tx,
         "boot_test".to_string(),
     );
-    agent.status = SubAgentStatus::Completed;
+    agent.status = AgentStatus::Completed;
     let agent_id = agent.id.clone();
     manager.agents.insert(agent_id.clone(), agent);
 
@@ -884,10 +884,10 @@ fn test_assign_rejects_message_for_non_running_agent() {
 
 #[test]
 fn test_assign_updates_non_running_metadata_without_message() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 1);
+    let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::Plan,
+    let mut agent = Agent::new(
+        AgentRole::Plan,
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -896,7 +896,7 @@ fn test_assign_updates_non_running_metadata_without_message() {
         input_tx,
         "boot_test".to_string(),
     );
-    agent.status = SubAgentStatus::Completed;
+    agent.status = AgentStatus::Completed;
     let agent_id = agent.id.clone();
     manager.agents.insert(agent_id.clone(), agent);
 
@@ -919,10 +919,10 @@ fn test_persist_and_reload_marks_running_agent_as_interrupted() {
     let workspace = tmp.path().to_path_buf();
     let state_path = default_state_path(tmp.path());
 
-    let mut manager = SubAgentManager::new(workspace.clone(), 2).with_state_path(state_path);
+    let mut manager = AgentManager::new(workspace.clone(), 2).with_state_path(state_path);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let running = SubAgent::new(
-        SubAgentType::General,
+    let running = Agent::new(
+        AgentRole::General,
         "work".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -936,25 +936,25 @@ fn test_persist_and_reload_marks_running_agent_as_interrupted() {
     manager.persist_state().expect("persist state");
 
     let mut reloaded =
-        SubAgentManager::new(workspace, 2).with_state_path(default_state_path(tmp.path()));
+        AgentManager::new(workspace, 2).with_state_path(default_state_path(tmp.path()));
     reloaded.load_state().expect("load state");
     let snapshot = reloaded
         .get_result(&running_id)
         .expect("reloaded agent should exist");
     assert!(matches!(
         snapshot.status,
-        SubAgentStatus::Interrupted(ref message)
-            if message.contains(SUBAGENT_RESTART_REASON)
+        AgentStatus::Interrupted(ref message)
+            if message.contains(AGENT_RESTART_REASON)
     ));
 }
 
 #[test]
 fn test_interrupted_status_name_and_summary() {
-    let snapshot = make_snapshot(SubAgentStatus::Interrupted(
-        SUBAGENT_RESTART_REASON.to_string(),
+    let snapshot = make_snapshot(AgentStatus::Interrupted(
+        AGENT_RESTART_REASON.to_string(),
     ));
-    assert_eq!(subagent_status_name(&snapshot.status), "interrupted");
-    assert!(summarize_subagent_result(&snapshot).contains(SUBAGENT_RESTART_REASON));
+    assert_eq!(agent_status_name(&snapshot.status), "interrupted");
+    assert!(summarize_agent_result(&snapshot).contains(AGENT_RESTART_REASON));
 }
 
 // === v0.6.6 — sub-agent authority unification ===
@@ -963,7 +963,7 @@ fn test_interrupted_status_name_and_summary() {
 fn build_allowed_tools_general_returns_none_for_full_inheritance() {
     // Default behavior: General agent with no explicit list inherits the
     // parent's full registry (None signals no narrowing).
-    let result = build_allowed_tools(&SubAgentType::General, None, true).unwrap();
+    let result = build_allowed_tools(&AgentRole::General, None, true).unwrap();
     assert!(
         result.is_none(),
         "General with no explicit_tools should default to full inheritance (None), got {result:?}"
@@ -974,7 +974,7 @@ fn build_allowed_tools_general_returns_none_for_full_inheritance() {
 fn build_allowed_tools_explore_returns_none_for_full_inheritance() {
     // Per-type allowlists are now advisory — Explore also gets the full
     // surface unless an explicit list is passed.
-    let result = build_allowed_tools(&SubAgentType::Explore, None, true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Explore, None, true).unwrap();
     assert!(
         result.is_none(),
         "Explore with no explicit_tools should default to full inheritance"
@@ -984,9 +984,9 @@ fn build_allowed_tools_explore_returns_none_for_full_inheritance() {
 #[test]
 fn build_allowed_tools_custom_requires_explicit_list() {
     // Custom is the one type that REQUIRES explicit allowed_tools.
-    let err = build_allowed_tools(&SubAgentType::Custom, None, true).unwrap_err();
+    let err = build_allowed_tools(&AgentRole::Custom, None, true).unwrap_err();
     assert!(
-        err.to_string().contains("Custom sub-agent requires"),
+        err.to_string().contains("Custom agent requires"),
         "got: {err}"
     );
 }
@@ -994,7 +994,7 @@ fn build_allowed_tools_custom_requires_explicit_list() {
 #[test]
 fn build_allowed_tools_explicit_list_returned_as_some() {
     let explicit = vec!["read_file".to_string(), "list_dir".to_string()];
-    let result = build_allowed_tools(&SubAgentType::Custom, Some(explicit.clone()), true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Custom, Some(explicit.clone()), true).unwrap();
     assert_eq!(result, Some(explicit));
 }
 
@@ -1006,7 +1006,7 @@ fn build_allowed_tools_explicit_list_dedupes_and_trims() {
         "list_dir".to_string(),
         "".to_string(), // skip empty
     ];
-    let result = build_allowed_tools(&SubAgentType::Custom, Some(explicit), true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Custom, Some(explicit), true).unwrap();
     assert_eq!(
         result,
         Some(vec!["read_file".to_string(), "list_dir".to_string()])
@@ -1041,9 +1041,9 @@ fn parse_spawn_request_cwd_empty_string_yields_none() {
 }
 
 #[test]
-fn build_subagent_system_prompt_appends_role_when_set() {
-    let assignment = SubAgentAssignment::new("p".to_string(), Some("worker".to_string()));
-    let prompt = build_subagent_system_prompt(&SubAgentType::General, &assignment, &HashMap::new());
+fn build_agent_system_prompt_appends_role_when_set() {
+    let assignment = AgentAssignment::new("p".to_string(), Some("worker".to_string()));
+    let prompt = build_agent_system_prompt(&AgentRole::General, &assignment, &HashMap::new());
     assert!(
         prompt.ends_with("You are operating in the role of `worker`."),
         "expected role line at end, got: {}",
@@ -1052,30 +1052,30 @@ fn build_subagent_system_prompt_appends_role_when_set() {
 }
 
 #[test]
-fn build_subagent_system_prompt_skips_role_when_none() {
-    let assignment = SubAgentAssignment::new("p".to_string(), None);
-    let prompt = build_subagent_system_prompt(&SubAgentType::General, &assignment, &HashMap::new());
+fn build_agent_system_prompt_skips_role_when_none() {
+    let assignment = AgentAssignment::new("p".to_string(), None);
+    let prompt = build_agent_system_prompt(&AgentRole::General, &assignment, &HashMap::new());
     assert!(!prompt.contains("You are operating in the role of"));
 }
 
 #[test]
-fn build_subagent_system_prompt_skips_role_when_blank() {
-    let assignment = SubAgentAssignment::new("p".to_string(), Some("   ".to_string()));
-    let prompt = build_subagent_system_prompt(&SubAgentType::General, &assignment, &HashMap::new());
+fn build_agent_system_prompt_skips_role_when_blank() {
+    let assignment = AgentAssignment::new("p".to_string(), Some("   ".to_string()));
+    let prompt = build_agent_system_prompt(&AgentRole::General, &assignment, &HashMap::new());
     assert!(!prompt.contains("You are operating in the role of"));
 }
 
 #[test]
-fn subagent_done_sentinel_format_is_well_formed() {
-    let res = make_snapshot(SubAgentStatus::Completed);
-    let sentinel = subagent_done_sentinel("agent_xyz", &res);
-    assert!(sentinel.starts_with("<deepseek:subagent.done>"));
-    assert!(sentinel.ends_with("</deepseek:subagent.done>"));
+fn agent_done_sentinel_format_is_well_formed() {
+    let res = make_snapshot(AgentStatus::Completed);
+    let sentinel = agent_done_sentinel("agent_xyz", &res);
+    assert!(sentinel.starts_with("<deepseek:agent.done>"));
+    assert!(sentinel.ends_with("</deepseek:agent.done>"));
 
     // The inner JSON parses and carries the expected fields.
     let inner = sentinel
-        .trim_start_matches("<deepseek:subagent.done>")
-        .trim_end_matches("</deepseek:subagent.done>");
+        .trim_start_matches("<deepseek:agent.done>")
+        .trim_end_matches("</deepseek:agent.done>");
     let parsed: serde_json::Value = serde_json::from_str(inner).expect("inner JSON parses");
     assert_eq!(parsed["agent_id"], "agent_xyz");
     assert_eq!(parsed["status"], "completed");
@@ -1088,11 +1088,11 @@ fn subagent_done_sentinel_format_is_well_formed() {
 }
 
 #[test]
-fn subagent_failed_sentinel_format_is_well_formed() {
-    let sentinel = subagent_failed_sentinel("agent_zzz", "boom");
+fn agent_failed_sentinel_format_is_well_formed() {
+    let sentinel = agent_failed_sentinel("agent_zzz", "boom");
     let inner = sentinel
-        .trim_start_matches("<deepseek:subagent.done>")
-        .trim_end_matches("</deepseek:subagent.done>");
+        .trim_start_matches("<deepseek:agent.done>")
+        .trim_end_matches("</deepseek:agent.done>");
     let parsed: serde_json::Value = serde_json::from_str(inner).expect("inner JSON parses");
     assert_eq!(parsed["agent_id"], "agent_zzz");
     assert_eq!(parsed["status"], "failed");
@@ -1154,7 +1154,7 @@ fn child_runtime_increments_depth_and_preserves_auto_approve() {
 async fn subagent_registry_blocks_approval_tools_without_parent_auto_approve() {
     let mut runtime = stub_runtime();
     runtime.context.auto_approve = false;
-    let registry = SubAgentToolRegistry::new(
+    let registry = AgentToolRegistry::new(
         runtime,
         Some(vec!["exec_shell".to_string()]),
         Arc::new(Mutex::new(TodoList::new())),
@@ -1206,7 +1206,7 @@ fn mailbox_propagates_through_child_runtime_chain() {
 
 #[test]
 fn subagent_rejects_interactive_shell_terminal_takeover() {
-    let err = reject_subagent_terminal_takeover(
+    let err = reject_agent_terminal_takeover(
         "exec_shell",
         &serde_json::json!({
             "command": "python3 -i",
@@ -1219,7 +1219,7 @@ fn subagent_rejects_interactive_shell_terminal_takeover() {
     assert!(msg.contains("cannot use exec_shell with interactive=true"));
     assert!(msg.contains("parent TUI terminal"));
 
-    reject_subagent_terminal_takeover(
+    reject_agent_terminal_takeover(
         "exec_shell",
         &serde_json::json!({
             "command": "cargo check",
@@ -1227,7 +1227,7 @@ fn subagent_rejects_interactive_shell_terminal_takeover() {
         }),
     )
     .expect("non-interactive shell remains allowed");
-    reject_subagent_terminal_takeover(
+    reject_agent_terminal_takeover(
         "exec_shell",
         &serde_json::json!({
             "command": "cargo test",
@@ -1320,9 +1320,9 @@ fn persisted_empty_allowed_tools_loads_as_full_inheritance() {
     // (or a v0.6.6 session with no narrowing) should load as None on
     // restart, meaning full inheritance.
     let dir = tempdir().unwrap();
-    let state_path = dir.path().join("subagents.v1.json");
+    let state_path = dir.path().join("agents.v1.json");
     let payload = serde_json::json!({
-        "schema_version": SUBAGENT_STATE_SCHEMA_VERSION,
+        "schema_version": AGENT_STATE_SCHEMA_VERSION,
         "agents": [{
             "id": "agent_test",
             "agent_type": "general",
@@ -1338,7 +1338,7 @@ fn persisted_empty_allowed_tools_loads_as_full_inheritance() {
     });
     std::fs::write(&state_path, payload.to_string()).unwrap();
 
-    let mut manager = SubAgentManager::new(dir.path().to_path_buf(), 5).with_state_path(state_path);
+    let mut manager = AgentManager::new(dir.path().to_path_buf(), 5).with_state_path(state_path);
     manager.load_state().expect("load should succeed");
     let agent = manager.agents.get("agent_test").expect("loaded agent");
     assert!(
@@ -1352,9 +1352,9 @@ fn persisted_non_empty_allowed_tools_loads_as_narrow() {
     // Backward-compat the other way: a v0.6.5 session that persisted with
     // an explicit narrow list keeps that list on reload.
     let dir = tempdir().unwrap();
-    let state_path = dir.path().join("subagents.v1.json");
+    let state_path = dir.path().join("agents.v1.json");
     let payload = serde_json::json!({
-        "schema_version": SUBAGENT_STATE_SCHEMA_VERSION,
+        "schema_version": AGENT_STATE_SCHEMA_VERSION,
         "agents": [{
             "id": "agent_narrow",
             "agent_type": "custom",
@@ -1370,7 +1370,7 @@ fn persisted_non_empty_allowed_tools_loads_as_narrow() {
     });
     std::fs::write(&state_path, payload.to_string()).unwrap();
 
-    let mut manager = SubAgentManager::new(dir.path().to_path_buf(), 5).with_state_path(state_path);
+    let mut manager = AgentManager::new(dir.path().to_path_buf(), 5).with_state_path(state_path);
     manager.load_state().expect("load should succeed");
     let agent = manager.agents.get("agent_narrow").expect("loaded agent");
     assert_eq!(
@@ -1380,16 +1380,16 @@ fn persisted_non_empty_allowed_tools_loads_as_narrow() {
     );
 }
 
-/// Build a minimal `SubAgentRuntime` for tests that exercise pure runtime
+/// Build a minimal `AgentRuntime` for tests that exercise pure runtime
 /// helpers (depth, cancellation, child_runtime). Doesn't construct a real
 /// HTTP client — calls that hit `runtime.client` would fail, but the
 /// helpers we test here don't.
-fn stub_runtime() -> SubAgentRuntime {
+fn stub_runtime() -> AgentRuntime {
     use tokio_util::sync::CancellationToken;
 
     let workspace = std::env::temp_dir().join("deepseek-test-stub");
     let context = ToolContext::new(workspace.clone());
-    SubAgentRuntime {
+    AgentRuntime {
         client: stub_client(),
         model: "deepseek-v4-flash".to_string(),
         auto_model: false,
@@ -1399,20 +1399,20 @@ fn stub_runtime() -> SubAgentRuntime {
         context,
         allow_shell: true,
         event_tx: None,
-        manager: new_shared_subagent_manager(workspace, 5),
+        manager: new_shared_agent_manager(workspace, 5),
         spawn_depth: 0,
         max_spawn_depth: DEFAULT_MAX_SPAWN_DEPTH,
         cancel_token: CancellationToken::new(),
         mailbox: None,
         parent_completion_tx: None,
         fork_context: None,
-        custom_type_configs: std::collections::HashMap::new(),
+        role_configs: std::collections::HashMap::new(),
     }
 }
 
 /// A minimal stub client. Test helpers below only ever check struct fields
 /// (depth, cancel_token, context); they don't call the network. We need a
-/// *some* `DeepSeekClient` because `SubAgentRuntime.client` isn't
+/// *some* `DeepSeekClient` because `AgentRuntime.client` isn't
 /// `Option<...>`. `Config::default()` is enough — `DeepSeekClient::new`
 /// only validates that an API key field exists, not that the key works.
 fn stub_client() -> DeepSeekClient {
@@ -1432,14 +1432,14 @@ fn stub_client() -> DeepSeekClient {
 // surfaces the prior-session records with the flag set.
 
 fn insert_prior_session_agent(
-    manager: &mut SubAgentManager,
+    manager: &mut AgentManager,
     id: &str,
-    status: SubAgentStatus,
+    status: AgentStatus,
     boot_id: &str,
 ) {
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
-    let mut agent = SubAgent::new(
-        SubAgentType::General,
+    let mut agent = Agent::new(
+        AgentRole::General,
         "old prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -1455,31 +1455,31 @@ fn insert_prior_session_agent(
 
 #[test]
 fn session_boot_ids_are_unique_per_manager() {
-    let a = SubAgentManager::new(PathBuf::from("."), 1);
-    let b = SubAgentManager::new(PathBuf::from("."), 1);
+    let a = AgentManager::new(PathBuf::from("."), 1);
+    let b = AgentManager::new(PathBuf::from("."), 1);
     assert_ne!(a.session_boot_id(), b.session_boot_id());
 }
 
 #[test]
 fn list_filtered_drops_prior_session_terminals_by_default() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 5);
+    let mut manager = AgentManager::new(PathBuf::from("."), 5);
     let current_boot = manager.session_boot_id().to_string();
     insert_prior_session_agent(
         &mut manager,
         "current_running",
-        SubAgentStatus::Running,
+        AgentStatus::Running,
         &current_boot,
     );
     insert_prior_session_agent(
         &mut manager,
         "prior_completed",
-        SubAgentStatus::Completed,
+        AgentStatus::Completed,
         "boot_old_session",
     );
     insert_prior_session_agent(
         &mut manager,
         "prior_running",
-        SubAgentStatus::Running,
+        AgentStatus::Running,
         "boot_old_session",
     );
 
@@ -1509,24 +1509,24 @@ fn list_filtered_drops_prior_session_terminals_by_default() {
 
 #[test]
 fn list_filtered_with_include_archived_returns_everything() {
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 5);
+    let mut manager = AgentManager::new(PathBuf::from("."), 5);
     let current_boot = manager.session_boot_id().to_string();
     insert_prior_session_agent(
         &mut manager,
         "current_done",
-        SubAgentStatus::Completed,
+        AgentStatus::Completed,
         &current_boot,
     );
     insert_prior_session_agent(
         &mut manager,
         "prior_done",
-        SubAgentStatus::Completed,
+        AgentStatus::Completed,
         "boot_old",
     );
     insert_prior_session_agent(
         &mut manager,
         "prior_failed",
-        SubAgentStatus::Failed("boom".to_string()),
+        AgentStatus::Failed("boom".to_string()),
         "boot_old",
     );
 
@@ -1546,8 +1546,8 @@ fn agents_with_empty_boot_id_classify_as_prior_session() {
     // Records persisted before #405 land with an empty `session_boot_id`
     // due to `#[serde(default)]`. The manager treats those the same as
     // a non-matching id — i.e. prior session.
-    let mut manager = SubAgentManager::new(PathBuf::from("."), 5);
-    insert_prior_session_agent(&mut manager, "legacy", SubAgentStatus::Completed, "");
+    let mut manager = AgentManager::new(PathBuf::from("."), 5);
+    insert_prior_session_agent(&mut manager, "legacy", AgentStatus::Completed, "");
 
     let listed_default = manager.list_filtered(false);
     assert!(
@@ -1566,17 +1566,17 @@ fn agents_with_empty_boot_id_classify_as_prior_session() {
 #[test]
 fn persist_round_trip_preserves_session_boot_id() {
     let dir = tempdir().expect("tempdir");
-    let state_path = dir.path().join(SUBAGENT_STATE_FILE);
+    let state_path = dir.path().join(AGENT_STATE_FILE);
 
     let original_boot;
     {
         let mut writer =
-            SubAgentManager::new(dir.path().to_path_buf(), 2).with_state_path(state_path.clone());
+            AgentManager::new(dir.path().to_path_buf(), 2).with_state_path(state_path.clone());
         original_boot = writer.session_boot_id().to_string();
         insert_prior_session_agent(
             &mut writer,
             "agent_persist",
-            SubAgentStatus::Completed,
+            AgentStatus::Completed,
             &original_boot,
         );
         writer
@@ -1587,7 +1587,7 @@ fn persist_round_trip_preserves_session_boot_id() {
     // A fresh manager comes up with a *different* boot id and reloads
     // the persisted state; the agent should now be classified prior.
     let mut reader =
-        SubAgentManager::new(dir.path().to_path_buf(), 2).with_state_path(state_path.clone());
+        AgentManager::new(dir.path().to_path_buf(), 2).with_state_path(state_path.clone());
     reader.load_state().expect("reload should succeed");
     assert_ne!(reader.session_boot_id(), original_boot);
 
@@ -1606,8 +1606,8 @@ fn persist_round_trip_preserves_session_boot_id() {
 
 // === Issue #756: parent-completion wakeup ===
 //
-// When a direct child of the engine finishes, `run_subagent_task` emits
-// a `SubAgentCompletion` on the runtime's `parent_completion_tx`. The
+// When a direct child of the engine finishes, `run_agent_task` emits
+// a `AgentCompletion` on the runtime's `parent_completion_tx`. The
 // engine's turn loop drains that channel before deciding to end the turn.
 // These tests cover the gating logic in `emit_parent_completion` so the
 // parent isn't flooded with grandchild completions and so the function
@@ -1615,8 +1615,8 @@ fn persist_round_trip_preserves_session_boot_id() {
 
 fn runtime_with_depth(
     spawn_depth: u32,
-    parent_completion_tx: Option<mpsc::UnboundedSender<SubAgentCompletion>>,
-) -> SubAgentRuntime {
+    parent_completion_tx: Option<mpsc::UnboundedSender<AgentCompletion>>,
+) -> AgentRuntime {
     let mut rt = stub_runtime();
     rt.spawn_depth = spawn_depth;
     rt.parent_completion_tx = parent_completion_tx;
@@ -1625,7 +1625,7 @@ fn runtime_with_depth(
 
 #[test]
 fn emit_parent_completion_fires_for_direct_child() {
-    let (tx, mut rx) = mpsc::unbounded_channel::<SubAgentCompletion>();
+    let (tx, mut rx) = mpsc::unbounded_channel::<AgentCompletion>();
     let runtime = runtime_with_depth(1, Some(tx));
 
     let sent = emit_parent_completion(&runtime, "agent_abc", "summary line\n<sentinel/>");
@@ -1639,7 +1639,7 @@ fn emit_parent_completion_fires_for_direct_child() {
 
 #[test]
 fn emit_parent_completion_skips_grandchildren() {
-    let (tx, mut rx) = mpsc::unbounded_channel::<SubAgentCompletion>();
+    let (tx, mut rx) = mpsc::unbounded_channel::<AgentCompletion>();
     let runtime = runtime_with_depth(2, Some(tx));
 
     let sent = emit_parent_completion(&runtime, "agent_grandchild", "ignored");
@@ -1658,7 +1658,7 @@ fn emit_parent_completion_skips_grandchildren() {
 fn emit_parent_completion_skips_engine_self() {
     // depth 0 is the engine itself — the engine never spawns a task at
     // depth 0, but defend against accidental misuse.
-    let (tx, mut rx) = mpsc::unbounded_channel::<SubAgentCompletion>();
+    let (tx, mut rx) = mpsc::unbounded_channel::<AgentCompletion>();
     let runtime = runtime_with_depth(0, Some(tx));
 
     let sent = emit_parent_completion(&runtime, "agent_root", "ignored");
@@ -1684,12 +1684,12 @@ fn emit_parent_completion_no_channel_is_noop() {
 
 #[test]
 fn emit_parent_completion_dropped_receiver_does_not_panic() {
-    let (tx, rx) = mpsc::unbounded_channel::<SubAgentCompletion>();
+    let (tx, rx) = mpsc::unbounded_channel::<AgentCompletion>();
     drop(rx);
     let runtime = runtime_with_depth(1, Some(tx));
 
     // The send returns an error internally but we discard it — the
-    // caller's run_subagent_task does not care whether the engine is
+    // caller's run_agent_task does not care whether the engine is
     // still listening (it might be shutting down).
     let sent = emit_parent_completion(&runtime, "agent_orphan", "after-rx-drop");
 
@@ -1704,7 +1704,7 @@ fn child_runtime_propagates_completion_tx_for_gating() {
     // The channel is cloned through `child_runtime()` so descendants carry
     // it. The gate at the send site (`spawn_depth == 1`) is what limits
     // who actually fires — `child_runtime` simply must not strand it.
-    let (tx, _rx) = mpsc::unbounded_channel::<SubAgentCompletion>();
+    let (tx, _rx) = mpsc::unbounded_channel::<AgentCompletion>();
     let parent = runtime_with_depth(0, Some(tx));
 
     let child = parent.child_runtime();
@@ -1719,28 +1719,28 @@ fn child_runtime_propagates_completion_tx_for_gating() {
 #[test]
 fn subagent_completion_payload_carries_existing_sentinel_format() {
     // The payload format is the same one already documented in
-    // prompts/base.md: human summary on line 1, `<deepseek:subagent.done>`
+    // prompts/base.md: human summary on line 1, `<deepseek:agent.done>`
     // sentinel on line 2. This test pins the format so future refactors
     // don't silently break the model's parsing contract.
-    let mut snap = make_snapshot(SubAgentStatus::Completed);
+    let mut snap = make_snapshot(AgentStatus::Completed);
     snap.result = Some("Found three errors.".to_string());
 
-    let summary = summarize_subagent_result(&snap);
-    let sentinel = subagent_done_sentinel("agent_test", &snap);
+    let summary = summarize_agent_result(&snap);
+    let sentinel = agent_done_sentinel("agent_test", &snap);
     let payload = format!("{summary}\n{sentinel}");
 
     let mut lines = payload.lines();
     let first = lines.next().expect("first line is summary");
     let second = lines.next().expect("second line is sentinel");
     assert!(
-        !first.starts_with("<deepseek:subagent.done>"),
+        !first.starts_with("<deepseek:agent.done>"),
         "summary should not be the sentinel itself"
     );
     assert!(
-        second.starts_with("<deepseek:subagent.done>"),
+        second.starts_with("<deepseek:agent.done>"),
         "second line is the sentinel"
     );
-    assert!(second.ends_with("</deepseek:subagent.done>"));
+    assert!(second.ends_with("</deepseek:agent.done>"));
     assert!(
         second.contains("\"agent_id\":\"agent_test\""),
         "sentinel JSON includes agent_id"

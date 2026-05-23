@@ -168,10 +168,10 @@ fallback_default_prior = 3.8
 #   auto_allow = ["cargo check", "npm run"]
 #
 # auto_allow = []
-max_subagents = 10 # 可选（1-20）
+max_concurrent_agents = 10 # 可选（1-20）
 
-# 可选子代理调优。max_concurrent 覆盖顶层 max_subagents。
-# [subagents]
+# 可选子代理调优。max_concurrent 覆盖顶层 max_concurrent_agents。
+# [agents]
 # max_concurrent = 10
 
 # 可选托管策略路径（Unix 默认 /etc/deepseek/*.toml）：
@@ -331,7 +331,7 @@ osc8_links = true            # 在 URL 周围发送 OSC 8 转义序列（在 iTe
 # ─────────────────────────────────────────────────────────────────────────────────
 [features]
 shell_tool = true
-subagents = true
+agents = true
 web_search = true # 启用规范的 web.run 以及兼容别名 web_search
 apply_patch = true
 mcp = true

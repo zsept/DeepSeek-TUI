@@ -101,9 +101,9 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
     app.session.total_conversation_tokens = app.session.total_tokens;
     app.session.session_cost = 0.0;
     app.session.session_cost_cny = 0.0;
-    app.session.subagent_cost = 0.0;
-    app.session.subagent_cost_cny = 0.0;
-    app.session.subagent_cost_event_seqs.clear();
+    app.session.agent_cost = 0.0;
+    app.session.agent_cost_cny = 0.0;
+    app.session.agent_cost_event_seqs.clear();
     app.session.displayed_cost_high_water = 0.0;
     app.session.displayed_cost_high_water_cny = 0.0;
     app.session.last_prompt_tokens = None;
@@ -177,7 +177,7 @@ pub fn export(app: &mut App, path: Option<&str>) -> CommandResult {
             },
             HistoryCell::Thinking { content, .. } => ("*Thinking:*", content.clone()),
             HistoryCell::Tool(tool) => ("**Tool:**", render_tool_cell(tool, 80)),
-            HistoryCell::SubAgent(sub) => ("**Sub-agent:**", render_subagent_cell(sub, 80)),
+            HistoryCell::Agent(sub) => ("**Agent:**", render_agent_cell(sub, 80)),
             HistoryCell::ArchivedContext {
                 level,
                 range,
@@ -270,7 +270,7 @@ fn render_tool_cell(tool: &crate::tui::history::ToolCell, width: u16) -> String 
         .join("\n")
 }
 
-fn render_subagent_cell(cell: &crate::tui::history::SubAgentCell, width: u16) -> String {
+fn render_agent_cell(cell: &crate::tui::history::AgentCell, width: u16) -> String {
     cell.lines(width)
         .into_iter()
         .map(line_to_string)
@@ -303,7 +303,7 @@ mod tests {
             use_alt_screen: true,
             use_mouse_capture: false,
             use_bracketed_paste: true,
-            max_subagents: 1,
+            max_concurrent_agents: 1,
             skills_dir: tmpdir.path().join("skills"),
             memory_path: tmpdir.path().join("memory.md"),
             notes_path: tmpdir.path().join("notes.txt"),
@@ -506,9 +506,9 @@ mod tests {
         let mut app = create_test_app_with_tmpdir(&tmpdir);
         app.session.session_cost = 1.25;
         app.session.session_cost_cny = 9.13;
-        app.session.subagent_cost = 0.75;
-        app.session.subagent_cost_cny = 5.48;
-        app.session.subagent_cost_event_seqs.insert(42);
+        app.session.agent_cost = 0.75;
+        app.session.agent_cost_cny = 5.48;
+        app.session.agent_cost_event_seqs.insert(42);
         app.session.displayed_cost_high_water = 2.0;
         app.session.displayed_cost_high_water_cny = 14.61;
         app.session.last_prompt_tokens = Some(120);
@@ -532,9 +532,9 @@ mod tests {
         assert_eq!(app.session.total_conversation_tokens, 500);
         assert_eq!(app.session.session_cost, 0.0);
         assert_eq!(app.session.session_cost_cny, 0.0);
-        assert_eq!(app.session.subagent_cost, 0.0);
-        assert_eq!(app.session.subagent_cost_cny, 0.0);
-        assert!(app.session.subagent_cost_event_seqs.is_empty());
+        assert_eq!(app.session.agent_cost, 0.0);
+        assert_eq!(app.session.agent_cost_cny, 0.0);
+        assert!(app.session.agent_cost_event_seqs.is_empty());
         assert_eq!(app.session.displayed_cost_high_water, 0.0);
         assert_eq!(app.session.displayed_cost_high_water_cny, 0.0);
         assert_eq!(app.session.last_prompt_tokens, None);

@@ -55,7 +55,7 @@ use crate::models::{
     ContentBlock, Message, MessageRequest, SystemBlock, SystemPrompt, context_window_for_model,
 };
 use crate::tools::plan::{PlanSnapshot, SharedPlanState};
-use crate::tools::subagent::{SharedSubAgentManager, SubAgentResult, SubAgentStatus};
+use crate::tools::subagent::{SharedAgentManager, AgentResult, AgentStatus};
 use crate::tools::todo::{SharedTodoList, TodoListSnapshot};
 use crate::working_set::WorkingSet;
 
@@ -200,7 +200,7 @@ pub struct StructuredState {
     pub working_set_summary: Option<String>,
     pub todo_snapshot: Option<TodoListSnapshot>,
     pub plan_snapshot: Option<PlanSnapshot>,
-    pub subagent_snapshots: Vec<SubAgentResult>,
+    pub subagent_snapshots: Vec<AgentResult>,
 }
 
 impl StructuredState {
@@ -213,7 +213,7 @@ impl StructuredState {
         working_set: &WorkingSet,
         todos: &SharedTodoList,
         plan_state: &SharedPlanState,
-        subagents: Option<&SharedSubAgentManager>,
+        subagents: Option<&SharedAgentManager>,
     ) -> Self {
         let working_set_summary = working_set.summary_block(&workspace);
 
@@ -241,7 +241,7 @@ impl StructuredState {
             guard
                 .list()
                 .into_iter()
-                .filter(|s| matches!(s.status, SubAgentStatus::Running))
+                .filter(|s| matches!(s.status, AgentStatus::Running))
                 .collect()
         } else {
             Vec::new()

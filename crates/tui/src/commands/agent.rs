@@ -17,7 +17,7 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
     }
 
     // Look up in user-defined custom types.
-    if let Some(ct) = app.subagent_custom_types.get(input) {
+    if let Some(ct) = app.agent_role_configs.get(input) {
         app.active_agent_type = Some(input.to_string());
         app.agent_system_prompt_override = Some(ct.system_prompt.clone());
         let model_note = ct.model.as_ref()
@@ -29,18 +29,18 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
         ));
     }
 
-    // Check built-in types — these are sub-agent only.
-    if crate::tools::subagent::SubAgentType::from_str(input).is_some() {
+    // Check built-in types — these are child-agent only.
+    if crate::tools::subagent::AgentRole::from_str(input).is_some() {
         return CommandResult::message(format!(
-            "'{input}' is a built-in sub-agent type, not a switchable parent role.\n\
-             Use agent_open(type=\"{input}\") to spawn it as a child sub-agent.\n\
-             To switch the parent agent, define a custom type in [subagents.types.{input}]."
+            "'{input}' is a built-in agent role, not a switchable parent role.\n\
+             Use agent_open(type=\"{input}\") to spawn it as a child agent.\n\
+             To switch the parent agent, define a custom type in roles/{input}/role.toml."
         ));
     }
 
     CommandResult::error(format!(
         "Unknown agent type: {input}\n\
-         Use /role to list available types, or define a custom type in [subagents.types.{input}]."
+         Use /role to list available types, or define a custom type in roles/{input}/role.toml."
     ))
 }
 
@@ -63,12 +63,12 @@ fn list_agents(app: &App) -> CommandResult {
     }
 
     // User-defined custom types
-    if !app.subagent_custom_types.is_empty() {
+    if !app.agent_role_configs.is_empty() {
         out.push_str(&format!(
             "\n── Custom ({}) ──\n",
-            app.subagent_custom_types.len()
+            app.agent_role_configs.len()
         ));
-        for (name, ct) in &app.subagent_custom_types {
+        for (name, ct) in &app.agent_role_configs {
             let marker = if app.active_agent_type.as_deref() == Some(name) {
                 " [active]"
             } else {

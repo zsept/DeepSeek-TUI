@@ -5,7 +5,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::core::coherence::CoherenceState;
 use crate::palette;
-use crate::tools::subagent::SubAgentStatus;
+use crate::tools::subagent::AgentStatus;
 use crate::tui::app::App;
 use crate::tui::format_helpers;
 use crate::tui::history::{HistoryCell, ToolCell, ToolStatus, summarize_tool_output};
@@ -114,21 +114,21 @@ pub(crate) fn footer_working_strip_active(app: &App) -> bool {
     app.is_loading || app.is_compacting || running_agent_count(app) > 0 || turn_in_progress
 }
 
-pub(crate) fn is_noisy_subagent_progress(status: &str) -> bool {
+pub(crate) fn is_noisy_agent_progress(status: &str) -> bool {
     let status = status.trim().to_ascii_lowercase();
     status.contains("requesting model response")
 }
 
 pub(crate) fn subagent_objective_summary(app: &App, id: &str) -> Option<String> {
-    app.subagent_cache
+    app.agent_cache
         .iter()
         .find(|agent| agent.agent_id == id)
         .map(|agent| summarize_tool_output(&agent.assignment.objective))
         .filter(|summary| !summary.is_empty())
 }
 
-pub(crate) fn friendly_subagent_progress(app: &App, id: &str, status: &str) -> String {
-    if !is_noisy_subagent_progress(status) {
+pub(crate) fn friendly_agent_progress(app: &App, id: &str, status: &str) -> String {
+    if !is_noisy_agent_progress(status) {
         return summarize_tool_output(status);
     }
 
@@ -136,7 +136,7 @@ pub(crate) fn friendly_subagent_progress(app: &App, id: &str, status: &str) -> S
         return format!("working on {summary}");
     }
     if let Some(existing) = app.agent_progress.get(id)
-        && !is_noisy_subagent_progress(existing)
+        && !is_noisy_agent_progress(existing)
         && existing != "working"
     {
         return existing.clone();
@@ -159,15 +159,15 @@ pub(crate) fn active_subagent_status_label(app: &App) -> Option<String> {
         (running, running)
     };
     let detail = app
-        .subagent_cache
+        .agent_cache
         .iter()
-        .find(|agent| matches!(agent.status, SubAgentStatus::Running))
+        .find(|agent| matches!(agent.status, AgentStatus::Running))
         .map(|agent| summarize_tool_output(&agent.assignment.objective))
         .filter(|summary| !summary.is_empty())
         .or_else(|| {
             app.agent_progress
                 .values()
-                .find(|value| !is_noisy_subagent_progress(value) && value.as_str() != "working")
+                .find(|value| !is_noisy_agent_progress(value) && value.as_str() != "working")
                 .cloned()
         })
         .unwrap_or_else(|| "working".to_string());

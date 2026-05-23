@@ -57,7 +57,7 @@ use crate::task_manager::{
     NewTaskRequest, SharedTaskManager, TaskManager, TaskManagerConfig, TaskStatus,
 };
 use crate::tools::spec::RuntimeToolServices;
-use crate::tools::subagent::SubAgentStatus;
+use crate::tools::subagent::AgentStatus;
 use crate::tui::auto_router;
 use crate::tui::color_compat::ColorCompatBackend;
 use crate::tui::command_palette::{
@@ -68,7 +68,7 @@ use crate::tui::context_inspector::build_context_inspector_text;
 use crate::tui::event_broker::EventBroker;
 use crate::tui::file_picker_relevance;
 use crate::tui::footer_ui::{
-    friendly_subagent_progress, is_noisy_subagent_progress, one_line_summary, render_footer,
+    friendly_agent_progress, is_noisy_agent_progress, one_line_summary, render_footer,
 };
 use crate::tui::format_helpers;
 use crate::tui::key_shortcuts;
@@ -88,8 +88,8 @@ use crate::tui::shell_job_routing::{
 };
 use crate::tui::streaming_thinking;
 use crate::tui::subagent_routing::{
-    format_task_list, handle_subagent_mailbox, open_task_pager, reconcile_subagent_activity_state,
-    running_agent_count, sort_subagents_in_place, task_mode_label, task_summary_to_panel_entry,
+    format_task_list, handle_agent_mailbox, open_task_pager, reconcile_agent_activity_state,
+    running_agent_count, sort_agents_in_place, task_mode_label, task_summary_to_panel_entry,
 };
 #[cfg(test)]
 use crate::tui::tool_routing::exploring_label;
@@ -98,7 +98,7 @@ use crate::tui::tool_routing::{
 };
 use crate::tui::ui_text::{history_cell_to_text, line_to_plain, truncate_line_to_width};
 use crate::tui::user_input::UserInputView;
-use crate::tui::views::subagent_view_agents;
+use crate::tui::views::agent_view_agents;
 use crate::tui::vim_mode;
 use crate::tui::workspace_context;
 
@@ -437,7 +437,7 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
             config,
             app.workspace.clone(),
             Some(app.model.clone()),
-            Some(app.max_subagents.clamp(1, 4)),
+            Some(app.max_concurrent_agents.clamp(1, 4)),
         ),
         config.clone(),
     )
@@ -673,7 +673,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         mcp_config_path: config.mcp_config_path(),
         skills_dir: app.skills_dir.clone(),
         extra_skills_dirs: app.extra_skills_dirs.clone(),
-        subagent_custom_types: config.subagent_custom_types(),
+        agent_role_configs: config.agent_role_configs(),
         system_prompt: config.system_prompt.clone(),
         instructions: config.instructions_paths(),
         project_context_pack_enabled: config.project_context_pack_enabled(),
@@ -687,7 +687,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         // model stops emitting tool calls. A real runaway is rare and
         // human-noticeable; we trust the operator over a hard step cap.
         max_steps: u32::MAX,
-        max_subagents: app.max_subagents,
+        max_concurrent_agents: app.max_concurrent_agents,
         features: config.features(),
         compaction: app.compaction_config(),
         cycle: app.cycle_config(),
@@ -708,7 +708,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
             .clone()
             .map(crate::config::LspConfigToml::into_runtime),
         runtime_services: app.runtime_services.clone(),
-        subagent_model_overrides: config.subagent_model_overrides(),
+        agent_role_model_overrides: config.agent_role_model_overrides(),
         memory_enabled: config.memory_enabled(),
         memory_path: config.memory_path(),
         vision_config: config.vision_model_config(),
@@ -1179,7 +1179,7 @@ async fn run_event_loop(
                                 | "rlm"
                                 | "delegate"
                         ) {
-                            app.pending_subagent_dispatch = Some(name.clone());
+                            app.pending_agent_dispatch = Some(name.clone());
                             if matches!(name.as_str(), "rlm_open" | "rlm_eval" | "rlm") {
                                 // New fanout invocation — children should
                                 // group under a fresh card, not the
@@ -1609,8 +1609,8 @@ async fn run_event_loop(
                         let _ = engine_handle.send(Op::ListSubAgents).await;
                     }
                     EngineEvent::AgentProgress { id, status } => {
-                        let display = friendly_subagent_progress(app, &id, &status);
-                        if is_noisy_subagent_progress(&status) {
+                        let display = friendly_agent_progress(app, &id, &status);
+                        if is_noisy_agent_progress(&status) {
                             app.agent_progress
                                 .entry(id.clone())
                                 .or_insert_with(|| display.clone());
@@ -1630,9 +1630,9 @@ async fn run_event_loop(
                             .unwrap_or_default();
                         let has_other_running_subagents =
                             app.agent_progress.keys().any(|agent_id| agent_id != &id)
-                                || app.subagent_cache.iter().any(|agent| {
+                                || app.agent_cache.iter().any(|agent| {
                                     agent.agent_id != id
-                                        && matches!(agent.status, SubAgentStatus::Running)
+                                        && matches!(agent.status, AgentStatus::Running)
                                 });
                         app.agent_progress.remove(&id);
                         app.status_message = Some(format!(
@@ -1676,11 +1676,11 @@ async fn run_event_loop(
                     }
                     EngineEvent::AgentList { agents } => {
                         let mut sorted = agents.clone();
-                        sort_subagents_in_place(&mut sorted);
+                        sort_agents_in_place(&mut sorted);
                         sorted.retain(|a| !a.from_prior_session);
-                        app.subagent_cache = sorted.clone();
-                        reconcile_subagent_activity_state(app);
-                        let view_agents = subagent_view_agents(app, &sorted);
+                        app.agent_cache = sorted.clone();
+                        reconcile_agent_activity_state(app);
+                        let view_agents = agent_view_agents(app, &sorted);
                         if app.view_stack.update_subagents(&view_agents) {
                             app.status_message =
                                 Some(format!("Sub-agents: {} total", view_agents.len()));
@@ -1689,7 +1689,7 @@ async fn run_event_loop(
                         // full list available via /agents command.
                     }
                     EngineEvent::SubAgentMailbox { seq, message } => {
-                        handle_subagent_mailbox(app, seq, &message);
+                        handle_agent_mailbox(app, seq, &message);
                         transcript_batch_updated = true;
                     }
                     EngineEvent::ApprovalRequired {
@@ -1956,7 +1956,7 @@ async fn run_event_loop(
         // the DeepSeek website's billing.
         let pending_bg_cost = crate::cost_status::drain();
         if pending_bg_cost.is_positive() {
-            app.accrue_subagent_cost_estimate(pending_bg_cost);
+            app.accrue_agent_cost_estimate(pending_bg_cost);
             app.needs_redraw = true;
         }
         // Expire the "Press Ctrl+C again to quit" prompt silently after its
@@ -2801,7 +2801,7 @@ async fn run_event_loop(
                             // Idempotent with the TurnComplete handler that runs
                             // when the engine actually echoes the cancel (#243).
                             // Background sub-agents continue running — they are
-                            // tracked via `subagent_cache` independently of the
+                            // tracked via `agent_cache` independently of the
                             // foreground turn.
                             app.finalize_active_cell_as_interrupted();
                             app.finalize_streaming_assistant_as_interrupted();
@@ -6230,9 +6230,9 @@ fn apply_loaded_session(app: &mut App, config: &Config, session: &SavedSession) 
     app.session.total_conversation_tokens = app.session.total_tokens;
     app.session.session_cost = session.metadata.cost.session_cost_usd;
     app.session.session_cost_cny = session.metadata.cost.session_cost_cny;
-    app.session.subagent_cost = session.metadata.cost.subagent_cost_usd;
-    app.session.subagent_cost_cny = session.metadata.cost.subagent_cost_cny;
-    app.session.subagent_cost_event_seqs.clear();
+    app.session.agent_cost = session.metadata.cost.agent_cost_usd;
+    app.session.agent_cost_cny = session.metadata.cost.agent_cost_cny;
+    app.session.agent_cost_event_seqs.clear();
     // Restore the high-water marks from persisted metadata so the
     // monotonic cost guarantee (#244) survives session restarts.
     // Take the max with the current totals — old sessions without
@@ -6856,7 +6856,7 @@ fn clamp_event_poll_timeout(timeout: Duration) -> Duration {
 }
 
 fn history_has_live_motion(history: &[HistoryCell]) -> bool {
-    use crate::tui::history::SubAgentCell;
+    use crate::tui::history::AgentCell;
     use crate::tui::widgets::agent_card::AgentLifecycle;
     history.iter().any(|cell| match cell {
         HistoryCell::Thinking { streaming, .. } => *streaming,
@@ -6875,11 +6875,11 @@ fn history_has_live_motion(history: &[HistoryCell]) -> bool {
             ToolCell::WebSearch(cell) => cell.status == ToolStatus::Running,
             ToolCell::Generic(cell) => cell.status == ToolStatus::Running,
         },
-        HistoryCell::SubAgent(SubAgentCell::Delegate(card)) => matches!(
+        HistoryCell::Agent(AgentCell::Delegate(card)) => matches!(
             card.status,
             AgentLifecycle::Pending | AgentLifecycle::Running
         ),
-        HistoryCell::SubAgent(SubAgentCell::Fanout(card)) => card
+        HistoryCell::Agent(AgentCell::Fanout(card)) => card
             .workers
             .iter()
             .any(|w| matches!(w.status, AgentLifecycle::Pending | AgentLifecycle::Running)),
@@ -7022,7 +7022,7 @@ fn activity_cell_rank(cell: &HistoryCell) -> Option<u8> {
             Some(ToolStatus::Success) => Some(2),
             None => Some(2),
         },
-        HistoryCell::SubAgent(_) => Some(0),
+        HistoryCell::Agent(_) => Some(0),
         HistoryCell::Error { .. } => Some(1),
         HistoryCell::Thinking { .. } => Some(2),
         _ => None,
@@ -7152,7 +7152,7 @@ fn activity_cell_label(app: &App, cell_index: usize, cell: &HistoryCell) -> Stri
     match cell {
         HistoryCell::Thinking { .. } => "thinking".to_string(),
         HistoryCell::Error { .. } => "error".to_string(),
-        HistoryCell::SubAgent(_) => "sub-agent".to_string(),
+        HistoryCell::Agent(_) => "sub-agent".to_string(),
         HistoryCell::Tool(_) => {
             detail_target_label(app, cell_index).unwrap_or_else(|| "tool activity".to_string())
         }
@@ -7188,7 +7188,7 @@ fn activity_status_line(cell: &HistoryCell) -> Option<String> {
             Some(line)
         }
         HistoryCell::Error { severity, .. } => Some(format!("Status: {:?}", severity)),
-        HistoryCell::SubAgent(_) => None,
+        HistoryCell::Agent(_) => None,
         _ => None,
     }
 }
@@ -7387,7 +7387,7 @@ pub(crate) fn open_details_pager_for_cell(app: &mut App, cell_index: usize) -> b
         HistoryCell::Error { .. } => "Error".to_string(),
         HistoryCell::Thinking { .. } => "Reasoning".to_string(),
         HistoryCell::Tool(_) => "Message".to_string(),
-        HistoryCell::SubAgent(_) => "Sub-agent".to_string(),
+        HistoryCell::Agent(_) => "Sub-agent".to_string(),
         HistoryCell::ArchivedContext { .. } => "Archived Context".to_string(),
     };
     let width = app
@@ -7532,7 +7532,7 @@ pub(crate) fn detail_target_label(app: &App, cell_index: usize) -> Option<String
         }
         HistoryCell::Tool(ToolCell::WebSearch(search)) => Some(format!("search {}", search.query)),
         HistoryCell::Tool(ToolCell::Generic(generic)) => Some(format!("tool {}", generic.name)),
-        HistoryCell::SubAgent(_) => Some("sub-agent".to_string()),
+        HistoryCell::Agent(_) => Some("sub-agent".to_string()),
         _ => None,
     }
 }

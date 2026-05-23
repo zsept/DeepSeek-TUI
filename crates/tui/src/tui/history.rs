@@ -123,25 +123,25 @@ pub enum HistoryCell {
         summary: String,
     },
     Tool(ToolCell),
-    /// Live in-transcript card for sub-agent activity (issue #128). Owns
+    /// Live in-transcript card for agent activity (issue #128). Owns
     /// either a single `DelegateCard` or a multi-worker `FanoutCard`; the
     /// UI re-binds it from the mailbox stream as envelopes arrive.
-    SubAgent(SubAgentCell),
+    Agent(AgentCell),
 }
 
 /// In-transcript sub-agent cell — either a single delegate or a fanout.
 /// State mutates over the turn as mailbox envelopes are drained.
 #[derive(Debug, Clone)]
-pub enum SubAgentCell {
+pub enum AgentCell {
     Delegate(crate::tui::widgets::agent_card::DelegateCard),
     Fanout(crate::tui::widgets::agent_card::FanoutCard),
 }
 
-impl SubAgentCell {
+impl AgentCell {
     pub fn lines(&self, width: u16) -> Vec<Line<'static>> {
         match self {
-            SubAgentCell::Delegate(card) => card.render_lines(width),
-            SubAgentCell::Fanout(card) => card.render_lines(width),
+            AgentCell::Delegate(card) => card.render_lines(width),
+            AgentCell::Fanout(card) => card.render_lines(width),
         }
     }
 }
@@ -248,7 +248,7 @@ impl HistoryCell {
                 None,
             ),
             HistoryCell::Tool(cell) => cell.lines_with_motion(width, false),
-            HistoryCell::SubAgent(cell) => cell.lines(width),
+            HistoryCell::Agent(cell) => cell.lines(width),
             HistoryCell::ArchivedContext { .. } => render_archived_context(self, width, false),
         }
     }
@@ -311,7 +311,7 @@ impl HistoryCell {
                 width,
             ),
             HistoryCell::System { .. } | HistoryCell::Error { .. } => self.lines(width),
-            HistoryCell::SubAgent(cell) => cell.lines(width),
+            HistoryCell::Agent(cell) => cell.lines(width),
             HistoryCell::ArchivedContext { .. } => {
                 render_archived_context(self, width, options.low_motion)
             }
@@ -359,7 +359,7 @@ impl HistoryCell {
                 None,
             ),
             HistoryCell::Tool(cell) => cell.transcript_lines(width),
-            HistoryCell::SubAgent(cell) => cell.lines(width),
+            HistoryCell::Agent(cell) => cell.lines(width),
             HistoryCell::ArchivedContext { .. } => render_archived_context(self, width, true),
         }
     }

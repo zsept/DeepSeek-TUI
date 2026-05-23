@@ -793,7 +793,7 @@ impl ToolRegistryBuilder {
     /// in Agent mode, including review, RLM, and the sub-agent management
     /// family (so children can recurse). Used by both the parent's Agent-mode
     /// registry build (`core/engine.rs`) and by every sub-agent
-    /// (`subagent::SubAgentToolRegistry`) — keeping them in lockstep.
+    /// (`subagent::AgentToolRegistry`) — keeping them in lockstep.
     ///
     /// `allow_shell` mirrors the session's shell permission. `manager` and
     /// `runtime` are the sub-agent runtime — children pass through their own
@@ -805,8 +805,8 @@ impl ToolRegistryBuilder {
         self,
         client: Option<DeepSeekClient>,
         model: String,
-        manager: super::subagent::SharedSubAgentManager,
-        runtime: super::subagent::SubAgentRuntime,
+        manager: super::subagent::SharedAgentManager,
+        runtime: super::subagent::AgentRuntime,
         allow_shell: bool,
         todo_list: super::todo::SharedTodoList,
         plan_state: super::plan::SharedPlanState,
@@ -817,7 +817,7 @@ impl ToolRegistryBuilder {
             .with_review_tool(client.clone(), model.clone())
             .with_rlm_tool(client, model)
             .with_recall_archive_tool()
-            .with_subagent_tools(manager, runtime)
+            .with_agent_manager_tools(manager, runtime)
     }
 
     /// Include the todo tool with a shared `TodoList`.
@@ -841,12 +841,12 @@ impl ToolRegistryBuilder {
         self.with_tool(Arc::new(UpdatePlanTool::new(plan_state)))
     }
 
-    /// Include sub-agent management tools.
+    /// Include agent management tools (agent_open / agent_eval / agent_close).
     #[must_use]
-    pub fn with_subagent_tools(
+    pub fn with_agent_manager_tools(
         self,
-        manager: super::subagent::SharedSubAgentManager,
-        runtime: super::subagent::SubAgentRuntime,
+        manager: super::subagent::SharedAgentManager,
+        runtime: super::subagent::AgentRuntime,
     ) -> Self {
         use super::subagent::{AgentCloseTool, AgentEvalTool, AgentOpenTool};
 

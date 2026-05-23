@@ -3,9 +3,9 @@
 use std::time::Instant;
 
 use crate::task_manager::{TaskRecord, TaskStatus, TaskSummary};
-use crate::tools::subagent::{MailboxMessage, SubAgentResult, SubAgentStatus};
+use crate::tools::subagent::{MailboxMessage, AgentResult, AgentStatus};
 use crate::tui::app::{App, AppMode, TaskPanelEntry};
-use crate::tui::history::{HistoryCell, SubAgentCell, summarize_tool_output};
+use crate::tui::history::{HistoryCell, AgentCell, summarize_tool_output};
 use crate::tui::pager::PagerView;
 use crate::tui::widgets::agent_card::{
     AgentLifecycle, DelegateCard, FanoutCard, apply_to_delegate, apply_to_fanout,
@@ -15,9 +15,9 @@ pub(super) fn running_agent_count(app: &App) -> usize {
     let mut ids: std::collections::HashSet<&str> =
         app.agent_progress.keys().map(String::as_str).collect();
     for agent in app
-        .subagent_cache
+        .agent_cache
         .iter()
-        .filter(|agent| matches!(agent.status, SubAgentStatus::Running))
+        .filter(|agent| matches!(agent.status, AgentStatus::Running))
     {
         ids.insert(agent.agent_id.as_str());
     }
@@ -29,7 +29,7 @@ pub(super) fn active_fanout_counts(app: &App) -> Option<(usize, usize)> {
     // FanoutCard, if one exists. Used by `rlm` and any future multi-child
     // dispatch the parent agent makes via repeated `agent_spawn`.
     if let Some(idx) = app.last_fanout_card_index
-        && let Some(HistoryCell::SubAgent(SubAgentCell::Fanout(card))) = app.history.get(idx)
+        && let Some(HistoryCell::Agent(AgentCell::Fanout(card))) = app.history.get(idx)
     {
         let running = card
             .workers
@@ -41,11 +41,11 @@ pub(super) fn active_fanout_counts(app: &App) -> Option<(usize, usize)> {
     None
 }
 
-pub(super) fn reconcile_subagent_activity_state(app: &mut App) {
+pub(super) fn reconcile_agent_activity_state(app: &mut App) {
     let running_agents: Vec<(String, String)> = app
-        .subagent_cache
+        .agent_cache
         .iter()
-        .filter(|agent| matches!(agent.status, SubAgentStatus::Running))
+        .filter(|agent| matches!(agent.status, AgentStatus::Running))
         .map(|agent| {
             (
                 agent.agent_id.clone(),
@@ -69,20 +69,20 @@ pub(super) fn reconcile_subagent_activity_state(app: &mut App) {
     }
 }
 
-fn subagent_status_rank(status: &SubAgentStatus) -> u8 {
+fn agent_status_rank(status: &AgentStatus) -> u8 {
     match status {
-        SubAgentStatus::Running => 0,
-        SubAgentStatus::Interrupted(_) => 1,
-        SubAgentStatus::Failed(_) => 2,
-        SubAgentStatus::Completed => 3,
-        SubAgentStatus::Cancelled => 4,
+        AgentStatus::Running => 0,
+        AgentStatus::Interrupted(_) => 1,
+        AgentStatus::Failed(_) => 2,
+        AgentStatus::Completed => 3,
+        AgentStatus::Cancelled => 4,
     }
 }
 
-pub(super) fn sort_subagents_in_place(agents: &mut [SubAgentResult]) {
+pub(super) fn sort_agents_in_place(agents: &mut [AgentResult]) {
     agents.sort_by(|a, b| {
-        subagent_status_rank(&a.status)
-            .cmp(&subagent_status_rank(&b.status))
+        agent_status_rank(&a.status)
+            .cmp(&agent_status_rank(&b.status))
             .then_with(|| a.agent_type.as_str().cmp(b.agent_type.as_str()))
             .then_with(|| a.agent_id.cmp(&b.agent_id))
     });
@@ -90,14 +90,14 @@ pub(super) fn sort_subagents_in_place(agents: &mut [SubAgentResult]) {
 
 /// Route a `MailboxMessage` envelope to the matching in-transcript card,
 /// allocating a `DelegateCard` or `FanoutCard` on first sight (issue #128).
-pub(super) fn handle_subagent_mailbox(app: &mut App, seq: u64, message: &MailboxMessage) {
+pub(super) fn handle_agent_mailbox(app: &mut App, seq: u64, message: &MailboxMessage) {
     // Accumulate sub-agent token costs for the real-time footer counter (#166).
     if let MailboxMessage::TokenUsage { model, usage, .. } = message {
-        if app.session.subagent_cost_event_seqs.insert(seq)
+        if app.session.agent_cost_event_seqs.insert(seq)
             && let Some(cost) =
                 crate::pricing::calculate_turn_cost_estimate_from_usage(model, usage)
         {
-            app.accrue_subagent_cost_estimate(cost);
+            app.accrue_agent_cost_estimate(cost);
         }
         return; // No card visual change needed; the footer handles display.
     }
@@ -109,21 +109,21 @@ pub(super) fn handle_subagent_mailbox(app: &mut App, seq: u64, message: &Mailbox
 
     if matches!(message, MailboxMessage::ChildSpawned { .. })
         && let Some(idx) = app.last_fanout_card_index
-        && let Some(HistoryCell::SubAgent(SubAgentCell::Fanout(card))) = app.history.get_mut(idx)
+        && let Some(HistoryCell::Agent(AgentCell::Fanout(card))) = app.history.get_mut(idx)
     {
         apply_to_fanout(card, message);
-        app.subagent_card_index.insert(agent_id, idx);
+        app.agent_card_index.insert(agent_id, idx);
         app.mark_history_updated();
         return;
     }
 
     // Existing card for this agent_id? Mutate in place.
-    if let Some(&idx) = app.subagent_card_index.get(&agent_id) {
+    if let Some(&idx) = app.agent_card_index.get(&agent_id) {
         let updated = match app.history.get_mut(idx) {
-            Some(HistoryCell::SubAgent(SubAgentCell::Delegate(card))) => {
+            Some(HistoryCell::Agent(AgentCell::Delegate(card))) => {
                 apply_to_delegate(card, message)
             }
-            Some(HistoryCell::SubAgent(SubAgentCell::Fanout(card))) => {
+            Some(HistoryCell::Agent(AgentCell::Fanout(card))) => {
                 apply_to_fanout(card, message)
             }
             _ => false,
@@ -141,34 +141,34 @@ pub(super) fn handle_subagent_mailbox(app: &mut App, seq: u64, message: &Mailbox
         return;
     };
 
-    let dispatch_kind = app.pending_subagent_dispatch.as_deref();
+    let dispatch_kind = app.pending_agent_dispatch.as_deref();
     let is_fanout = matches!(dispatch_kind, Some("rlm_open" | "rlm_eval" | "rlm"));
 
     if is_fanout {
         // Reuse the active fanout card for sibling spawns; otherwise create
         // one anchored at this position so subsequent siblings join it.
         if let Some(idx) = app.last_fanout_card_index
-            && let Some(HistoryCell::SubAgent(SubAgentCell::Fanout(card))) =
+            && let Some(HistoryCell::Agent(AgentCell::Fanout(card))) =
                 app.history.get_mut(idx)
         {
             card.claim_pending_worker(&agent_id, AgentLifecycle::Running);
-            app.subagent_card_index.insert(agent_id, idx);
+            app.agent_card_index.insert(agent_id, idx);
         } else {
             let mut card = FanoutCard::new(dispatch_kind.unwrap_or("rlm_eval").to_string());
             card.upsert_worker(&agent_id, AgentLifecycle::Running);
-            app.add_message(HistoryCell::SubAgent(SubAgentCell::Fanout(card)));
+            app.add_message(HistoryCell::Agent(AgentCell::Fanout(card)));
             let idx = app.history.len().saturating_sub(1);
             app.last_fanout_card_index = Some(idx);
-            app.subagent_card_index.insert(agent_id, idx);
+            app.agent_card_index.insert(agent_id, idx);
         }
     } else {
         let card = DelegateCard::new(agent_id.clone(), agent_type.clone());
-        app.add_message(HistoryCell::SubAgent(SubAgentCell::Delegate(card)));
+        app.add_message(HistoryCell::Agent(AgentCell::Delegate(card)));
         let idx = app.history.len().saturating_sub(1);
-        app.subagent_card_index.insert(agent_id, idx);
+        app.agent_card_index.insert(agent_id, idx);
         // Single delegate consumes the pending dispatch label so a follow-on
         // tool call doesn't accidentally inherit it.
-        app.pending_subagent_dispatch = None;
+        app.pending_agent_dispatch = None;
     }
 
     app.mark_history_updated();

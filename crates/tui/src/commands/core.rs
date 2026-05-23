@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use crate::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
 use crate::localization::{MessageId, tr};
 use crate::tui::app::{App, AppAction, AppMode, ReasoningEffort};
-use crate::tui::views::{HelpView, ModalKind, SubAgentsView, subagent_view_agents};
+use crate::tui::views::{HelpView, ModalKind, SubAgentsView, agent_view_agents};
 
 use super::CommandResult;
 
@@ -159,7 +159,7 @@ pub fn models(_app: &mut App) -> CommandResult {
 /// List sub-agent status from the engine
 pub fn subagents(app: &mut App) -> CommandResult {
     if app.view_stack.top_kind() != Some(ModalKind::SubAgents) {
-        let agents = subagent_view_agents(app, &app.subagent_cache);
+        let agents = agent_view_agents(app, &app.agent_cache);
         app.view_stack.push(SubAgentsView::new(agents));
     }
     app.status_message = Some(tr(app.ui_locale, MessageId::SubagentsFetching).to_string());
@@ -299,7 +299,7 @@ pub fn home_dashboard(app: &mut App) -> CommandResult {
     }
 
     // Sub-agents
-    let subagent_count = app.subagent_cache.len();
+    let subagent_count = app.agent_cache.len();
     if subagent_count > 0 {
         let _ = writeln!(
             stats,
@@ -389,7 +389,7 @@ mod tests {
             use_alt_screen: true,
             use_mouse_capture: false,
             use_bracketed_paste: true,
-            max_subagents: 1,
+            max_concurrent_agents: 1,
             skills_dir: PathBuf::from("/tmp/test-skills"),
             memory_path: PathBuf::from("memory.md"),
             notes_path: PathBuf::from("notes.txt"),

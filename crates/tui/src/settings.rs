@@ -613,7 +613,7 @@ impl Settings {
                     "auto" => "auto",
                     "work" | "plan" | "todos" => "work",
                     "tasks" => "tasks",
-                    "agents" | "subagents" | "sub-agents" => "agents",
+                    "agents" => "agents",
                     "context" | "session" => "context",
                     "hidden" | "hide" | "closed" | "off" | "none" => "hidden",
                     _ => {
@@ -1048,7 +1048,7 @@ fn normalize_sidebar_focus(value: &str) -> &str {
     match value.trim().to_ascii_lowercase().as_str() {
         "work" | "plan" | "todos" => "work",
         "tasks" => "tasks",
-        "agents" | "subagents" | "sub-agents" => "agents",
+        "agents" => "agents",
         "context" | "session" => "context",
         "hidden" | "hide" | "closed" | "off" | "none" => "hidden",
         _ => "auto",

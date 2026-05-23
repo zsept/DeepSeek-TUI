@@ -56,7 +56,7 @@ pub struct TodoItem {
     #[serde(default)]
     pub depends_on: Vec<u32>,
     /// Optional sub-agent id. When set, the sidebar Work panel
-    /// resolves the agent name from `subagent_cache` and appends
+    /// resolves the agent name from `agent_cache` and appends
     /// it to the node label in graph mode.
     #[serde(default)]
     pub agent_id: Option<String>,

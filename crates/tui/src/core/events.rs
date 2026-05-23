@@ -11,7 +11,7 @@ use crate::core::coherence::CoherenceState;
 use crate::error_taxonomy::ErrorEnvelope;
 use crate::models::{Message, SystemPrompt, Usage};
 use crate::tools::spec::{ToolError, ToolResult};
-use crate::tools::subagent::SubAgentResult;
+use crate::tools::subagent::AgentResult;
 use crate::tools::user_input::UserInputRequest;
 
 /// Final status for a turn.
@@ -190,7 +190,7 @@ pub enum Event {
     AgentComplete { id: String, result: String },
 
     /// Sub-agent listing
-    AgentList { agents: Vec<SubAgentResult> },
+    AgentList { agents: Vec<AgentResult> },
 
     /// Structured sub-agent mailbox envelope (issue #128). Carries the
     /// monotonic seq + the typed `MailboxMessage` so the UI can route each

@@ -138,10 +138,10 @@ pub struct SessionCostSnapshot {
     pub session_cost_cny: f64,
     /// Accumulated sub-agent/background LLM cost in USD.
     #[serde(default)]
-    pub subagent_cost_usd: f64,
+    pub agent_cost_usd: f64,
     /// Accumulated sub-agent/background LLM cost in CNY.
     #[serde(default)]
-    pub subagent_cost_cny: f64,
+    pub agent_cost_cny: f64,
     /// Max-ever displayed session+subagent cost in USD (preserves #244
     /// monotonic guarantee across session restarts).
     #[serde(default)]
@@ -154,12 +154,12 @@ pub struct SessionCostSnapshot {
 impl SessionCostSnapshot {
     /// Session + subagent cost in USD.
     pub fn total_usd(&self) -> f64 {
-        self.session_cost_usd + self.subagent_cost_usd
+        self.session_cost_usd + self.agent_cost_usd
     }
 
     /// Session + subagent cost in CNY.
     pub fn total_cny(&self) -> f64 {
-        self.session_cost_cny + self.subagent_cost_cny
+        self.session_cost_cny + self.agent_cost_cny
     }
 }
 

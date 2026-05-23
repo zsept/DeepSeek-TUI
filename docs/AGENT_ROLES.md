@@ -1,9 +1,9 @@
 # Sub-Agents
 
-Sub-agents are persistent background instances of the agent loop. The parent
+Agents are persistent background instances of the agent loop. The parent
 opens one with a focused task, gets back an `agent_id` and session name
-immediately, and continues working while the sub-agent runs to completion.
-Sub-agents inherit the parent's tool registry by default and run with
+immediately, and continues working while the agent runs to completion.
+Agents inherit the parent's tool registry by default and run with
 `CancellationToken::child_token()`, so cancelling the parent cancels every
 descendant.
 
@@ -39,7 +39,7 @@ turn's user message.
 task you pass. Use `fork_context: true` when the child should continue from
 the parent's current request prefix instead. In fork mode the runtime keeps the
 parent prefill/prompt prefix byte-identical where available, appends a
-structured state snapshot, then adds the sub-agent role instructions and task
+structured state snapshot, then adds the agent role instructions and task
 at the tail. That preserves DeepSeek prefix-cache reuse while giving the child
 the context needed for continuation, review, summarization, or compaction work.
 
@@ -97,8 +97,8 @@ the next turn.
 
 ## Concurrency cap
 
-The dispatcher caps concurrent sub-agents at 10 by default
-(configurable via `[subagents].max_concurrent` in `~/.deepseek/config.toml`,
+The dispatcher caps concurrent agents at 10 by default
+(configurable via `[agents].max_concurrent` in `~/.deepseek/config.toml`,
 hard ceiling 20). When the parent hits the cap, `agent_open` returns
 an error with the cap value; the parent should use `agent_eval` to wait for
 completion or `agent_close` to free a slot before retrying.
@@ -138,7 +138,7 @@ manager can't match them to the current boot.
 
 ## Output contract
 
-Every sub-agent produces a final result string with five sections,
+Every agent produces a final result string with five sections,
 in order:
 
 ```
@@ -149,13 +149,13 @@ RISKS:      what could go wrong / what the parent should double-check
 BLOCKERS:   what stopped you; "None." if you finished cleanly
 ```
 
-The exact format lives in `crates/tui/src/prompts/subagent_output_format.md`.
+The exact format lives in `crates/tui/src/prompts/agent_output_format.md`.
 The parent reads `EVIDENCE` as a working set for the next turn, so
 explorers and reviewers should be precise here.
 
 ## Memory and the `remember` tool (#489)
 
-Sub-agents inherit the parent's memory file when memory is enabled
+Agents inherit the parent's memory file when memory is enabled
 (`[memory] enabled = true` or `DEEPSEEK_MEMORY=on`). They can
 append durable notes via the `remember` tool — handy for an
 explorer that discovers a project convention worth carrying across

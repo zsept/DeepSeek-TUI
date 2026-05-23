@@ -7,10 +7,10 @@ use crate::localization::{Locale, MessageId, tr};
 use crate::palette;
 use crate::settings::Settings;
 use crate::tools::UserInputResponse;
-use crate::tools::subagent::{SubAgentAssignment, SubAgentResult, SubAgentStatus, SubAgentType};
+use crate::tools::subagent::{AgentAssignment, AgentResult, AgentStatus, AgentRole};
 use crate::tui::app::App;
 use crate::tui::approval::{ElevationOption, ReviewDecision};
-use crate::tui::history::{HistoryCell, SubAgentCell, summarize_tool_output};
+use crate::tui::history::{HistoryCell, AgentCell, summarize_tool_output};
 use crate::tui::theme::Theme;
 use crate::tui::widgets::agent_card::AgentLifecycle;
 
@@ -222,7 +222,7 @@ pub trait ModalView: std::any::Any {
         ViewAction::None
     }
     fn render(&self, area: Rect, buf: &mut Buffer);
-    fn update_subagents(&mut self, _agents: &[SubAgentResult]) -> bool {
+    fn update_subagents(&mut self, _agents: &[AgentResult]) -> bool {
         false
     }
     fn tick(&mut self) -> ViewAction {
@@ -282,7 +282,7 @@ impl ViewStack {
         }
     }
 
-    pub fn update_subagents(&mut self, agents: &[SubAgentResult]) -> bool {
+    pub fn update_subagents(&mut self, agents: &[AgentResult]) -> bool {
         self.views
             .last_mut()
             .map(|view| view.update_subagents(agents))
@@ -1509,7 +1509,7 @@ pub mod help;
 pub use help::HelpView;
 
 pub struct SubAgentsView {
-    agents: Vec<SubAgentResult>,
+    agents: Vec<AgentResult>,
     scroll: usize,
 }
 
@@ -1519,10 +1519,10 @@ pub struct SubAgentsView {
 /// briefly be ahead of the manager-list refresh. Include those live rows so
 /// the command does not say "no agents" while the footer/sidebar already show
 /// active delegated work.
-pub(crate) fn subagent_view_agents(
+pub(crate) fn agent_view_agents(
     app: &App,
-    manager_agents: &[SubAgentResult],
-) -> Vec<SubAgentResult> {
+    manager_agents: &[AgentResult],
+) -> Vec<AgentResult> {
     let mut agents = manager_agents.to_vec();
     let mut seen: std::collections::HashSet<String> =
         agents.iter().map(|agent| agent.agent_id.clone()).collect();
@@ -1531,8 +1531,8 @@ pub(crate) fn subagent_view_agents(
         if seen.insert(agent_id.clone()) {
             agents.push(live_subagent_result(
                 agent_id,
-                SubAgentType::General,
-                SubAgentStatus::Running,
+                AgentRole::General,
+                AgentStatus::Running,
                 progress,
                 Some("live"),
             ));
@@ -1541,11 +1541,11 @@ pub(crate) fn subagent_view_agents(
 
     for cell in &app.history {
         match cell {
-            HistoryCell::SubAgent(SubAgentCell::Delegate(card))
+            HistoryCell::Agent(AgentCell::Delegate(card))
                 if seen.insert(card.agent_id.clone()) =>
             {
                 let agent_type =
-                    SubAgentType::from_str(&card.agent_type).unwrap_or(SubAgentType::General);
+                    AgentRole::from_str(&card.agent_type).unwrap_or(AgentRole::General);
                 agents.push(live_subagent_result(
                     &card.agent_id,
                     agent_type,
@@ -1554,7 +1554,7 @@ pub(crate) fn subagent_view_agents(
                     Some("transcript"),
                 ));
             }
-            HistoryCell::SubAgent(SubAgentCell::Fanout(card)) => {
+            HistoryCell::Agent(AgentCell::Fanout(card)) => {
                 for worker in &card.workers {
                     if seen.insert(worker.agent_id.clone()) {
                         let objective = format!(
@@ -1564,7 +1564,7 @@ pub(crate) fn subagent_view_agents(
                         );
                         agents.push(live_subagent_result(
                             &worker.agent_id,
-                            SubAgentType::General,
+                            AgentRole::General,
                             lifecycle_to_subagent_status(worker.status),
                             &objective,
                             Some(card.kind.as_str()),
@@ -1579,29 +1579,29 @@ pub(crate) fn subagent_view_agents(
     agents
 }
 
-fn lifecycle_to_subagent_status(status: AgentLifecycle) -> SubAgentStatus {
+fn lifecycle_to_subagent_status(status: AgentLifecycle) -> AgentStatus {
     match status {
-        AgentLifecycle::Pending | AgentLifecycle::Running => SubAgentStatus::Running,
-        AgentLifecycle::Completed => SubAgentStatus::Completed,
-        AgentLifecycle::Failed => SubAgentStatus::Failed("failed in transcript".to_string()),
-        AgentLifecycle::Cancelled => SubAgentStatus::Cancelled,
+        AgentLifecycle::Pending | AgentLifecycle::Running => AgentStatus::Running,
+        AgentLifecycle::Completed => AgentStatus::Completed,
+        AgentLifecycle::Failed => AgentStatus::Failed("failed in transcript".to_string()),
+        AgentLifecycle::Cancelled => AgentStatus::Cancelled,
     }
 }
 
 fn live_subagent_result(
     agent_id: &str,
-    agent_type: SubAgentType,
-    status: SubAgentStatus,
+    agent_type: AgentRole,
+    status: AgentStatus,
     objective: &str,
     role: Option<&str>,
-) -> SubAgentResult {
-    SubAgentResult {
+) -> AgentResult {
+    AgentResult {
         name: agent_id.to_string(),
         agent_id: agent_id.to_string(),
         context_mode: "fresh".to_string(),
         fork_context: false,
         agent_type,
-        assignment: SubAgentAssignment {
+        assignment: AgentAssignment {
             objective: summarize_tool_output(objective),
             role: role.map(str::to_string),
         },
@@ -1616,7 +1616,7 @@ fn live_subagent_result(
 }
 
 impl SubAgentsView {
-    pub fn new(agents: Vec<SubAgentResult>) -> Self {
+    pub fn new(agents: Vec<AgentResult>) -> Self {
         Self { agents, scroll: 0 }
     }
 }
@@ -1650,7 +1650,7 @@ impl ModalView for SubAgentsView {
         }
     }
 
-    fn update_subagents(&mut self, agents: &[SubAgentResult]) -> bool {
+    fn update_subagents(&mut self, agents: &[AgentResult]) -> bool {
         self.agents = agents.to_vec();
         self.scroll = self.scroll.min(self.agents.len().saturating_sub(1));
         true
@@ -1692,11 +1692,11 @@ impl ModalView for SubAgentsView {
 
             for agent in &self.agents {
                 match agent.status {
-                    SubAgentStatus::Running => running.push(agent),
-                    SubAgentStatus::Completed => completed.push(agent),
-                    SubAgentStatus::Interrupted(_) => interrupted.push(agent),
-                    SubAgentStatus::Failed(_) => failed.push(agent),
-                    SubAgentStatus::Cancelled => cancelled.push(agent),
+                    AgentStatus::Running => running.push(agent),
+                    AgentStatus::Completed => completed.push(agent),
+                    AgentStatus::Interrupted(_) => interrupted.push(agent),
+                    AgentStatus::Failed(_) => failed.push(agent),
+                    AgentStatus::Cancelled => cancelled.push(agent),
                 }
             }
 
@@ -1735,23 +1735,23 @@ impl ModalView for SubAgentsView {
             )));
 
             running.sort_by(|a, b| {
-                let order = agent_type_order(&a.agent_type).cmp(&agent_type_order(&b.agent_type));
+                let order = agent_role_order(&a.agent_type).cmp(&agent_role_order(&b.agent_type));
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
             completed.sort_by(|a, b| {
-                let order = agent_type_order(&a.agent_type).cmp(&agent_type_order(&b.agent_type));
+                let order = agent_role_order(&a.agent_type).cmp(&agent_role_order(&b.agent_type));
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
             interrupted.sort_by(|a, b| {
-                let order = agent_type_order(&a.agent_type).cmp(&agent_type_order(&b.agent_type));
+                let order = agent_role_order(&a.agent_type).cmp(&agent_role_order(&b.agent_type));
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
             failed.sort_by(|a, b| {
-                let order = agent_type_order(&a.agent_type).cmp(&agent_type_order(&b.agent_type));
+                let order = agent_role_order(&a.agent_type).cmp(&agent_role_order(&b.agent_type));
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
             cancelled.sort_by(|a, b| {
-                let order = agent_type_order(&a.agent_type).cmp(&agent_type_order(&b.agent_type));
+                let order = agent_role_order(&a.agent_type).cmp(&agent_role_order(&b.agent_type));
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
 
@@ -1830,7 +1830,7 @@ fn append_subagent_group(
     lines: &mut Vec<ratatui::text::Line<'static>>,
     title: &str,
     section_style: ratatui::style::Style,
-    agents: &[&SubAgentResult],
+    agents: &[&AgentResult],
     content_width: usize,
 ) {
     use ratatui::{
@@ -1913,42 +1913,42 @@ fn append_subagent_group(
     lines.push(Line::from(""));
 }
 
-fn agent_type_order(agent_type: &SubAgentType) -> u8 {
+fn agent_role_order(agent_type: &AgentRole) -> u8 {
     match agent_type {
-        SubAgentType::General => 0,
-        SubAgentType::Explore => 1,
-        SubAgentType::Plan => 2,
-        SubAgentType::Implementer => 3,
-        SubAgentType::Verifier => 4,
-        SubAgentType::Review => 5,
-        SubAgentType::Custom => 6,
-        SubAgentType::Named(_) => 7,
+        AgentRole::General => 0,
+        AgentRole::Explore => 1,
+        AgentRole::Plan => 2,
+        AgentRole::Implementer => 3,
+        AgentRole::Verifier => 4,
+        AgentRole::Review => 5,
+        AgentRole::Custom => 6,
+        AgentRole::Named(_) => 7,
     }
 }
 
-fn format_agent_type(agent_type: &SubAgentType) -> String {
+fn format_agent_type(agent_type: &AgentRole) -> String {
     agent_type.as_str().to_string()
 }
 
 fn format_agent_status(
-    status: &SubAgentStatus,
+    status: &AgentStatus,
 ) -> (&'static str, ratatui::style::Style, Option<&str>) {
     use ratatui::style::Style;
 
     match status {
-        SubAgentStatus::Running => ("running", Style::default().fg(palette::DEEPSEEK_SKY), None),
-        SubAgentStatus::Completed => (
+        AgentStatus::Running => ("running", Style::default().fg(palette::DEEPSEEK_SKY), None),
+        AgentStatus::Completed => (
             "completed",
             Style::default().fg(palette::DEEPSEEK_BLUE),
             None,
         ),
-        SubAgentStatus::Interrupted(reason) => (
+        AgentStatus::Interrupted(reason) => (
             "interrupted",
             Style::default().fg(palette::STATUS_WARNING),
             Some(reason.as_str()),
         ),
-        SubAgentStatus::Cancelled => ("cancelled", Style::default().fg(palette::TEXT_MUTED), None),
-        SubAgentStatus::Failed(reason) => (
+        AgentStatus::Cancelled => ("cancelled", Style::default().fg(palette::TEXT_MUTED), None),
+        AgentStatus::Failed(reason) => (
             "failed",
             Style::default().fg(palette::DEEPSEEK_RED),
             Some(reason.as_str()),
@@ -1970,16 +1970,16 @@ fn truncate_view_text(text: &str, max_chars: usize) -> String {
 mod tests {
     use super::{
         ConfigListItem, ConfigSection, ConfigView, ModalKind, ModalView, ShellControlView,
-        ViewAction, ViewEvent, ViewStack, subagent_view_agents, truncate_view_text,
+        ViewAction, ViewEvent, ViewStack, agent_view_agents, truncate_view_text,
     };
     use crate::config::Config;
     use crate::localization::Locale;
     use crate::settings::Settings;
     use crate::tools::subagent::{
-        SubAgentAssignment, SubAgentResult, SubAgentStatus, SubAgentType,
+        AgentAssignment, AgentResult, AgentStatus, AgentRole,
     };
     use crate::tui::app::{App, TuiOptions};
-    use crate::tui::history::{HistoryCell, SubAgentCell};
+    use crate::tui::history::{HistoryCell, AgentCell};
     use crate::tui::widgets::agent_card::{AgentLifecycle, FanoutCard};
     use crossterm::event::{
         KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
@@ -1997,7 +1997,7 @@ mod tests {
             use_alt_screen: true,
             use_mouse_capture: false,
             use_bracketed_paste: true,
-            max_subagents: 1,
+            max_concurrent_agents: 1,
             skills_dir: PathBuf::from("."),
             memory_path: PathBuf::from("memory.md"),
             notes_path: PathBuf::from("notes.txt"),
@@ -2019,14 +2019,14 @@ mod tests {
         }
     }
 
-    fn manager_agent(id: &str, status: SubAgentStatus) -> SubAgentResult {
-        SubAgentResult {
+    fn manager_agent(id: &str, status: AgentStatus) -> AgentResult {
+        AgentResult {
             name: id.to_string(),
             agent_id: id.to_string(),
             context_mode: "fresh".to_string(),
             fork_context: false,
-            agent_type: SubAgentType::Explore,
-            assignment: SubAgentAssignment {
+            agent_type: AgentRole::Explore,
+            assignment: AgentAssignment {
                 objective: "read the docs".to_string(),
                 role: None,
             },
@@ -2041,50 +2041,50 @@ mod tests {
     }
 
     #[test]
-    fn subagent_view_agents_includes_progress_only_running_agent() {
+    fn agent_view_agents_includes_progress_only_running_agent() {
         let mut app = create_test_app();
         app.agent_progress
             .insert("agent_live".to_string(), "reading code".to_string());
 
-        let agents = subagent_view_agents(&app, &[]);
+        let agents = agent_view_agents(&app, &[]);
 
         assert_eq!(agents.len(), 1);
         assert_eq!(agents[0].agent_id, "agent_live");
-        assert!(matches!(agents[0].status, SubAgentStatus::Running));
+        assert!(matches!(agents[0].status, AgentStatus::Running));
         assert_eq!(agents[0].assignment.role.as_deref(), Some("live"));
         assert!(agents[0].assignment.objective.contains("reading code"));
     }
 
     #[test]
-    fn subagent_view_agents_includes_live_fanout_workers_when_cache_is_empty() {
+    fn agent_view_agents_includes_live_fanout_workers_when_cache_is_empty() {
         let mut app = create_test_app();
         let mut card = FanoutCard::new("rlm").with_workers(["chunk_1", "chunk_2"]);
         card.upsert_worker("chunk_1", AgentLifecycle::Completed);
         card.upsert_worker("chunk_2", AgentLifecycle::Running);
-        app.add_message(HistoryCell::SubAgent(SubAgentCell::Fanout(card)));
+        app.add_message(HistoryCell::Agent(AgentCell::Fanout(card)));
         app.last_fanout_card_index = Some(app.history.len().saturating_sub(1));
 
-        let agents = subagent_view_agents(&app, &[]);
+        let agents = agent_view_agents(&app, &[]);
 
         assert_eq!(agents.len(), 2);
         assert_eq!(agents[0].agent_id, "chunk_1");
-        assert!(matches!(agents[0].status, SubAgentStatus::Completed));
+        assert!(matches!(agents[0].status, AgentStatus::Completed));
         assert_eq!(agents[1].agent_id, "chunk_2");
-        assert!(matches!(agents[1].status, SubAgentStatus::Running));
+        assert!(matches!(agents[1].status, AgentStatus::Running));
         assert_eq!(agents[1].assignment.role.as_deref(), Some("rlm"));
     }
 
     #[test]
-    fn subagent_view_agents_deduplicates_manager_rows_over_live_rows() {
+    fn agent_view_agents_deduplicates_manager_rows_over_live_rows() {
         let mut app = create_test_app();
         app.agent_progress
             .insert("agent_cached".to_string(), "live duplicate".to_string());
-        let manager = vec![manager_agent("agent_cached", SubAgentStatus::Running)];
+        let manager = vec![manager_agent("agent_cached", AgentStatus::Running)];
 
-        let agents = subagent_view_agents(&app, &manager);
+        let agents = agent_view_agents(&app, &manager);
 
         assert_eq!(agents.len(), 1);
-        assert_eq!(agents[0].agent_type, SubAgentType::Explore);
+        assert_eq!(agents[0].agent_type, AgentRole::Explore);
         assert_eq!(agents[0].assignment.objective, "read the docs");
     }
 

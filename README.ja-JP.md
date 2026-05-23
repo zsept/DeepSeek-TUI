@@ -374,7 +374,7 @@ description: DeepSeek にカスタムワークフローを実行させたいと�
 | [TENCENT_CLOUD_REMOTE_FIRST.md](docs/TENCENT_CLOUD_REMOTE_FIRST.md) | Tencent/CNB/Lighthouse/Feishu のリモート優先パス |
 | [TENCENT_LIGHTHOUSE_HK.md](docs/TENCENT_LIGHTHOUSE_HK.md) | Tencent Lighthouse 香港インスタンス設定 |
 | [MEMORY.md](docs/MEMORY.md) | ユーザーメモリ機能ガイド |
-| [SUBAGENTS.md](docs/SUBAGENTS.md) | サブエージェントの役割分類とライフサイクル |
+| [AGENT_ROLES.md](docs/AGENT_ROLES.md) | サブエージェントの役割分類とライフサイクル |
 | [KEYBINDINGS.md](docs/KEYBINDINGS.md) | ショートカット完全カタログ |
 | [RELEASE_RUNBOOK.md](docs/RELEASE_RUNBOOK.md) | リリースプロセス |
 | [OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | 運用とリカバリ |

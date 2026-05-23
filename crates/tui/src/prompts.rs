@@ -1641,8 +1641,8 @@ mod tests {
     #[test]
     fn subagent_done_sentinel_section_present() {
         let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
-        assert!(prompt.contains("Internal Sub-agent Completion Events"));
-        assert!(prompt.contains("<deepseek:subagent.done>"));
+        assert!(prompt.contains("Internal Agent Completion Events"));
+        assert!(prompt.contains("<deepseek:agent.done>"));
         assert!(prompt.contains("not user input"));
         assert!(prompt.contains("Integration protocol"));
         assert!(prompt.contains("Do not tell the user they pasted sentinels"));

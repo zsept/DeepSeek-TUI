@@ -18,7 +18,7 @@ use ratatui::{
 
 use crate::palette;
 use crate::tools::plan::StepStatus;
-use crate::tools::subagent::SubAgentStatus;
+use crate::tools::subagent::AgentStatus;
 use crate::tools::todo::TodoStatus;
 use crate::tui::theme::Theme;
 
@@ -49,7 +49,7 @@ pub fn render_sidebar(f: &mut Frame, area: Rect, app: &App) {
         SidebarFocus::Auto => render_sidebar_auto(f, area, app),
         SidebarFocus::Work => render_sidebar_work(f, area, app),
         SidebarFocus::Tasks => render_sidebar_tasks(f, area, app),
-        SidebarFocus::Agents => render_sidebar_subagents(f, area, app),
+        SidebarFocus::Agents => render_sidebar_agents(f, area, app),
         SidebarFocus::Context => render_context_panel(f, area, app),
         SidebarFocus::Hidden => Block::default()
             .style(Style::default().bg(app.theme.sidebar_bg))
@@ -63,7 +63,7 @@ pub fn render_sidebar(f: &mut Frame, area: Rect, app: &App) {
 fn render_sidebar_auto(f: &mut Frame, area: Rect, app: &App) {
     let work_has_content = sidebar_work_summary(app).has_useful_content();
     let tasks_empty = app.runtime_turn_id.is_none() && app.task_panel.is_empty();
-    let agents_empty = app.subagent_cache.is_empty()
+    let agents_empty = app.agent_cache.is_empty()
         && app.agent_progress.is_empty()
         && active_fanout_counts(app).is_none()
         && !foreground_rlm_running(app);
@@ -107,7 +107,7 @@ fn render_sidebar_auto(f: &mut Frame, area: Rect, app: &App) {
         match panel {
             AutoSidebarPanel::Work => render_sidebar_work(f, *rect, app),
             AutoSidebarPanel::Tasks => render_sidebar_tasks(f, *rect, app),
-            AutoSidebarPanel::Agents => render_sidebar_subagents(f, *rect, app),
+            AutoSidebarPanel::Agents => render_sidebar_agents(f, *rect, app),
             AutoSidebarPanel::Context => render_context_panel(f, *rect, app),
         }
     }
@@ -158,7 +158,7 @@ struct SidebarWorkChecklistItem {
     /// Carried for future use; rendering reads `agent_name` instead.
     #[allow(dead_code)]
     agent_id: Option<String>,
-    /// Resolved agent name from `subagent_cache`.
+    /// Resolved agent name from `agent_cache`.
     agent_name: Option<String>,
 }
 
@@ -241,9 +241,9 @@ fn sidebar_work_summary(app: &App) -> SidebarWorkSummary {
         Ok(todos) => {
             let snapshot = todos.snapshot();
             summary.checklist_completion_pct = snapshot.completion_pct;
-            // Build agent name lookup from subagent_cache.
+            // Build agent name lookup from agent_cache.
             let agent_names: std::collections::HashMap<&str, &str> = app
-                .subagent_cache
+                .agent_cache
                 .iter()
                 .filter_map(|a| {
                     a.nickname
@@ -1463,7 +1463,7 @@ fn duration_ms(duration: Duration) -> u64 {
     u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
 }
 
-fn render_sidebar_subagents(f: &mut Frame, area: Rect, app: &App) {
+fn render_sidebar_agents(f: &mut Frame, area: Rect, app: &App) {
     if area.height < 3 {
         return;
     }
@@ -1471,7 +1471,7 @@ fn render_sidebar_subagents(f: &mut Frame, area: Rect, app: &App) {
     let content_width = area.width.saturating_sub(4) as usize;
     let usable_rows = area.height.saturating_sub(3) as usize;
     let cached_ids: std::collections::HashSet<&str> = app
-        .subagent_cache
+        .agent_cache
         .iter()
         .map(|agent| agent.agent_id.as_str())
         .collect();
@@ -1481,12 +1481,12 @@ fn render_sidebar_subagents(f: &mut Frame, area: Rect, app: &App) {
         .filter(|id| !cached_ids.contains(id.as_str()))
         .count();
     let cached_running = app
-        .subagent_cache
+        .agent_cache
         .iter()
-        .filter(|agent| matches!(agent.status, SubAgentStatus::Running))
+        .filter(|agent| matches!(agent.status, AgentStatus::Running))
         .count();
     let role_counts: std::collections::BTreeMap<String, usize> =
-        app.subagent_cache
+        app.agent_cache
             .iter()
             .fold(std::collections::BTreeMap::new(), |mut acc, agent| {
                 *acc.entry(agent.agent_type.as_str().to_string())
@@ -1498,8 +1498,8 @@ fn render_sidebar_subagents(f: &mut Frame, area: Rect, app: &App) {
         .unwrap_or((0, None));
     let foreground_rlm_running = foreground_rlm_running(app);
 
-    let summary = SidebarSubagentSummary {
-        cached_total: app.subagent_cache.len(),
+    let summary = SidebarAgentSummary {
+        cached_total: app.agent_cache.len(),
         cached_running,
         progress_only_count,
         fanout_total,
@@ -1508,16 +1508,16 @@ fn render_sidebar_subagents(f: &mut Frame, area: Rect, app: &App) {
         role_counts,
     };
     let rows = sidebar_agent_rows(app);
-    let lines = subagent_panel_lines(&summary, &rows, content_width, usable_rows.max(1), &app.theme);
+    let lines = agent_panel_lines(&summary, &rows, content_width, usable_rows.max(1), &app.theme);
 
     render_sidebar_section(f, area, "Agents", lines, app);
 }
 
 /// Minimal projection of the data the sub-agent sidebar needs. Lifted out
-/// of `render_sidebar_subagents` so the rendering can be snapshot-tested
+/// of `render_sidebar_agents` so the rendering can be snapshot-tested
 /// without a full `App`.
 #[derive(Debug, Clone, Default)]
-pub struct SidebarSubagentSummary {
+pub struct SidebarAgentSummary {
     pub cached_total: usize,
     pub cached_running: usize,
     pub progress_only_count: usize,
@@ -1555,7 +1555,7 @@ fn foreground_rlm_running(app: &App) -> bool {
 
 fn sidebar_agent_rows(app: &App) -> Vec<SidebarAgentRow> {
     let mut rows: Vec<SidebarAgentRow> = app
-        .subagent_cache
+        .agent_cache
         .iter()
         .map(|agent| {
             let progress = app
@@ -1582,7 +1582,7 @@ fn sidebar_agent_rows(app: &App) -> Vec<SidebarAgentRow> {
         .collect();
 
     let cached_ids: std::collections::HashSet<&str> = app
-        .subagent_cache
+        .agent_cache
         .iter()
         .map(|agent| agent.agent_id.as_str())
         .collect();
@@ -1606,20 +1606,20 @@ fn sidebar_agent_rows(app: &App) -> Vec<SidebarAgentRow> {
     rows
 }
 
-fn subagent_status_text(status: &SubAgentStatus) -> &'static str {
+fn subagent_status_text(status: &AgentStatus) -> &'static str {
     match status {
-        SubAgentStatus::Running => "running",
-        SubAgentStatus::Completed => "done",
-        SubAgentStatus::Interrupted(_) => "interrupted",
-        SubAgentStatus::Failed(_) => "failed",
-        SubAgentStatus::Cancelled => "canceled",
+        AgentStatus::Running => "running",
+        AgentStatus::Completed => "done",
+        AgentStatus::Interrupted(_) => "interrupted",
+        AgentStatus::Failed(_) => "failed",
+        AgentStatus::Cancelled => "canceled",
     }
 }
 
 /// Build sub-agent sidebar lines from summary + per-agent rows. Public
 /// for the snapshot tests in this module.
-pub fn subagent_panel_lines(
-    summary: &SidebarSubagentSummary,
+pub fn agent_panel_lines(
+    summary: &SidebarAgentSummary,
     rows: &[SidebarAgentRow],
     content_width: usize,
     max_rows: usize,
@@ -1804,7 +1804,7 @@ fn render_context_panel(f: &mut Frame, area: Rect, app: &App) {
     // ── Session cost ─────────────────────────────────────────────
     let displayed_total = app.displayed_session_cost_for_currency(app.cost_currency);
     let session_cost = app.session_cost_for_currency(app.cost_currency);
-    let agent_cost = app.subagent_cost_for_currency(app.cost_currency);
+    let agent_cost = app.agent_cost_for_currency(app.cost_currency);
     let real_total = session_cost + agent_cost;
     // Only show the additive breakdown when it matches the displayed
     // total; when the high-water mark is in effect (post-reconciliation),
@@ -1940,8 +1940,8 @@ fn render_sidebar_section(
 mod tests {
     use super::{
         ACTIVE_TOOL_COMPLETED_ROW_TTL, ACTIVE_TOOL_STALE_RUNNING_ROW_TTL, AutoSidebarPanel,
-        AutoSidebarState, SidebarAgentRow, SidebarSubagentSummary, SidebarWorkChecklistItem,
-        SidebarWorkStrategyStep, SidebarWorkSummary, auto_sidebar_panels, subagent_panel_lines,
+        AutoSidebarState, SidebarAgentRow, SidebarAgentSummary, SidebarWorkChecklistItem,
+        SidebarWorkStrategyStep, SidebarWorkSummary, auto_sidebar_panels, agent_panel_lines,
         task_panel_lines, work_panel_empty_hint, work_panel_lines,
     };
     use crate::config::Config;
@@ -1966,7 +1966,7 @@ mod tests {
             use_alt_screen: true,
             use_mouse_capture: false,
             use_bracketed_paste: true,
-            max_subagents: 1,
+            max_concurrent_agents: 1,
             skills_dir: PathBuf::from("."),
             memory_path: PathBuf::from("memory.md"),
             notes_path: PathBuf::from("notes.txt"),
@@ -2582,8 +2582,8 @@ mod tests {
 
     #[test]
     fn navigator_empty_state_says_no_agents() {
-        let summary = SidebarSubagentSummary::default();
-        let lines = subagent_panel_lines(&summary, &[], 32, 8, &crate::tui::theme::DARK_THEME);
+        let summary = SidebarAgentSummary::default();
+        let lines = agent_panel_lines(&summary, &[], 32, 8, &crate::tui::theme::DARK_THEME);
         let text = lines_to_text(&lines);
         assert_eq!(text, vec!["No agents".to_string()]);
     }
@@ -2594,7 +2594,7 @@ mod tests {
         let mut role_counts = std::collections::BTreeMap::new();
         role_counts.insert("general".to_string(), 2);
         role_counts.insert("explore".to_string(), 1);
-        let summary = SidebarSubagentSummary {
+        let summary = SidebarAgentSummary {
             cached_total: 3,
             cached_running: 2,
             progress_only_count: 0,
@@ -2623,7 +2623,7 @@ mod tests {
                 duration_ms: Some(21_000),
             },
         ];
-        let text = lines_to_text(&subagent_panel_lines(&summary, &rows, 64, 12, &crate::tui::theme::DARK_THEME));
+        let text = lines_to_text(&agent_panel_lines(&summary, &rows, 64, 12, &crate::tui::theme::DARK_THEME));
         assert!(text[0].contains("2 running"), "header: {:?}", text[0]);
         assert!(text[0].contains("/ 3"), "total in header: {:?}", text[0]);
         assert!(
@@ -2644,7 +2644,7 @@ mod tests {
 
     #[test]
     fn navigator_uses_fanout_total_when_fanout_has_seeded_slots() {
-        let summary = SidebarSubagentSummary {
+        let summary = SidebarAgentSummary {
             cached_total: 1,
             cached_running: 1,
             progress_only_count: 0,
@@ -2654,7 +2654,7 @@ mod tests {
             role_counts: std::collections::BTreeMap::new(),
         };
 
-        let text = lines_to_text(&subagent_panel_lines(&summary, &[], 64, 8, &crate::tui::theme::DARK_THEME));
+        let text = lines_to_text(&agent_panel_lines(&summary, &[], 64, 8, &crate::tui::theme::DARK_THEME));
 
         assert!(text[0].contains("1 running"), "header: {:?}", text[0]);
         assert!(text[0].contains("/ 6"), "fanout total: {:?}", text[0]);
@@ -2664,7 +2664,7 @@ mod tests {
     fn navigator_settled_state_says_done() {
         let mut role_counts = std::collections::BTreeMap::new();
         role_counts.insert("general".to_string(), 1);
-        let summary = SidebarSubagentSummary {
+        let summary = SidebarAgentSummary {
             cached_total: 1,
             cached_running: 0,
             progress_only_count: 0,
@@ -2673,7 +2673,7 @@ mod tests {
             foreground_rlm_running: false,
             role_counts,
         };
-        let text = lines_to_text(&subagent_panel_lines(&summary, &[], 32, 8, &crate::tui::theme::DARK_THEME));
+        let text = lines_to_text(&agent_panel_lines(&summary, &[], 32, 8, &crate::tui::theme::DARK_THEME));
         assert!(text[0].contains("1 done"), "settled header: {:?}", text[0]);
     }
 
@@ -2684,7 +2684,7 @@ mod tests {
         for role in ["general", "explore", "plan", "review", "custom", "extra"] {
             role_counts.insert(role.to_string(), 1);
         }
-        let summary = SidebarSubagentSummary {
+        let summary = SidebarAgentSummary {
             cached_total: 6,
             cached_running: 6,
             progress_only_count: 0,
@@ -2693,7 +2693,7 @@ mod tests {
             foreground_rlm_running: false,
             role_counts,
         };
-        let lines = subagent_panel_lines(&summary, &[], 16, 8, &crate::tui::theme::DARK_THEME);
+        let lines = agent_panel_lines(&summary, &[], 16, 8, &crate::tui::theme::DARK_THEME);
         let role_line: &str = lines[1]
             .spans
             .first()
@@ -2707,11 +2707,11 @@ mod tests {
 
     #[test]
     fn navigator_shows_foreground_rlm_work_when_no_subagents_exist() {
-        let summary = SidebarSubagentSummary {
+        let summary = SidebarAgentSummary {
             foreground_rlm_running: true,
-            ..SidebarSubagentSummary::default()
+            ..SidebarAgentSummary::default()
         };
-        let text = lines_to_text(&subagent_panel_lines(&summary, &[], 64, 8, &crate::tui::theme::DARK_THEME));
+        let text = lines_to_text(&agent_panel_lines(&summary, &[], 64, 8, &crate::tui::theme::DARK_THEME));
 
         assert!(!text[0].contains("No agents"), "header: {:?}", text);
         assert!(

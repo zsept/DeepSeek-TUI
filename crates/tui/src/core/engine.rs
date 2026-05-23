@@ -25,7 +25,7 @@ use crate::client::DeepSeekClient;
 use crate::compaction::{
     CompactionConfig, compact_messages_safe, merge_system_prompts, should_compact,
 };
-use crate::config::{ApiProvider, Config, DEFAULT_MAX_SUBAGENTS, DEFAULT_TEXT_MODEL};
+use crate::config::{ApiProvider, Config, DEFAULT_MAX_CONCURRENT_AGENTS, DEFAULT_TEXT_MODEL};
 use crate::cycle_manager::{
     CycleBriefing, CycleConfig, StructuredState, archive_cycle, build_seed_messages,
     estimate_briefing_tokens, produce_briefing, should_advance_cycle,
@@ -47,8 +47,8 @@ use crate::tools::shell::{SharedShellManager, new_shared_shell_manager};
 use crate::tools::spec::RuntimeToolServices;
 use crate::tools::spec::{ApprovalRequirement, ToolError, ToolResult};
 use crate::tools::subagent::{
-    Mailbox, SharedSubAgentManager, SubAgentCompletion, SubAgentForkContext, SubAgentRuntime,
-    SubAgentType, new_shared_subagent_manager, resolve_subagent_assignment_route,
+    Mailbox, SharedAgentManager, AgentCompletion, AgentForkContext, AgentRuntime,
+    AgentRole, new_shared_agent_manager, resolve_agent_assignment_route,
 };
 use crate::tools::todo::{SharedTodoList, new_shared_todo_list};
 use crate::tools::user_input::{UserInputRequest, UserInputResponse};
@@ -94,7 +94,7 @@ pub struct EngineConfig {
     /// built-in workspace/global candidates.
     pub extra_skills_dirs: Vec<PathBuf>,
     /// User-defined custom sub-agent type definitions.
-    pub subagent_custom_types: std::collections::HashMap<String, crate::config::SubAgentCustomType>,
+    pub agent_role_configs: std::collections::HashMap<String, crate::config::AgentRoleConfig>,
     /// Custom parent system prompt from `Config::system_prompt`.
     pub system_prompt: Option<String>,
     /// Additional instruction files concatenated into the system
@@ -109,7 +109,7 @@ pub struct EngineConfig {
     /// Maximum number of assistant steps before stopping.
     pub max_steps: u32,
     /// Maximum number of concurrently active subagents.
-    pub max_subagents: usize,
+    pub max_concurrent_agents: usize,
     /// Feature flags controlling tool availability.
     pub features: Features,
     /// Auto-compaction settings for long conversations.
@@ -130,7 +130,7 @@ pub struct EngineConfig {
     /// Shared Plan state.
     pub plan_state: SharedPlanState,
     /// Maximum sub-agent recursion depth (default 3). See
-    /// `SubAgentRuntime::max_spawn_depth`. Override via
+    /// `AgentRuntime::max_spawn_depth`. Override via
     /// `[runtime] max_spawn_depth = N` in `~/.deepseek/config.toml`.
     pub max_spawn_depth: u32,
     /// Per-domain network policy decider (#135). Shared across the session so
@@ -149,7 +149,7 @@ pub struct EngineConfig {
     /// Durable runtime services exposed to model-visible tools.
     pub runtime_services: RuntimeToolServices,
     /// Per-role/type sub-agent model overrides already resolved from config.
-    pub subagent_model_overrides: HashMap<String, String>,
+    pub agent_role_model_overrides: HashMap<String, String>,
     /// Whether the user-memory feature is enabled (#489). When `true` the
     /// engine reads `memory_path` on each prompt assembly and prepends a
     /// `<user_memory>` block to the system prompt.
@@ -186,13 +186,13 @@ impl Default for EngineConfig {
             mcp_config_path: PathBuf::from("mcp.json"),
             skills_dir: crate::skills::default_skills_dir(),
             extra_skills_dirs: Vec::new(),
-            subagent_custom_types: HashMap::new(),
+            agent_role_configs: HashMap::new(),
             system_prompt: None,
             instructions: Vec::new(),
             project_context_pack_enabled: true,
             translation_enabled: false,
             max_steps: 100,
-            max_subagents: DEFAULT_MAX_SUBAGENTS,
+            max_concurrent_agents: DEFAULT_MAX_CONCURRENT_AGENTS,
             features: Features::with_defaults(),
             compaction: CompactionConfig::default(),
             cycle: CycleConfig::default(),
@@ -206,7 +206,7 @@ impl Default for EngineConfig {
                 crate::snapshot::DEFAULT_MAX_WORKSPACE_BYTES_FOR_SNAPSHOT,
             lsp_config: None,
             runtime_services: RuntimeToolServices::default(),
-            subagent_model_overrides: HashMap::new(),
+            agent_role_model_overrides: HashMap::new(),
             memory_enabled: false,
             memory_path: PathBuf::from("./memory.md"),
             vision_config: None,
@@ -287,7 +287,7 @@ pub struct Engine {
     deepseek_client_error: Option<String>,
     api_key_env_only_recovery: Option<String>,
     session: Session,
-    subagent_manager: SharedSubAgentManager,
+    agent_manager: SharedAgentManager,
     shell_manager: SharedShellManager,
     mcp_pool: Option<Arc<AsyncMutex<McpPool>>>,
     rx_op: mpsc::Receiver<Op>,
@@ -296,13 +296,13 @@ pub struct Engine {
     rx_steer: mpsc::Receiver<String>,
     tx_event: mpsc::Sender<Event>,
     /// Wakeup channel for the parent turn loop when a direct child sub-agent
-    /// terminates (issue #756). Cloned into `SubAgentRuntime` so the runtime
+    /// terminates (issue #756). Cloned into `AgentRuntime` so the runtime
     /// can fan completion events back into the engine.
-    tx_subagent_completion: mpsc::UnboundedSender<SubAgentCompletion>,
-    /// Receiver paired with `tx_subagent_completion`. Drained at the
-    /// turn-loop's empty-tool_uses branch to surface `<deepseek:subagent.done>`
+    tx_agent_completion: mpsc::UnboundedSender<AgentCompletion>,
+    /// Receiver paired with `tx_agent_completion`. Drained at the
+    /// turn-loop's empty-tool_uses branch to surface `<deepseek:agent.done>`
     /// sentinels into the parent's transcript before deciding to end the turn.
-    pub(super) rx_subagent_completion: mpsc::UnboundedReceiver<SubAgentCompletion>,
+    pub(super) rx_subagent_completion: mpsc::UnboundedReceiver<AgentCompletion>,
     cancel_token: CancellationToken,
     shared_cancel_token: Arc<StdMutex<CancellationToken>>,
     /// Latched reason for the current cancellation, mirrored to
@@ -405,7 +405,7 @@ impl Engine {
         let (tx_approval, rx_approval) = mpsc::channel(64);
         let (tx_user_input, rx_user_input) = mpsc::channel(32);
         let (tx_steer, rx_steer) = mpsc::channel(64);
-        let (tx_subagent_completion, rx_subagent_completion) = mpsc::unbounded_channel();
+        let (tx_agent_completion, rx_subagent_completion) = mpsc::unbounded_channel();
         let cancel_token = CancellationToken::new();
         let shared_cancel_token = Arc::new(StdMutex::new(cancel_token.clone()));
         let cancel_reason: Arc<StdMutex<Option<CancelReason>>> = Arc::new(StdMutex::new(None));
@@ -466,8 +466,8 @@ impl Engine {
             crate::prefix_cache::PrefixStabilityManager::new_unpinned()
         });
 
-        let subagent_manager =
-            new_shared_subagent_manager(config.workspace.clone(), config.max_subagents);
+        let agent_manager =
+            new_shared_agent_manager(config.workspace.clone(), config.max_concurrent_agents);
         let shell_manager = config
             .runtime_services
             .shell_manager
@@ -546,7 +546,7 @@ impl Engine {
             deepseek_client_error,
             api_key_env_only_recovery,
             session,
-            subagent_manager,
+            agent_manager,
             shell_manager,
             mcp_pool: None,
             rx_op,
@@ -554,7 +554,7 @@ impl Engine {
             rx_user_input,
             rx_steer,
             tx_event,
-            tx_subagent_completion,
+            tx_agent_completion,
             rx_subagent_completion,
             cancel_token: cancel_token.clone(),
             shared_cancel_token: shared_cancel_token.clone(),
@@ -652,35 +652,35 @@ impl Engine {
                         continue;
                     };
 
-                    let mut runtime = SubAgentRuntime::new(
+                    let mut runtime = AgentRuntime::new(
                         client,
                         self.session.model.clone(),
                         // Sub-agents don't inherit YOLO mode - use Agent mode defaults
                         self.build_tool_context(AppMode::Limited, self.session.auto_approve),
                         self.session.allow_shell,
                         Some(self.tx_event.clone()),
-                        Arc::clone(&self.subagent_manager),
+                        Arc::clone(&self.agent_manager),
                     )
-                    .with_role_models(self.config.subagent_model_overrides.clone())
+                    .with_role_models(self.config.agent_role_model_overrides.clone())
                     .with_auto_model(self.session.auto_model)
                     .with_reasoning_effort(
                         self.session.reasoning_effort.clone(),
                         self.session.reasoning_effort_auto,
                     )
                     .with_max_spawn_depth(self.config.max_spawn_depth)
-                    .with_custom_type_configs(self.config.subagent_custom_types.clone())
+                    .with_role_configs(self.config.agent_role_configs.clone())
                     .background_runtime();
-                    let route = resolve_subagent_assignment_route(&runtime, None, &prompt).await;
+                    let route = resolve_agent_assignment_route(&runtime, None, &prompt).await;
                     runtime.model = route.model;
                     runtime.reasoning_effort = route.reasoning_effort;
                     runtime.reasoning_effort_auto = false;
 
                     let result = {
-                        let mut manager = self.subagent_manager.write().await;
+                        let mut manager = self.agent_manager.write().await;
                         manager.spawn_background(
-                            Arc::clone(&self.subagent_manager),
+                            Arc::clone(&self.agent_manager),
                             runtime,
-                            SubAgentType::General,
+                            AgentRole::General,
                             prompt.clone(),
                             None,
                         )
@@ -708,7 +708,7 @@ impl Engine {
                 }
                 Op::ListSubAgents => {
                     let agents = {
-                        let mut manager = self.subagent_manager.write().await;
+                        let mut manager = self.agent_manager.write().await;
                         manager.cleanup(Duration::from_secs(60 * 60));
                         manager.list()
                     };
@@ -1010,10 +1010,10 @@ impl Engine {
                 &self.session.working_set,
                 &self.config.todos,
                 &self.config.plan_state,
-                Some(&self.subagent_manager),
+                Some(&self.agent_manager),
             )
             .await;
-            Some(SubAgentForkContext {
+            Some(AgentForkContext {
                 system: self.session.system_prompt.clone(),
                 messages: self.messages_with_turn_metadata(),
                 structured_state_block: state.to_system_block(),
@@ -1058,23 +1058,23 @@ impl Engine {
             AppMode::Limited | AppMode::Yolo => {
                 if self.config.features.enabled(Feature::Subagents) {
                     let runtime = if let Some(client) = self.deepseek_client.clone() {
-                        let mut rt = SubAgentRuntime::new(
+                        let mut rt = AgentRuntime::new(
                             client,
                             self.session.model.clone(),
                             tool_context.clone(),
                             self.session.allow_shell,
                             Some(self.tx_event.clone()),
-                            Arc::clone(&self.subagent_manager),
+                            Arc::clone(&self.agent_manager),
                         )
-                        .with_role_models(self.config.subagent_model_overrides.clone())
+                        .with_role_models(self.config.agent_role_model_overrides.clone())
                         .with_auto_model(self.session.auto_model)
                         .with_reasoning_effort(
                             self.session.reasoning_effort.clone(),
                             self.session.reasoning_effort_auto,
                         )
                         .with_max_spawn_depth(self.config.max_spawn_depth)
-                        .with_custom_type_configs(self.config.subagent_custom_types.clone())
-                        .with_parent_completion_tx(self.tx_subagent_completion.clone());
+                        .with_role_configs(self.config.agent_role_configs.clone())
+                        .with_parent_completion_tx(self.tx_agent_completion.clone());
                         if let Some(context) = fork_context_for_runtime.clone() {
                             rt = rt.with_fork_context(context);
                         }
@@ -1089,8 +1089,8 @@ impl Engine {
                     };
                     Some(
                         builder
-                            .with_subagent_tools(
-                                self.subagent_manager.clone(),
+                            .with_agent_manager_tools(
+                                self.agent_manager.clone(),
                                 runtime.expect("sub-agent runtime should exist with active client"),
                             )
                             .build(tool_context),
@@ -1647,7 +1647,7 @@ impl Engine {
                     &self.session.working_set,
                     &self.config.todos,
                     &self.config.plan_state,
-                    Some(&self.subagent_manager),
+                    Some(&self.agent_manager),
                 )
                 .await;
                 s.to_system_block()
@@ -1748,7 +1748,7 @@ impl Engine {
             &self.session.working_set,
             &self.config.todos,
             &self.config.plan_state,
-            Some(&self.subagent_manager),
+            Some(&self.agent_manager),
         )
         .await;
         let state_block = state.to_system_block();

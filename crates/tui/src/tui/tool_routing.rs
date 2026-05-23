@@ -388,7 +388,7 @@ fn accrue_child_token_cost_if_any(app: &mut App, result: &Result<ToolResult, Too
         server_tool_use: None,
     };
     if let Some(cost) = crate::pricing::calculate_turn_cost_estimate_from_usage(model, &usage) {
-        app.accrue_subagent_cost_estimate(cost);
+        app.accrue_agent_cost_estimate(cost);
     }
 }
 

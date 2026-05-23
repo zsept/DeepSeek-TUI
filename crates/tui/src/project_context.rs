@@ -916,7 +916,7 @@ mod tests {
             tmp.path()
                 .join(".deepseek")
                 .join("state")
-                .join("subagents.v1.json"),
+                .join("agents.v1.json"),
             "{}",
         )
         .expect("write state");

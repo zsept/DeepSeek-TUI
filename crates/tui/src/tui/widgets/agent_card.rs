@@ -416,7 +416,7 @@ pub fn apply_to_delegate(card: &mut DelegateCard, msg: &MailboxMessage) -> bool 
             return false;
         }
         MailboxMessage::TokenUsage { .. } => {
-            // Cost accumulation happens in handle_subagent_mailbox (ui.rs)
+            // Cost accumulation happens in handle_agent_mailbox (ui.rs)
             // before this apply function is called; TokenUsage never reaches
             // this arm in practice.
             return false;
@@ -463,7 +463,7 @@ pub fn apply_to_fanout(card: &mut FanoutCard, msg: &MailboxMessage) -> bool {
             true
         }
         MailboxMessage::TokenUsage { .. } => {
-            // Cost accumulation happens in handle_subagent_mailbox (ui.rs)
+            // Cost accumulation happens in handle_agent_mailbox (ui.rs)
             // before this apply function is called; TokenUsage never reaches
             // this arm in practice.
             true
@@ -665,7 +665,7 @@ mod tests {
     fn fanout_started_claims_seeded_pending_slot_without_growing_grid() {
         let mut card = FanoutCard::new("fanout").with_workers(["task:a", "task:b"]);
         let started =
-            MailboxMessage::started("agent_live", crate::tools::subagent::SubAgentType::General);
+            MailboxMessage::started("agent_live", crate::tools::subagent::AgentRole::General);
 
         assert!(apply_to_fanout(&mut card, &started));
 
@@ -679,7 +679,7 @@ mod tests {
     #[test]
     fn fanout_apply_transitions_worker_through_lifecycle() {
         let mut card = FanoutCard::new("fanout").with_workers(["w_1"]);
-        let started = MailboxMessage::started("w_1", crate::tools::subagent::SubAgentType::General);
+        let started = MailboxMessage::started("w_1", crate::tools::subagent::AgentRole::General);
         apply_to_fanout(&mut card, &started);
         assert_eq!(card.workers[0].status, AgentLifecycle::Running);
 

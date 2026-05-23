@@ -84,7 +84,7 @@ mod tests {
                 use_alt_screen: false,
                 use_mouse_capture: false,
                 use_bracketed_paste: true,
-                max_subagents: 2,
+                max_concurrent_agents: 2,
                 skills_dir: PathBuf::from("."),
                 memory_path: PathBuf::from("memory.md"),
                 notes_path: PathBuf::from("notes.txt"),

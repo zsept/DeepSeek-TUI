@@ -11,7 +11,7 @@ use crate::tui::file_mention::{
 use crate::tui::footer_ui::{
     active_tool_status_label, footer_auxiliary_spans, footer_cache_spans, footer_coherence_spans,
     footer_state_label, footer_status_line_spans, format_context_budget,
-    format_token_count_compact, friendly_subagent_progress, render_footer_from,
+    format_token_count_compact, friendly_agent_progress, render_footer_from,
 };
 use crate::tui::history::{
     ExecCell, ExecSource, GenericToolCell, HistoryCell, ToolCell, ToolStatus,
@@ -1183,7 +1183,7 @@ fn create_test_app() -> App {
         use_alt_screen: true,
         use_mouse_capture: false,
         use_bracketed_paste: true,
-        max_subagents: 1,
+        max_concurrent_agents: 1,
         skills_dir: PathBuf::from("."),
         memory_path: PathBuf::from("memory.md"),
         notes_path: PathBuf::from("notes.txt"),
@@ -1241,7 +1241,7 @@ fn create_test_options() -> TuiOptions {
         use_alt_screen: true,
         use_mouse_capture: false,
         use_bracketed_paste: true,
-        max_subagents: 1,
+        max_concurrent_agents: 1,
         skills_dir: PathBuf::from("."),
         memory_path: PathBuf::from("memory.md"),
         notes_path: PathBuf::from("notes.txt"),
@@ -1327,9 +1327,9 @@ fn apply_loaded_session_resets_unpersisted_telemetry() {
     let mut app = create_test_app();
     app.session.session_cost = 1.25;
     app.session.session_cost_cny = 9.13;
-    app.session.subagent_cost = 0.75;
-    app.session.subagent_cost_cny = 5.48;
-    app.session.subagent_cost_event_seqs.insert(42);
+    app.session.agent_cost = 0.75;
+    app.session.agent_cost_cny = 5.48;
+    app.session.agent_cost_event_seqs.insert(42);
     app.session.displayed_cost_high_water = 2.0;
     app.session.displayed_cost_high_water_cny = 14.61;
     app.session.last_prompt_tokens = Some(120);
@@ -1355,9 +1355,9 @@ fn apply_loaded_session_resets_unpersisted_telemetry() {
     assert_eq!(app.session.total_conversation_tokens, 500);
     assert_eq!(app.session.session_cost, 0.0);
     assert_eq!(app.session.session_cost_cny, 0.0);
-    assert_eq!(app.session.subagent_cost, 0.0);
-    assert_eq!(app.session.subagent_cost_cny, 0.0);
-    assert!(app.session.subagent_cost_event_seqs.is_empty());
+    assert_eq!(app.session.agent_cost, 0.0);
+    assert_eq!(app.session.agent_cost_cny, 0.0);
+    assert!(app.session.agent_cost_event_seqs.is_empty());
     assert_eq!(app.session.displayed_cost_high_water, 0.0);
     assert_eq!(app.session.displayed_cost_high_water_cny, 0.0);
     assert_eq!(app.session.last_prompt_tokens, None);
@@ -2049,17 +2049,17 @@ fn hidden_sidebar_focus_suppresses_sidebar_split_even_when_wide() {
     assert_eq!(sidebar_width_for_chat_area(&app, 120), None);
 }
 
-fn make_subagent(
+fn make_agent(
     id: &str,
-    status: crate::tools::subagent::SubAgentStatus,
-) -> crate::tools::subagent::SubAgentResult {
-    crate::tools::subagent::SubAgentResult {
+    status: crate::tools::subagent::AgentStatus,
+) -> crate::tools::subagent::AgentResult {
+    crate::tools::subagent::AgentResult {
         name: id.to_string(),
         agent_id: id.to_string(),
         context_mode: "fresh".to_string(),
         fork_context: false,
-        agent_type: crate::tools::subagent::SubAgentType::General,
-        assignment: crate::tools::subagent::SubAgentAssignment {
+        agent_type: crate::tools::subagent::AgentRole::General,
+        assignment: crate::tools::subagent::AgentAssignment {
             objective: format!("objective-{id}"),
             role: Some("worker".to_string()),
         },
@@ -2074,17 +2074,17 @@ fn make_subagent(
 }
 
 #[test]
-fn sort_subagents_orders_running_before_terminal_statuses() {
+fn sort_agents_orders_running_before_terminal_statuses() {
     let mut agents = vec![
-        make_subagent("agent_c", crate::tools::subagent::SubAgentStatus::Completed),
-        make_subagent("agent_a", crate::tools::subagent::SubAgentStatus::Running),
-        make_subagent(
+        make_agent("agent_c", crate::tools::subagent::AgentStatus::Completed),
+        make_agent("agent_a", crate::tools::subagent::AgentStatus::Running),
+        make_agent(
             "agent_b",
-            crate::tools::subagent::SubAgentStatus::Failed("boom".to_string()),
+            crate::tools::subagent::AgentStatus::Failed("boom".to_string()),
         ),
     ];
 
-    sort_subagents_in_place(&mut agents);
+    sort_agents_in_place(&mut agents);
 
     assert_eq!(agents[0].agent_id, "agent_a");
     assert_eq!(agents[1].agent_id, "agent_b");
@@ -2094,9 +2094,9 @@ fn sort_subagents_orders_running_before_terminal_statuses() {
 #[test]
 fn running_agent_count_unions_cache_and_progress() {
     let mut app = create_test_app();
-    app.subagent_cache = vec![
-        make_subagent("agent_a", crate::tools::subagent::SubAgentStatus::Running),
-        make_subagent("agent_b", crate::tools::subagent::SubAgentStatus::Completed),
+    app.agent_cache = vec![
+        make_agent("agent_a", crate::tools::subagent::AgentStatus::Running),
+        make_agent("agent_b", crate::tools::subagent::AgentStatus::Completed),
     ];
     app.agent_progress
         .insert("agent_c".to_string(), "planning".to_string());
@@ -2105,22 +2105,22 @@ fn running_agent_count_unions_cache_and_progress() {
 }
 
 #[test]
-fn reconcile_subagent_activity_state_trims_stale_progress_and_sets_anchor() {
+fn reconcile_agent_activity_state_trims_stale_progress_and_sets_anchor() {
     let mut app = create_test_app();
-    app.subagent_cache = vec![
-        make_subagent("agent_a", crate::tools::subagent::SubAgentStatus::Running),
-        make_subagent("agent_b", crate::tools::subagent::SubAgentStatus::Completed),
+    app.agent_cache = vec![
+        make_agent("agent_a", crate::tools::subagent::AgentStatus::Running),
+        make_agent("agent_b", crate::tools::subagent::AgentStatus::Completed),
     ];
     app.agent_progress
         .insert("agent_stale".to_string(), "old".to_string());
 
-    reconcile_subagent_activity_state(&mut app);
+    reconcile_agent_activity_state(&mut app);
     assert!(app.agent_progress.contains_key("agent_a"));
     assert!(!app.agent_progress.contains_key("agent_stale"));
     assert!(app.agent_activity_started_at.is_some());
 
-    app.subagent_cache.clear();
-    reconcile_subagent_activity_state(&mut app);
+    app.agent_cache.clear();
+    reconcile_agent_activity_state(&mut app);
     assert!(app.agent_progress.is_empty());
     assert!(app.agent_activity_started_at.is_none());
 }
@@ -2128,7 +2128,7 @@ fn reconcile_subagent_activity_state_trims_stale_progress_and_sets_anchor() {
 #[test]
 fn subagent_token_usage_updates_live_cost_counter_without_card_change() {
     let mut app = create_test_app();
-    handle_subagent_mailbox(
+    handle_agent_mailbox(
         &mut app,
         1,
         &crate::tools::subagent::MailboxMessage::TokenUsage {
@@ -2142,7 +2142,7 @@ fn subagent_token_usage_updates_live_cost_counter_without_card_change() {
         },
     );
 
-    assert!(app.session.subagent_cost > 0.0);
+    assert!(app.session.agent_cost > 0.0);
     assert!(
         app.history.is_empty(),
         "usage-only mailbox messages should not allocate a sub-agent card"
@@ -2162,12 +2162,12 @@ fn subagent_token_usage_is_deduped_by_mailbox_sequence() {
         },
     };
 
-    handle_subagent_mailbox(&mut app, 7, &usage);
-    let first = app.session.subagent_cost;
-    handle_subagent_mailbox(&mut app, 7, &usage);
-    assert_eq!(app.session.subagent_cost, first);
-    handle_subagent_mailbox(&mut app, 8, &usage);
-    assert!(app.session.subagent_cost > first);
+    handle_agent_mailbox(&mut app, 7, &usage);
+    let first = app.session.agent_cost;
+    handle_agent_mailbox(&mut app, 7, &usage);
+    assert_eq!(app.session.agent_cost, first);
+    handle_agent_mailbox(&mut app, 8, &usage);
+    assert!(app.session.agent_cost > first);
 }
 
 #[test]
@@ -3756,7 +3756,7 @@ fn tool_child_usage_metadata_updates_live_cost_counter() {
 
     handle_tool_call_complete(&mut app, "review-usage", "review", &result);
 
-    assert!(app.session.subagent_cost > 0.0);
+    assert!(app.session.agent_cost > 0.0);
 }
 
 #[test]
@@ -4762,7 +4762,7 @@ fn noisy_subagent_progress_keeps_existing_objective_summary() {
     );
 
     let display =
-        friendly_subagent_progress(&app, "agent_live", "step 1/8: requesting model response");
+        friendly_agent_progress(&app, "agent_live", "step 1/8: requesting model response");
 
     assert_eq!(display, "starting: inspect release state");
 }
@@ -5194,14 +5194,14 @@ fn render_footer_from_git_branch_item_renders_workspace_branch() {
 #[test]
 fn displayed_session_cost_is_monotonic_under_negative_reconciliation() {
     let mut app = create_test_app();
-    app.accrue_subagent_cost(0.50);
+    app.accrue_agent_cost(0.50);
     let after_first = app.displayed_session_cost();
     assert!((after_first - 0.50).abs() < 1e-6);
 
     // Simulate reconciliation that lowers the underlying counter (e.g. a
     // cache discount applied after the fact). The underlying value drops,
     // but the displayed cost must not.
-    app.session.subagent_cost = 0.20;
+    app.session.agent_cost = 0.20;
     let after_recon = app.displayed_session_cost();
     assert!(
         after_recon >= after_first,
@@ -5229,19 +5229,19 @@ fn duplicate_mailbox_token_usage_does_not_regress_displayed_cost() {
             ..Default::default()
         },
     };
-    handle_subagent_mailbox(&mut app, 11, &usage);
+    handle_agent_mailbox(&mut app, 11, &usage);
     let baseline = app.displayed_session_cost();
     assert!(baseline > 0.0);
 
     // Re-emit the same seq — must be deduped, displayed cost unchanged.
-    handle_subagent_mailbox(&mut app, 11, &usage);
+    handle_agent_mailbox(&mut app, 11, &usage);
     assert!(
         (app.displayed_session_cost() - baseline).abs() < 1e-9,
         "duplicate mailbox seq must not move displayed cost"
     );
 
     // A fresh seq must extend the displayed cost upward.
-    handle_subagent_mailbox(&mut app, 12, &usage);
+    handle_agent_mailbox(&mut app, 12, &usage);
     assert!(app.displayed_session_cost() > baseline);
 }
 #[test]
@@ -5578,7 +5578,7 @@ fn completed_turn_notification_truncates_long_text() {
 fn subagent_completion_notification_uses_summary_line_not_sentinel() {
     let msg = crate::tui::notifications::subagent_completion_message(
         "agent_live",
-        "Finished the docs audit.\n<deepseek:subagent.done>{}</deepseek:subagent.done>",
+        "Finished the docs audit.\n<deepseek:agent.done>{}</deepseek:agent.done>",
         false,
         Duration::from_secs(42),
     );

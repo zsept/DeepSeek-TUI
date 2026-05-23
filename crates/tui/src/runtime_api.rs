@@ -1984,7 +1984,7 @@ mod tests {
                 default_mode: "limited".to_string(),
                 allow_shell: false,
                 trust_mode: false,
-                max_subagents: 2,
+                max_concurrent_agents: 2,
             },
             Arc::new(MockExecutor),
         )

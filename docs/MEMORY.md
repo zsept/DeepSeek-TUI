@@ -225,7 +225,7 @@ memory_path = "~/.deepseek/memory.md"
 
 ## Related
 
-- `docs/SUBAGENTS.md` — sub-agents inherit memory and can use the
+- `docs/AGENT_ROLES.md` — sub-agents inherit memory and can use the
   `remember` tool too.
 - `docs/CONFIGURATION.md` — full config reference.
 - Issue [#489](https://github.com/Hmbown/DeepSeek-TUI/issues/489)

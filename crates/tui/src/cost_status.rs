@@ -10,7 +10,7 @@
 //! Mirrors the [`crate::retry_status`] pattern: background callers
 //! call [`report`] after each `client.create_message`, the TUI
 //! render loop calls [`drain`] every frame, and any drained amount
-//! gets folded into `App::accrue_subagent_cost_estimate`.
+//! gets folded into `App::accrue_agent_cost_estimate`.
 //!
 //! Why a side-channel and not a plumbed callback: the leaky callers
 //! (`compaction.rs`, `seam_manager.rs`, `cycle_manager.rs`) are
@@ -50,7 +50,7 @@ pub fn report(model: &str, usage: &Usage) {
 
 /// Drain the pending cost. Returns the accumulated amount and resets
 /// the pool to zero. Called by the TUI render / event loop on each
-/// frame; any non-zero result gets folded into `accrue_subagent_cost_estimate`.
+/// frame; any non-zero result gets folded into `accrue_agent_cost_estimate`.
 pub fn drain() -> CostEstimate {
     let Ok(mut pending) = cell().lock() else {
         return CostEstimate::default();

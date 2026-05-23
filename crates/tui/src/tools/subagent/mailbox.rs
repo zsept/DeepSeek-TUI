@@ -21,7 +21,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::models::Usage;
 
-use super::SubAgentType;
+use super::AgentRole;
 
 /// Stable, structured progress envelope shared across the sub-agent surface.
 ///
@@ -89,7 +89,7 @@ impl MailboxMessage {
         }
     }
 
-    pub(crate) fn started(agent_id: impl Into<String>, agent_type: SubAgentType) -> Self {
+    pub(crate) fn started(agent_id: impl Into<String>, agent_type: AgentRole) -> Self {
         Self::Started {
             agent_id: agent_id.into(),
             agent_type: agent_type.as_str().to_string(),
@@ -155,7 +155,7 @@ pub struct MailboxReceiver {
 impl Mailbox {
     /// Create a new mailbox bound to the given cancellation token. Closing
     /// the mailbox (or dropping the last sender) cancels this token, which
-    /// propagates to children via `child_token()` per `SubAgentRuntime`.
+    /// propagates to children via `child_token()` per `AgentRuntime`.
     #[must_use]
     pub fn new(cancel_token: CancellationToken) -> (Self, MailboxReceiver) {
         let (tx, rx) = mpsc::unbounded_channel();
@@ -412,7 +412,7 @@ mod tests {
     #[tokio::test]
     async fn agent_id_is_extractable_from_every_variant() {
         let cases: Vec<(MailboxMessage, &str)> = vec![
-            (MailboxMessage::started("a1", SubAgentType::General), "a1"),
+            (MailboxMessage::started("a1", AgentRole::General), "a1"),
             (MailboxMessage::progress("a2", "x"), "a2"),
             (
                 MailboxMessage::ToolCallStarted {

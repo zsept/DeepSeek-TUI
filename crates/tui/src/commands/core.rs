@@ -335,7 +335,7 @@ pub fn home_dashboard(app: &mut App) -> CommandResult {
     let _ = writeln!(stats, "\n{}", tr(locale, MessageId::HomeModeTips));
     let _ = writeln!(stats, "--------------------------------------------");
     match app.mode {
-        AppMode::Agent => {
+        AppMode::Limited => {
             let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeAgentModeTip));
             let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeAgentModeReviewTip));
             let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeAgentModeYoloTip));
@@ -783,7 +783,7 @@ mod tests {
 
     #[test]
     fn test_home_dashboard_mode_tips_for_each_mode() {
-        let modes = [AppMode::Agent, AppMode::Yolo, AppMode::Plan];
+        let modes = [AppMode::Limited, AppMode::Yolo, AppMode::Plan];
         for mode in modes {
             let mut app = create_test_app();
             app.mode = mode;

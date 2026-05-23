@@ -1981,7 +1981,7 @@ mod tests {
                 worker_count: 1,
                 default_workspace: PathBuf::from("."),
                 default_model: DEFAULT_TEXT_MODEL.to_string(),
-                default_mode: "agent".to_string(),
+                default_mode: "limited".to_string(),
                 allow_shell: false,
                 trust_mode: false,
                 max_subagents: 2,
@@ -3162,7 +3162,7 @@ mod tests {
                 "total_tokens": 100,
                 "model": "deepseek-v4-pro",
                 "workspace": "/tmp/test",
-                "mode": "agent"
+                "mode": "limited"
             },
             "messages": [
                 {
@@ -3334,7 +3334,7 @@ mod tests {
             .post(format!("http://{addr}/v1/threads"))
             .json(&json!({
                 "model": "deepseek-v4-flash",
-                "mode": "agent"
+                "mode": "limited"
             }))
             .send()
             .await?

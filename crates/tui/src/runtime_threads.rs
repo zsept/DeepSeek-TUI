@@ -3105,7 +3105,7 @@ fn parse_mode(mode: &str) -> AppMode {
     match mode.trim().to_ascii_lowercase().as_str() {
         "plan" => AppMode::Plan,
         "yolo" => AppMode::Yolo,
-        _ => AppMode::Agent,
+        _ => AppMode::Limited,
     }
 }
 
@@ -3256,7 +3256,7 @@ mod tests {
             updated_at: now,
             model: DEFAULT_TEXT_MODEL.to_string(),
             workspace: PathBuf::from("."),
-            mode: AppMode::Agent.as_setting().to_string(),
+            mode: AppMode::Limited.as_setting().to_string(),
             allow_shell: false,
             trust_mode: false,
             auto_approve: false,
@@ -4917,7 +4917,7 @@ mod tests {
             updated_at: created_at,
             model: DEFAULT_TEXT_MODEL.to_string(),
             workspace: PathBuf::from("."),
-            mode: "agent".to_string(),
+            mode: "limited".to_string(),
             allow_shell: false,
             trust_mode: false,
             auto_approve: false,
@@ -5059,7 +5059,7 @@ mod tests {
 
     #[test]
     fn parse_mode_defaults_to_agent() {
-        assert_eq!(parse_mode("unknown"), AppMode::Agent);
+        assert_eq!(parse_mode("unknown"), AppMode::Limited);
         assert_eq!(parse_mode("plan"), AppMode::Plan);
     }
 

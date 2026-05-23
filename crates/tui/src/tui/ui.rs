@@ -2656,7 +2656,7 @@ async fn run_event_loop(
                         app.set_sidebar_focus(SidebarFocus::Tasks);
                         app.status_message = Some("Sidebar focus: tasks".to_string());
                     } else {
-                        app.set_mode(AppMode::Agent);
+                        app.set_mode(AppMode::Limited);
                     }
                     continue;
                 }
@@ -3372,7 +3372,7 @@ async fn run_event_loop(
                 }
                 KeyCode::Char('x') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                     let new_mode = match app.mode {
-                        AppMode::Plan => AppMode::Agent,
+                        AppMode::Plan => AppMode::Limited,
                         _ => AppMode::Plan,
                     };
                     app.set_mode(new_mode);
@@ -3381,7 +3381,7 @@ async fn run_event_loop(
                     app.paste_from_clipboard();
                 }
                 KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::ALT) => {
-                    app.set_mode(AppMode::Agent);
+                    app.set_mode(AppMode::Limited);
                     continue;
                 }
                 KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::ALT) => {
@@ -3393,7 +3393,7 @@ async fn run_event_loop(
                     continue;
                 }
                 KeyCode::Char('A') if key.modifiers.contains(KeyModifiers::ALT) => {
-                    app.set_mode(AppMode::Agent);
+                    app.set_mode(AppMode::Limited);
                     continue;
                 }
                 KeyCode::Char('Y') if key.modifiers.contains(KeyModifiers::ALT) => {
@@ -5254,7 +5254,7 @@ async fn apply_plan_choice(
 ) -> Result<()> {
     match choice {
         PlanChoice::AcceptAgent => {
-            app.set_mode(AppMode::Agent);
+            app.set_mode(AppMode::Limited);
             app.add_message(HistoryCell::System {
                 content: "Plan accepted. Switching to Agent mode and starting implementation."
                     .to_string(),
@@ -5290,9 +5290,9 @@ async fn apply_plan_choice(
             app.status_message = Some("Revise the plan and press Enter.".to_string());
         }
         PlanChoice::ExitPlan => {
-            app.set_mode(AppMode::Agent);
+            app.set_mode(AppMode::Limited);
             app.add_message(HistoryCell::System {
-                content: "Exited Plan mode. Switched to Agent mode.".to_string(),
+                content: "Exited Plan mode. Switched to Limited mode.".to_string(),
             });
         }
     }

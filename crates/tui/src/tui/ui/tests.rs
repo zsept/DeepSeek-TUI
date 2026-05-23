@@ -1981,12 +1981,12 @@ fn spans_text(spans: &[Span<'_>]) -> String {
 #[test]
 fn alt_4_focuses_agents_sidebar_without_switching_modes() {
     let mut app = create_test_app();
-    app.mode = AppMode::Agent;
+    app.mode = AppMode::Limited;
     app.sidebar_focus = SidebarFocus::Auto;
 
     apply_alt_4_shortcut(&mut app, KeyModifiers::ALT);
 
-    assert_eq!(app.mode, AppMode::Agent);
+    assert_eq!(app.mode, AppMode::Limited);
     assert_eq!(app.sidebar_focus, SidebarFocus::Agents);
     assert_eq!(app.status_message.as_deref(), Some("Sidebar focus: agents"));
 }
@@ -1994,12 +1994,12 @@ fn alt_4_focuses_agents_sidebar_without_switching_modes() {
 #[test]
 fn ctrl_alt_4_focuses_agents_sidebar_without_switching_modes() {
     let mut app = create_test_app();
-    app.mode = AppMode::Agent;
+    app.mode = AppMode::Limited;
     app.sidebar_focus = SidebarFocus::Auto;
 
     apply_alt_4_shortcut(&mut app, KeyModifiers::ALT | KeyModifiers::CONTROL);
 
-    assert_eq!(app.mode, AppMode::Agent);
+    assert_eq!(app.mode, AppMode::Limited);
     assert_eq!(app.sidebar_focus, SidebarFocus::Agents);
     assert_eq!(app.status_message.as_deref(), Some("Sidebar focus: agents"));
 }
@@ -2224,10 +2224,10 @@ fn footer_status_line_spans_show_mode_and_model_idle_and_active() {
     let mut app = create_test_app();
     app.model = "deepseek-v4-flash".to_string();
     // Pin Agent mode regardless of user settings on the host machine.
-    let _ = app.set_mode(crate::tui::app::AppMode::Agent);
+    let _ = app.set_mode(crate::tui::app::AppMode::Limited);
 
     let idle = spans_text(&footer_status_line_spans(&app, 60));
-    assert!(idle.contains("agent"));
+    assert!(idle.contains("limited"));
     assert!(idle.contains("deepseek-v4-flash"));
     assert!(idle.contains("\u{00B7}"));
     assert!(!idle.contains("ready"));
@@ -2237,7 +2237,7 @@ fn footer_status_line_spans_show_mode_and_model_idle_and_active() {
     // the footer's spacer. The mode + model still render unchanged.
     app.is_loading = true;
     let active = spans_text(&footer_status_line_spans(&app, 60));
-    assert!(active.contains("agent"));
+    assert!(active.contains("limited"));
     assert!(active.contains("deepseek-v4-flash"));
     assert!(
         !active.contains("thinking"),
@@ -2560,7 +2560,7 @@ fn should_auto_compact_before_send_respects_threshold_and_setting() {
 fn test_esc_cancels_streaming_sets_is_loading_false() {
     let mut app = create_test_app();
     app.is_loading = true;
-    app.mode = AppMode::Agent;
+    app.mode = AppMode::Limited;
 
     // Simulate what happens in ui.rs when Esc is pressed during loading:
     // engine_handle.cancel() is called (can't test directly - private)
@@ -2609,10 +2609,10 @@ fn test_esc_is_noop_when_idle() {
     app.is_loading = false;
     app.input.clear();
     app.cursor_position = 0;
-    app.mode = AppMode::Agent;
+    app.mode = AppMode::Limited;
 
     assert_eq!(next_escape_action(&app, false), EscapeAction::Noop);
-    assert_eq!(app.mode, AppMode::Agent);
+    assert_eq!(app.mode, AppMode::Limited);
 }
 
 #[test]
@@ -5079,7 +5079,7 @@ fn render_footer_from_with_default_items_renders_mode_and_model() {
     app.session.session_cost = 0.00005;
     let items = crate::config::StatusItem::default_footer();
     let props = render_footer_from(&app, &items, None);
-    assert_eq!(props.mode_label, "agent");
+    assert_eq!(props.mode_label, "limited");
     assert!(!props.model.is_empty(), "footer should show a model name");
     // Tiny but real costs should render instead of disappearing as "$0.00".
     assert!(!props.cost.is_empty());
@@ -5157,7 +5157,7 @@ fn render_footer_from_drops_only_unselected_clusters() {
         .filter(|item| *item != crate::config::StatusItem::Cost)
         .collect();
     let props = render_footer_from(&app, &items, None);
-    assert_eq!(props.mode_label, "agent");
+    assert_eq!(props.mode_label, "limited");
     assert!(!props.model.is_empty(), "footer should show a model name");
     assert!(
         props.cost.is_empty(),

@@ -124,7 +124,7 @@ fn onboarding_is_workspace_trust_gate(
 /// Supported application modes for the TUI.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppMode {
-    Agent,
+    Limited,
     Yolo,
     Plan,
 }
@@ -474,14 +474,14 @@ impl AppMode {
         match value.trim().to_ascii_lowercase().as_str() {
             "plan" => Self::Plan,
             "yolo" => Self::Yolo,
-            _ => Self::Agent,
+            _ => Self::Limited,
         }
     }
 
     #[must_use]
     pub fn as_setting(self) -> &'static str {
         match self {
-            Self::Agent => "agent",
+            Self::Limited => "limited",
             Self::Yolo => "yolo",
             Self::Plan => "plan",
         }
@@ -490,7 +490,7 @@ impl AppMode {
     /// Short label used in the UI footer.
     pub fn label(self) -> &'static str {
         match self {
-            AppMode::Agent => "AGENT",
+            AppMode::Limited => "LIMITED",
             AppMode::Yolo => "YOLO",
             AppMode::Plan => "PLAN",
         }
@@ -500,7 +500,7 @@ impl AppMode {
     /// Description shown in help or onboarding text.
     pub fn description(self) -> &'static str {
         match self {
-            AppMode::Agent => "Agent mode - autonomous task execution with tools",
+            AppMode::Limited => "Agent mode - autonomous task execution with tools",
             AppMode::Yolo => "YOLO mode - full tool access without approvals",
             AppMode::Plan => "Plan mode - design before implementing",
         }
@@ -1387,7 +1387,7 @@ impl App {
         let initial_mode = if yolo {
             AppMode::Yolo
         } else if start_in_agent_mode {
-            AppMode::Agent
+            AppMode::Limited
         } else {
             preferred_mode
         };
@@ -1758,8 +1758,8 @@ impl App {
     /// Cycle through modes: Plan → Agent → YOLO → Plan.
     pub fn cycle_mode(&mut self) {
         let next = match self.mode {
-            AppMode::Plan => AppMode::Agent,
-            AppMode::Agent => AppMode::Yolo,
+            AppMode::Plan => AppMode::Limited,
+            AppMode::Limited => AppMode::Yolo,
             AppMode::Yolo => AppMode::Plan,
         };
         let _ = self.set_mode(next);
@@ -1769,8 +1769,8 @@ impl App {
     #[allow(dead_code)]
     pub fn cycle_mode_reverse(&mut self) {
         let next = match self.mode {
-            AppMode::Agent => AppMode::Plan,
-            AppMode::Yolo => AppMode::Agent,
+            AppMode::Limited => AppMode::Plan,
+            AppMode::Yolo => AppMode::Limited,
             AppMode::Plan => AppMode::Yolo,
         };
         let _ = self.set_mode(next);
@@ -4735,7 +4735,7 @@ mod tests {
         app.cycle_mode_reverse();
         assert_eq!(app.mode, AppMode::Yolo);
 
-        app.mode = AppMode::Agent;
+        app.mode = AppMode::Limited;
         app.cycle_mode_reverse();
         assert_eq!(app.mode, AppMode::Plan);
     }
@@ -4821,7 +4821,7 @@ mod tests {
         assert!(app.trust_mode);
         assert_eq!(app.approval_mode, ApprovalMode::Auto);
 
-        app.set_mode(AppMode::Agent);
+        app.set_mode(AppMode::Limited);
         assert!(!app.allow_shell);
         assert!(!app.trust_mode);
         assert_eq!(app.approval_mode, ApprovalMode::Never);
@@ -4840,7 +4840,7 @@ mod tests {
         assert!(app.trust_mode);
         assert_eq!(app.approval_mode, ApprovalMode::Auto);
 
-        app.set_mode(AppMode::Agent);
+        app.set_mode(AppMode::Limited);
         assert!(!app.allow_shell);
         assert!(!app.trust_mode);
         assert_eq!(app.approval_mode, ApprovalMode::Suggest);
@@ -4857,7 +4857,7 @@ mod tests {
 
         let app = App::new(options, &config);
 
-        assert_eq!(app.mode, AppMode::Agent);
+        assert_eq!(app.mode, AppMode::Limited);
         assert_eq!(app.approval_mode, ApprovalMode::Never);
     }
 

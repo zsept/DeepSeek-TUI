@@ -331,7 +331,7 @@ impl TaskManagerConfig {
                     .clone()
                     .unwrap_or_else(|| DEFAULT_TEXT_MODEL.to_string())
             }),
-            default_mode: "agent".to_string(),
+            default_mode: "limited".to_string(),
             allow_shell: config.allow_shell(),
             trust_mode: false,
             max_subagents: config.max_subagents().clamp(1, MAX_SUBAGENTS),
@@ -1742,7 +1742,7 @@ mod tests {
             worker_count: 1,
             default_workspace: PathBuf::from("."),
             default_model: "deepseek-v4-flash".to_string(),
-            default_mode: "agent".to_string(),
+            default_mode: "limited".to_string(),
             allow_shell: false,
             trust_mode: false,
             max_subagents: 2,

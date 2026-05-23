@@ -672,7 +672,7 @@ pub fn switch_mode(app: &mut App, mode: AppMode) -> String {
 
 fn parse_mode_arg(arg: &str) -> Option<AppMode> {
     match arg.trim().to_ascii_lowercase().as_str() {
-        "agent" | "1" => Some(AppMode::Agent),
+        "agent" | "1" => Some(AppMode::Limited),
         "plan" | "2" => Some(AppMode::Plan),
         "yolo" | "3" => Some(AppMode::Yolo),
         _ => None,
@@ -681,7 +681,7 @@ fn parse_mode_arg(arg: &str) -> Option<AppMode> {
 
 fn mode_display_name(mode: AppMode) -> &'static str {
     match mode {
-        AppMode::Agent => "Agent",
+        AppMode::Limited => "Limited",
         AppMode::Plan => "Plan",
         AppMode::Yolo => "YOLO",
     }
@@ -1363,7 +1363,7 @@ mod tests {
         let mut app = create_test_app();
         // Switch to Agent first to guarantee a clean starting state regardless of
         // user settings on the host machine.
-        let _ = mode(&mut app, Some("agent"));
+        let _ = mode(&mut app, Some("limited"));
         let result = mode(&mut app, Some("yolo"));
         assert!(result.message.unwrap().contains("Switched to YOLO mode"));
         assert!(app.allow_shell);
@@ -1376,8 +1376,8 @@ mod tests {
     #[test]
     fn test_mode_switch_command_accepts_names_and_numbers() {
         let mut app = create_test_app();
-        let _ = mode(&mut app, Some("agent"));
-        assert_eq!(app.mode, AppMode::Agent);
+        let _ = mode(&mut app, Some("limited"));
+        assert_eq!(app.mode, AppMode::Limited);
         let _ = mode(&mut app, Some("2"));
         assert_eq!(app.mode, AppMode::Plan);
         let _ = mode(&mut app, Some("3"));
@@ -1716,7 +1716,7 @@ mod tests {
         let result = set_config(&mut app, Some("default_mode normal --save"));
         let msg = result.message.unwrap();
         assert_eq!(msg, "default_mode = agent (saved)");
-        assert_eq!(app.mode, AppMode::Agent);
+        assert_eq!(app.mode, AppMode::Limited);
 
         let settings_path = Settings::path().unwrap();
         let saved = fs::read_to_string(settings_path).unwrap();

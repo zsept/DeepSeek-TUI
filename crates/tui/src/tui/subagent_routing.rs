@@ -346,7 +346,7 @@ mod tests {
             status,
             prompt_summary: "Fix task list output".to_string(),
             model: "deepseek-v4-pro".to_string(),
-            mode: "agent".to_string(),
+            mode: "limited".to_string(),
             created_at: Utc::now(),
             started_at: None,
             ended_at: None,

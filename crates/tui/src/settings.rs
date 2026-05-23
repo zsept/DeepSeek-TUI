@@ -219,7 +219,7 @@ pub struct Settings {
     pub composer_vim_mode: String,
     /// Transcript spacing rhythm: compact, comfortable, spacious
     pub transcript_spacing: String,
-    /// Default mode: "agent", "plan", "yolo"
+    /// Default mode: "limited", "plan", "yolo"
     pub default_mode: String,
     /// Sidebar width as percentage of terminal width
     pub sidebar_width_percent: u16,
@@ -307,7 +307,7 @@ impl Default for Settings {
             composer_border: true,
             composer_vim_mode: "normal".to_string(),
             transcript_spacing: "comfortable".to_string(),
-            default_mode: "agent".to_string(),
+            default_mode: "limited".to_string(),
             sidebar_width_percent: 28,
             sidebar_focus: "auto".to_string(),
             context_panel: false,

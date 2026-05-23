@@ -210,7 +210,7 @@ pub enum TranscriptSpacingValue {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DefaultModeValue {
-    Agent,
+    Limited,
     Plan,
     Yolo,
 }
@@ -837,7 +837,7 @@ impl TranscriptSpacingValue {
 impl DefaultModeValue {
     fn as_setting(self) -> &'static str {
         match self {
-            Self::Agent => "agent",
+            Self::Limited => "agent",
             Self::Plan => "plan",
             Self::Yolo => "yolo",
         }
@@ -948,7 +948,7 @@ impl From<&str> for TranscriptSpacingValue {
 impl From<&str> for DefaultModeValue {
     fn from(value: &str) -> Self {
         match AppMode::from_setting(value) {
-            AppMode::Agent => Self::Agent,
+            AppMode::Limited => Self::Limited,
             AppMode::Plan => Self::Plan,
             AppMode::Yolo => Self::Yolo,
         }

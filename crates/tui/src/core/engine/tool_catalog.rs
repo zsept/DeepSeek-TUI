@@ -38,7 +38,7 @@ pub(super) fn should_default_defer_tool(name: &str, mode: AppMode) -> bool {
     // verification commands (build/test/git/cargo) without first having to
     // discover them through ToolSearch. Plan mode does not register shell
     // execution tools.
-    let always_loaded_in_action_modes = matches!(mode, AppMode::Agent)
+    let always_loaded_in_action_modes = matches!(mode, AppMode::Limited)
         && matches!(
             name,
             "exec_shell"

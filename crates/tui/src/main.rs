@@ -4679,7 +4679,7 @@ async fn run_exec_agent(
     let mode = if auto_approve {
         AppMode::Yolo
     } else {
-        AppMode::Agent
+        AppMode::Limited
     };
 
     let mut loaded_session_id = None;
@@ -4755,7 +4755,7 @@ async fn run_exec_agent(
         error: Option<String>,
     }
     let mut summary = ExecSummary {
-        mode: "agent".to_string(),
+        mode: "limited".to_string(),
         model: effective_model.clone(),
         prompt: prompt.to_string(),
         ..ExecSummary::default()

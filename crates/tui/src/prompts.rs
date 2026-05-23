@@ -351,7 +351,7 @@ pub const CALM_PERSONALITY: &str = include_str!("prompts/personalities/calm.md")
 pub const PLAYFUL_PERSONALITY: &str = include_str!("prompts/personalities/playful.md");
 
 /// Mode deltas — permissions, workflow expectations, mode-specific rules.
-pub const AGENT_MODE: &str = include_str!("prompts/modes/agent.md");
+pub const LIMITED_MODE: &str = include_str!("prompts/modes/limited.md");
 pub const PLAN_MODE: &str = include_str!("prompts/modes/plan.md");
 pub const YOLO_MODE: &str = include_str!("prompts/modes/yolo.md");
 
@@ -417,7 +417,7 @@ impl Personality {
 
 fn mode_prompt(mode: AppMode) -> &'static str {
     match mode {
-        AppMode::Agent => AGENT_MODE,
+        AppMode::Limited => LIMITED_MODE,
         AppMode::Yolo => YOLO_MODE,
         AppMode::Plan => PLAN_MODE,
     }
@@ -425,7 +425,7 @@ fn mode_prompt(mode: AppMode) -> &'static str {
 
 fn default_approval_mode_for_mode(mode: AppMode) -> ApprovalMode {
     match mode {
-        AppMode::Agent => ApprovalMode::Suggest,
+        AppMode::Limited => ApprovalMode::Suggest,
         AppMode::Yolo => ApprovalMode::Auto,
         AppMode::Plan => ApprovalMode::Never,
     }
@@ -435,7 +435,7 @@ fn approval_prompt_for_mode(mode: AppMode, approval_mode: ApprovalMode) -> &'sta
     match mode {
         AppMode::Yolo => AUTO_APPROVAL,
         AppMode::Plan => NEVER_APPROVAL,
-        AppMode::Agent => match approval_mode {
+        AppMode::Limited => match approval_mode {
             ApprovalMode::Auto => AUTO_APPROVAL,
             ApprovalMode::Suggest => SUGGEST_APPROVAL,
             ApprovalMode::Never => NEVER_APPROVAL,
@@ -688,7 +688,7 @@ pub fn system_prompt_for_mode_with_context_skills_session_and_approval(
     }
 
     // 4. Context Management (Agent / Yolo only).
-    if matches!(mode, AppMode::Agent | AppMode::Yolo) {
+    if matches!(mode, AppMode::Limited | AppMode::Yolo) {
         full_prompt.push_str(
             "\n\n## Context Management\n\n\
              When the conversation gets long (you'll see a context usage indicator), you can:\n\
@@ -901,7 +901,7 @@ mod tests {
         // both depend on this ordering.
         let tmp = tempdir().expect("tempdir");
         let text = match system_prompt_for_mode_with_context_skills_session_and_approval(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -973,7 +973,7 @@ mod tests {
         // motivated the closer.
         let tmp = tempdir().expect("tempdir");
         let text = match system_prompt_for_mode_with_context_skills_session_and_approval(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1020,7 +1020,7 @@ mod tests {
         // "preamble is opt-in for non-English" invariant.
         let tmp = tempdir().expect("tempdir");
         let text = match system_prompt_for_mode_with_context_skills_session_and_approval(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1112,7 +1112,7 @@ mod tests {
     fn environment_block_is_inserted_into_system_prompt() {
         let tmp = tempdir().expect("tempdir");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1150,7 +1150,7 @@ mod tests {
     fn memory_guidance_absent_when_no_memory_block() {
         let tmp = tempdir().expect("tempdir");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1180,7 +1180,7 @@ mod tests {
         let tmp = tempdir().expect("tempdir");
         let block = "## User Memory\n\n- prefers Rust\n";
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1212,7 +1212,7 @@ mod tests {
         let tmp = tempdir().expect("tempdir");
         std::fs::write(tmp.path().join("README.md"), "# Pack test").expect("write readme");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1242,7 +1242,7 @@ mod tests {
         std::fs::write(tmp.path().join(".deepseek").join("handoff.md"), "handoff")
             .expect("handoff");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1280,7 +1280,7 @@ mod tests {
         )
         .unwrap();
 
-        let prompt = match system_prompt_for_mode_with_context(AppMode::Agent, workspace, None) {
+        let prompt = match system_prompt_for_mode_with_context(AppMode::Limited, workspace, None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
@@ -1293,7 +1293,7 @@ mod tests {
     #[test]
     fn missing_handoff_does_not_inject_block() {
         let tmp = tempdir().expect("tempdir");
-        let prompt = match system_prompt_for_mode_with_context(AppMode::Agent, tmp.path(), None) {
+        let prompt = match system_prompt_for_mode_with_context(AppMode::Limited, tmp.path(), None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
@@ -1306,7 +1306,7 @@ mod tests {
         let dir = tmp.path().join(".deepseek");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("handoff.md"), "   \n\n  ").unwrap();
-        let prompt = match system_prompt_for_mode_with_context(AppMode::Agent, tmp.path(), None) {
+        let prompt = match system_prompt_for_mode_with_context(AppMode::Limited, tmp.path(), None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
@@ -1315,7 +1315,7 @@ mod tests {
 
     #[test]
     fn compose_prompt_includes_all_layers() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         // Base layer
         assert!(prompt.contains("You are DeepSeek TUI"));
         // Personality layer
@@ -1389,7 +1389,7 @@ mod tests {
     #[test]
     fn each_mode_gets_correct_approval() {
         assert!(
-            compose_prompt(AppMode::Agent, Personality::Calm).contains("Approval Policy: Suggest")
+            compose_prompt(AppMode::Limited, Personality::Calm).contains("Approval Policy: Suggest")
         );
         assert!(compose_prompt(AppMode::Yolo, Personality::Calm).contains("Approval Policy: Auto"));
         assert!(
@@ -1400,7 +1400,7 @@ mod tests {
     #[test]
     fn agent_prompt_can_reflect_never_approval_policy() {
         let prompt =
-            compose_prompt_with_approval(AppMode::Agent, Personality::Calm, ApprovalMode::Never);
+            compose_prompt_with_approval(AppMode::Limited, Personality::Calm, ApprovalMode::Never);
         assert!(prompt.contains("Mode: Agent"));
         assert!(prompt.contains("Approval Policy: Never"));
         assert!(prompt.contains("/config approval_mode suggest"));
@@ -1408,8 +1408,8 @@ mod tests {
 
     #[test]
     fn personality_switches_correctly() {
-        let calm = compose_prompt(AppMode::Agent, Personality::Calm);
-        let playful = compose_prompt(AppMode::Agent, Personality::Playful);
+        let calm = compose_prompt(AppMode::Limited, Personality::Calm);
+        let playful = compose_prompt(AppMode::Limited, Personality::Playful);
         assert!(calm.contains("Personality: Calm"));
         assert!(playful.contains("Personality: Playful"));
         assert!(!calm.contains("Personality: Playful"));
@@ -1418,7 +1418,7 @@ mod tests {
     #[test]
     fn compact_template_is_included_in_full_prompt() {
         let tmp = tempdir().expect("tempdir");
-        let prompt = match system_prompt_for_mode_with_context(AppMode::Agent, tmp.path(), None) {
+        let prompt = match system_prompt_for_mode_with_context(AppMode::Limited, tmp.path(), None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
@@ -1439,7 +1439,7 @@ mod tests {
     fn session_goal_is_injected_below_compact_template() {
         let tmp = tempdir().expect("tempdir");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             Some("## Repo Working Set\nsrc/lib.rs"),
             None,
@@ -1475,7 +1475,7 @@ mod tests {
     fn empty_session_goal_is_not_injected() {
         let tmp = tempdir().expect("tempdir");
         let prompt = match system_prompt_for_mode_with_context_skills_and_session(
-            AppMode::Agent,
+            AppMode::Limited,
             tmp.path(),
             None,
             None,
@@ -1501,7 +1501,7 @@ mod tests {
 
     #[test]
     fn tool_selection_guide_avoids_defensive_tool_suppression() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(prompt.contains("Tool Selection Guide"));
         assert!(prompt.contains("Use `agent_eval`"));
         assert!(
@@ -1524,7 +1524,7 @@ mod tests {
     /// user's language" directive while keeping the heading.
     #[test]
     fn language_mirroring_section_present_in_all_modes() {
-        for mode in [AppMode::Agent, AppMode::Yolo, AppMode::Plan] {
+        for mode in [AppMode::Limited, AppMode::Yolo, AppMode::Plan] {
             let prompt = compose_prompt(mode, Personality::Calm);
             assert!(
                 prompt.contains("## Language"),
@@ -1541,7 +1541,7 @@ mod tests {
 
     #[test]
     fn language_mirroring_prioritizes_latest_user_message_over_locale_default() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(
             prompt.contains("latest user message first"),
             "the language directive must choose the turn language from the user message before \
@@ -1565,7 +1565,7 @@ mod tests {
     /// changing the wording, don't fail a test for it.
     #[test]
     fn rlm_specialty_tool_guidance_present() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         // Structural: the RLM heading must exist as a section anchor.
         assert!(prompt.contains("RLM — How to Use It"));
         // Structural: the word "rlm" must appear multiple times (tool
@@ -1584,7 +1584,7 @@ mod tests {
 
     #[test]
     fn workspace_orientation_guidance_present() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(prompt.contains("Workspace Orientation"));
         assert!(prompt.contains("canonical project root"));
         assert!(prompt.contains("AGENTS.md"));
@@ -1593,7 +1593,7 @@ mod tests {
 
     #[test]
     fn prompt_uses_persistent_agent_and_rlm_surface() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         for tool in [
             "agent_open",
             "agent_eval",
@@ -1631,7 +1631,7 @@ mod tests {
 
     #[test]
     fn prompt_documents_fork_context_prefix_cache_contract() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(prompt.contains("fork_context: true"));
         assert!(prompt.contains("byte-identical"));
         assert!(prompt.contains("DeepSeek prefix-cache reuse"));
@@ -1640,7 +1640,7 @@ mod tests {
 
     #[test]
     fn subagent_done_sentinel_section_present() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(prompt.contains("Internal Sub-agent Completion Events"));
         assert!(prompt.contains("<deepseek:subagent.done>"));
         assert!(prompt.contains("not user input"));
@@ -1650,7 +1650,7 @@ mod tests {
 
     #[test]
     fn preamble_rhythm_section_present() {
-        let prompt = compose_prompt(AppMode::Agent, Personality::Calm);
+        let prompt = compose_prompt(AppMode::Limited, Personality::Calm);
         assert!(prompt.contains("Preamble Rhythm"));
         assert!(prompt.contains("I'll start by reading the module structure"));
     }
@@ -1675,7 +1675,7 @@ mod tests {
         // Suspect #4 from #263: mode prompt churn within a single mode.
         // Two calls with identical (mode, personality) inputs must produce
         // identical bytes — anything else is a cache buster.
-        for mode in [AppMode::Agent, AppMode::Yolo, AppMode::Plan] {
+        for mode in [AppMode::Limited, AppMode::Yolo, AppMode::Plan] {
             for personality in [Personality::Calm, Personality::Playful] {
                 let a = compose_prompt(mode, personality);
                 let b = compose_prompt(mode, personality);
@@ -1697,7 +1697,7 @@ mod tests {
         let tmp = tempdir().expect("tempdir");
         let workspace = tmp.path();
 
-        for mode in [AppMode::Agent, AppMode::Yolo, AppMode::Plan] {
+        for mode in [AppMode::Limited, AppMode::Yolo, AppMode::Plan] {
             let a = match system_prompt_for_mode_with_context(mode, workspace, None) {
                 SystemPrompt::Text(text) => text,
                 SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1723,12 +1723,12 @@ mod tests {
         let workspace = tmp.path();
         let summary = "## Repo Working Set\nWorkspace: /tmp/x\n";
 
-        let a = match system_prompt_for_mode_with_context(AppMode::Agent, workspace, Some(summary))
+        let a = match system_prompt_for_mode_with_context(AppMode::Limited, workspace, Some(summary))
         {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
-        let b = match system_prompt_for_mode_with_context(AppMode::Agent, workspace, Some(summary))
+        let b = match system_prompt_for_mode_with_context(AppMode::Limited, workspace, Some(summary))
         {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
@@ -1760,11 +1760,11 @@ mod tests {
         )
         .unwrap();
 
-        let a = match system_prompt_for_mode_with_context(AppMode::Agent, workspace, None) {
+        let a = match system_prompt_for_mode_with_context(AppMode::Limited, workspace, None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
-        let b = match system_prompt_for_mode_with_context(AppMode::Agent, workspace, None) {
+        let b = match system_prompt_for_mode_with_context(AppMode::Limited, workspace, None) {
             SystemPrompt::Text(text) => text,
             SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
         };
@@ -1791,7 +1791,7 @@ mod tests {
 
         let summary = "## Repo Working Set\nWorkspace: /tmp/x\n";
         let prompt =
-            match system_prompt_for_mode_with_context(AppMode::Agent, workspace, Some(summary)) {
+            match system_prompt_for_mode_with_context(AppMode::Limited, workspace, Some(summary)) {
                 SystemPrompt::Text(text) => text,
                 SystemPrompt::Blocks(_) => panic!("expected text system prompt"),
             };
@@ -1895,7 +1895,7 @@ mod tests {
         std::fs::write(&extra, "EXTRA_INSTRUCTIONS_MARKER_BODY").unwrap();
 
         let prompt = match super::system_prompt_for_mode_with_context_and_skills(
-            AppMode::Agent,
+            AppMode::Limited,
             workspace,
             None,
             None,

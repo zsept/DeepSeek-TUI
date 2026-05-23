@@ -433,7 +433,7 @@ impl Engine {
             crate::memory::compose_block(config.memory_enabled, &config.memory_path);
         let system_prompt =
             prompts::system_prompt_for_mode_with_context_skills_session_and_approval(
-                AppMode::Agent,
+                AppMode::Limited,
                 &config.workspace,
                 None,
                 Some(&config.skills_dir),
@@ -656,7 +656,7 @@ impl Engine {
                         client,
                         self.session.model.clone(),
                         // Sub-agents don't inherit YOLO mode - use Agent mode defaults
-                        self.build_tool_context(AppMode::Agent, self.session.auto_approve),
+                        self.build_tool_context(AppMode::Limited, self.session.auto_approve),
                         self.session.allow_shell,
                         Some(self.tx_event.clone()),
                         Arc::clone(&self.subagent_manager),
@@ -799,7 +799,7 @@ impl Engine {
                     }
                     // Now dispatch the new message as a normal send,
                     // reusing the engine's stored mode/model config.
-                    let mode = AppMode::Agent; // default fallback
+                    let mode = AppMode::Limited; // default fallback
                     self.handle_send_message(
                         new_message,
                         mode,
@@ -1055,7 +1055,7 @@ impl Engine {
         };
 
         let tool_registry = match mode {
-            AppMode::Agent | AppMode::Yolo => {
+            AppMode::Limited | AppMode::Yolo => {
                 if self.config.features.enabled(Feature::Subagents) {
                     let runtime = if let Some(client) = self.deepseek_client.clone() {
                         let mut rt = SubAgentRuntime::new(

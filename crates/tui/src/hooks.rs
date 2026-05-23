@@ -861,7 +861,7 @@ NOEQUAL line dropped
     fn test_hook_context_to_env_vars() {
         let ctx = HookContext::new()
             .with_tool_name("exec_shell")
-            .with_mode("agent")
+            .with_mode("limited")
             .with_workspace(PathBuf::from("/tmp"));
 
         let env = ctx.to_env_vars();
@@ -870,7 +870,7 @@ NOEQUAL line dropped
             env.get("DEEPSEEK_TOOL_NAME"),
             Some(&"exec_shell".to_string())
         );
-        assert_eq!(env.get("DEEPSEEK_MODE"), Some(&"agent".to_string()));
+        assert_eq!(env.get("DEEPSEEK_MODE"), Some(&"limited".to_string()));
         assert_eq!(env.get("DEEPSEEK_WORKSPACE"), Some(&"/tmp".to_string()));
     }
 
@@ -904,12 +904,12 @@ NOEQUAL line dropped
     fn test_hook_condition_mode() {
         let hook =
             Hook::new(HookEvent::ModeChange, "echo test").with_condition(HookCondition::Mode {
-                mode: "agent".to_string(),
+                mode: "limited".to_string(),
             });
 
         let executor = HookExecutor::disabled();
 
-        let context_match = HookContext::new().with_mode("AGENT"); // Case insensitive
+        let context_match = HookContext::new().with_mode("LIMITED"); // Case insensitive
         let context_no_match = HookContext::new().with_mode("normal");
 
         assert!(executor.matches_condition(&hook, &context_match));

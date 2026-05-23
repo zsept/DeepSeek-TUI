@@ -722,7 +722,7 @@ pub(crate) fn footer_state_label(app: &App) -> (&'static str, ratatui::style::Co
 pub(crate) fn footer_mode_style(app: &App) -> (&'static str, ratatui::style::Color) {
     let label = app.mode.as_setting();
     let color = match app.mode {
-        crate::tui::app::AppMode::Agent => app.theme.mode_agent,
+        crate::tui::app::AppMode::Limited => app.theme.mode_agent,
         crate::tui::app::AppMode::Yolo => app.theme.mode_yolo,
         crate::tui::app::AppMode::Plan => app.theme.mode_plan,
     };

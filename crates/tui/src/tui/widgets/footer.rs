@@ -289,12 +289,12 @@ impl FooterProps {
 
 fn mode_style(app: &App) -> (&'static str, Color) {
     let label = match app.mode {
-        AppMode::Agent => "agent",
+        AppMode::Limited => "limited",
         AppMode::Yolo => "yolo",
         AppMode::Plan => "plan",
     };
     let color = match app.mode {
-        AppMode::Agent => app.theme.mode_agent,
+        AppMode::Limited => app.theme.mode_agent,
         AppMode::Yolo => app.theme.mode_yolo,
         AppMode::Plan => app.theme.mode_plan,
     };
@@ -705,7 +705,7 @@ mod tests {
 
         assert_eq!(props.state_label, "ready");
         assert_eq!(props.state_color, palette::TEXT_MUTED);
-        assert_eq!(props.mode_label, "agent");
+        assert_eq!(props.mode_label, "limited");
         assert_eq!(props.mode_color, palette::MODE_AGENT);
         assert_eq!(props.text_dim_color, palette::TEXT_DIM);
         assert_eq!(props.text_hint_color, palette::TEXT_HINT);
@@ -893,7 +893,7 @@ mod tests {
     fn from_app_mode_color_matches_mode_for_each_variant() {
         let mut app = make_app();
         let cases = [
-            (AppMode::Agent, "agent", palette::MODE_AGENT),
+            (AppMode::Limited, "limited", palette::MODE_AGENT),
             (AppMode::Yolo, "yolo", palette::MODE_YOLO),
             (AppMode::Plan, "plan", palette::MODE_PLAN),
         ];
@@ -1009,7 +1009,7 @@ mod tests {
         widget.render(area, &mut buf);
 
         let rendered: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
-        assert!(rendered.contains("agent"));
+        assert!(rendered.contains("limited"));
         assert!(rendered.contains("deepseek-v4-flash"));
         assert!(!rendered.contains("ready"));
     }
@@ -1148,7 +1148,7 @@ mod tests {
     fn footer_priority_drop_full_at_120_cols() {
         let props = props_with_status("working");
         let line = render_at_width(props, 120);
-        assert!(line.contains("agent"), "mode visible: {line:?}");
+        assert!(line.contains("limited"), "mode visible: {line:?}");
         assert!(
             line.contains("deepseek-v4-flash"),
             "model visible: {line:?}"
@@ -1161,7 +1161,7 @@ mod tests {
     fn footer_priority_drop_full_at_100_cols() {
         let props = props_with_status("working");
         let line = render_at_width(props, 100);
-        assert!(line.contains("agent"));
+        assert!(line.contains("limited"));
         assert!(line.contains("deepseek-v4-flash"));
         assert!(line.contains("working"));
     }
@@ -1172,7 +1172,7 @@ mod tests {
     fn footer_priority_drop_full_at_80_cols() {
         let props = props_with_status("working");
         let line = render_at_width(props, 80);
-        assert!(line.contains("agent"));
+        assert!(line.contains("limited"));
         assert!(line.contains("deepseek-v4-flash"));
         assert!(!line.contains("..."), "no mid-word truncation: {line:?}");
         assert!(line.len() <= 80, "fits in 80 cols: {line:?}");
@@ -1186,7 +1186,7 @@ mod tests {
         // "agent · deepseek-v4-flash · refreshing context" = 46 cols. At 40
         // the status label drops, keeping mode + model verbatim.
         let line = render_at_width(props, 40);
-        assert!(line.contains("agent"), "mode kept: {line:?}");
+        assert!(line.contains("limited"), "mode kept: {line:?}");
         assert!(
             line.contains("deepseek-v4-flash"),
             "model kept verbatim: {line:?}"
@@ -1204,7 +1204,7 @@ mod tests {
     fn footer_priority_drop_full_at_60_cols() {
         let props = props_with_status("working");
         let line = render_at_width(props, 60);
-        assert!(line.contains("agent"));
+        assert!(line.contains("limited"));
         assert!(line.contains("deepseek-v4-flash"));
         assert!(line.contains("working"));
     }
@@ -1215,7 +1215,7 @@ mod tests {
     fn footer_priority_drop_truncates_model_only_when_status_already_gone() {
         let props = props_with_status("working");
         let line = render_at_width(props, 20);
-        assert!(line.starts_with("agent"), "mode stays at front: {line:?}");
+        assert!(line.starts_with("limited"), "mode stays at front: {line:?}");
         assert!(
             line.contains("..."),
             "model truncated as last resort: {line:?}"
@@ -1260,7 +1260,7 @@ mod tests {
         let line = render_at_width(props, 40);
 
         assert!(
-            line.contains("agent"),
+            line.contains("limited"),
             "left status should survive: {line:?}"
         );
         assert!(
@@ -1292,7 +1292,7 @@ mod tests {
         let line = render_at_width(props, 80);
 
         assert!(
-            line.contains("agent"),
+            line.contains("limited"),
             "left status should render: {line:?}"
         );
         assert!(
@@ -1308,7 +1308,7 @@ mod tests {
     fn footer_cost_renders_in_left_cluster_at_wide_widths() {
         let props = props_with_status_and_cost("working", "$0.42");
         let line = render_at_width(props, 120);
-        let mode_pos = line.find("agent").expect("mode visible");
+        let mode_pos = line.find("limited").expect("mode visible");
         let model_pos = line.find("deepseek-v4-flash").expect("model visible");
         let cost_pos = line.find("$0.42").expect("cost visible on left");
         let status_pos = line.find("working").expect("status visible");
@@ -1325,7 +1325,7 @@ mod tests {
         // At 47 the status drops but the cost survives (47 ≥ 36 mode+model+cost).
         let props = props_with_status_and_cost("refreshing context", "$0.42");
         let line = render_at_width(props, 47);
-        assert!(line.contains("agent"));
+        assert!(line.contains("limited"));
         assert!(line.contains("deepseek-v4-flash"));
         assert!(
             line.contains("$0.42"),
@@ -1360,7 +1360,7 @@ mod tests {
 
         let rendered: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
         assert!(rendered.contains("session saved"));
-        assert!(!rendered.contains("agent"));
+        assert!(!rendered.contains("limited"));
         assert!(!rendered.contains("deepseek-v4-flash"));
     }
 }

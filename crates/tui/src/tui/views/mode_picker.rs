@@ -23,7 +23,7 @@ struct ModeRow {
 
 const MODE_ROWS: &[ModeRow] = &[
     ModeRow {
-        mode: AppMode::Agent,
+        mode: AppMode::Limited,
         number: '1',
         name: "Agent",
         hint: "Normal execution with approvals",
@@ -59,7 +59,7 @@ impl ModePickerView {
     fn selected_mode(&self) -> AppMode {
         MODE_ROWS
             .get(self.cursor)
-            .map_or(AppMode::Agent, |row| row.mode)
+            .map_or(AppMode::Limited, |row| row.mode)
     }
 
     fn move_up(&mut self) {
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn enter_emits_selected_mode() {
-        let mut view = ModePickerView::new(AppMode::Agent);
+        let mut view = ModePickerView::new(AppMode::Limited);
         view.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         let action = view.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         match action {
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn number_keys_select_modes() {
-        let mut view = ModePickerView::new(AppMode::Agent);
+        let mut view = ModePickerView::new(AppMode::Limited);
         let action = view.handle_key(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
         match action {
             ViewAction::EmitAndClose(ViewEvent::ModeSelected { mode }) => {

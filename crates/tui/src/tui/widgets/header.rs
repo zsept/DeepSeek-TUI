@@ -178,7 +178,7 @@ impl<'a> HeaderWidget<'a> {
 
     fn mode_color(mode: AppMode) -> Color {
         match mode {
-            AppMode::Agent => palette::MODE_AGENT,
+            AppMode::Limited => palette::MODE_AGENT,
             AppMode::Yolo => palette::MODE_YOLO,
             AppMode::Plan => palette::MODE_PLAN,
         }
@@ -186,7 +186,7 @@ impl<'a> HeaderWidget<'a> {
 
     fn mode_name(mode: AppMode) -> &'static str {
         match mode {
-            AppMode::Agent => "Agent",
+            AppMode::Limited => "Limited",
             AppMode::Yolo => "Yolo",
             AppMode::Plan => "Plan",
         }
@@ -617,7 +617,7 @@ mod tests {
     fn wide_header_shows_plain_mode_and_single_metadata_cluster() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-pro",
                 "deepseek-tui",
                 false,
@@ -626,7 +626,7 @@ mod tests {
             72,
         );
 
-        assert!(rendered.contains("Agent"));
+        assert!(rendered.contains("Limited"));
         assert!(rendered.contains("deepseek-tui"));
         assert!(rendered.contains("deepseek-v4-pro"));
         assert!(!rendered.contains("Plan"));
@@ -640,7 +640,7 @@ mod tests {
         // `deepseek --version` / `/status`).
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-pro",
                 "deepseek-tui",
                 false,
@@ -703,7 +703,7 @@ mod tests {
     #[test]
     fn narrow_header_keeps_context_percent_visible() {
         let rendered = render_header(
-            HeaderData::new(AppMode::Agent, "", "", true, palette::DEEPSEEK_INK).with_usage(
+            HeaderData::new(AppMode::Limited, "", "", true, palette::DEEPSEEK_INK).with_usage(
                 0,
                 Some(128_000),
                 0.0,
@@ -731,14 +731,14 @@ mod tests {
 
         assert!(rendered.trim_start().starts_with('Y'));
         assert!(!rendered.contains("Plan"));
-        assert!(!rendered.contains("Agent"));
+        assert!(!rendered.contains("Limited"));
     }
 
     #[test]
     fn header_hides_context_signal_when_usage_snapshot_is_missing() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-flash",
                 "repo",
                 false,
@@ -755,7 +755,7 @@ mod tests {
     fn header_caps_context_signal_at_hundred_percent() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-flash",
                 "repo",
                 false,
@@ -773,7 +773,7 @@ mod tests {
     fn header_shows_provider_chip_when_set() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-ai/deepseek-v4-flash",
                 "deepseek-tui",
                 false,
@@ -792,7 +792,7 @@ mod tests {
     fn header_hides_provider_chip_when_default_deepseek() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-pro",
                 "deepseek-tui",
                 false,
@@ -857,7 +857,7 @@ mod tests {
     fn header_renders_whale_chip_next_to_effort_label() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-pro",
                 "deepseek-tui",
                 false,
@@ -888,7 +888,7 @@ mod tests {
     fn header_hides_whale_chip_when_status_indicator_off() {
         let rendered = render_header(
             HeaderData::new(
-                AppMode::Agent,
+                AppMode::Limited,
                 "deepseek-v4-pro",
                 "deepseek-tui",
                 false,

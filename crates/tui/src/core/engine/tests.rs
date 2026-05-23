@@ -283,7 +283,7 @@ fn successful_update_plan_ends_plan_mode_turn_immediately() {
         &Ok(ToolResult::success("planned"))
     ));
     assert!(!should_stop_after_plan_tool(
-        AppMode::Agent,
+        AppMode::Limited,
         "update_plan",
         &Ok(ToolResult::success("planned"))
     ));
@@ -314,7 +314,7 @@ fn quick_plan_requests_force_update_plan_on_first_step() {
         "Inspect the repo and then give me a quick plan."
     ));
     assert!(!should_force_update_plan_first(
-        AppMode::Agent,
+        AppMode::Limited,
         "Give me a quick 3-step plan."
     ));
 }
@@ -398,12 +398,12 @@ fn non_yolo_mode_retains_default_defer_policy() {
     // Shell tools are kept loaded in action modes so the model can verify
     // work without an extra ToolSearch round-trip; non-action tools (e.g.
     // MCP) still defer.
-    assert!(!should_default_defer_tool("exec_shell", AppMode::Agent));
+    assert!(!should_default_defer_tool("exec_shell", AppMode::Limited));
     assert!(should_default_defer_tool("exec_shell", AppMode::Plan));
-    assert!(!should_default_defer_tool("read_file", AppMode::Agent));
+    assert!(!should_default_defer_tool("read_file", AppMode::Limited));
     assert!(should_default_defer_tool(
         "mcp_read_resource",
-        AppMode::Agent
+        AppMode::Limited
     ));
 }
 
@@ -416,7 +416,7 @@ fn model_tool_catalog_applies_native_and_mcp_deferral() {
             api_tool("project_map"),
         ],
         vec![api_tool("list_mcp_resources"), api_tool("mcp_server_write")],
-        AppMode::Agent,
+        AppMode::Limited,
     );
 
     let defer_loading = |name: &str| {
@@ -579,15 +579,15 @@ fn deferred_tool_preflight_loads_edit_schema_without_executing_bad_aliases() {
     let (engine, _handle) = Engine::new(EngineConfig::default(), &Config::default());
     let registry = engine
         .build_turn_tool_registry_builder(
-            AppMode::Agent,
+            AppMode::Limited,
             engine.config.todos.clone(),
             engine.config.plan_state.clone(),
         )
-        .build(engine.build_tool_context(AppMode::Agent, false));
+        .build(engine.build_tool_context(AppMode::Limited, false));
     let catalog = build_model_tool_catalog(
         registry.to_api_tools_with_cache(true),
         vec![],
-        AppMode::Agent,
+        AppMode::Limited,
     );
     let mut active = initial_active_tools(&catalog);
     assert!(!active.contains("edit_file"));
@@ -624,15 +624,15 @@ fn deferred_tool_preflight_guides_checklist_update_list_replacement() {
     let (engine, _handle) = Engine::new(EngineConfig::default(), &Config::default());
     let registry = engine
         .build_turn_tool_registry_builder(
-            AppMode::Agent,
+            AppMode::Limited,
             engine.config.todos.clone(),
             engine.config.plan_state.clone(),
         )
-        .build(engine.build_tool_context(AppMode::Agent, false));
+        .build(engine.build_tool_context(AppMode::Limited, false));
     let catalog = build_model_tool_catalog(
         registry.to_api_tools_with_cache(true),
         vec![],
-        AppMode::Agent,
+        AppMode::Limited,
     );
     let mut active = initial_active_tools(&catalog);
     assert!(!active.contains("checklist_update"));
@@ -739,7 +739,7 @@ fn turn_tool_registry_builder_keeps_plan_mode_read_only_for_files() {
 fn parent_turn_registry_includes_recall_archive_for_investigative_modes() {
     let (engine, _handle) = Engine::new(EngineConfig::default(), &Config::default());
 
-    for mode in [AppMode::Plan, AppMode::Agent, AppMode::Yolo] {
+    for mode in [AppMode::Plan, AppMode::Limited, AppMode::Yolo] {
         let registry = engine
             .build_turn_tool_registry_builder(
                 mode,
@@ -761,10 +761,10 @@ fn agent_mode_can_build_auto_approved_tool_context() {
 
     assert!(
         !engine
-            .build_tool_context(AppMode::Agent, false)
+            .build_tool_context(AppMode::Limited, false)
             .auto_approve
     );
-    assert!(engine.build_tool_context(AppMode::Agent, true).auto_approve);
+    assert!(engine.build_tool_context(AppMode::Limited, true).auto_approve);
     assert!(engine.build_tool_context(AppMode::Yolo, false).auto_approve);
 }
 
@@ -777,7 +777,7 @@ fn agent_and_yolo_modes_elevate_shell_sandbox_to_allow_network() {
     // outbound boundary.
     let (engine, _handle) = Engine::new(EngineConfig::default(), &Config::default());
 
-    let agent_ctx = engine.build_tool_context(AppMode::Agent, false);
+    let agent_ctx = engine.build_tool_context(AppMode::Limited, false);
     let agent_policy = agent_ctx
         .elevated_sandbox_policy
         .as_ref()
@@ -850,7 +850,7 @@ fn sandbox_policy_for_mode_returns_correct_policy_per_mode() {
     ));
 
     // Agent: WorkspaceWrite with workspace as writable root, network on.
-    match sandbox_policy_for_mode(AppMode::Agent, &workspace) {
+    match sandbox_policy_for_mode(AppMode::Limited, &workspace) {
         SandboxPolicy::WorkspaceWrite {
             writable_roots,
             network_access,
@@ -1029,7 +1029,7 @@ fn refresh_system_prompt_leaves_working_set_out_of_system_prompt() {
         .working_set
         .observe_user_message("please inspect src/lib.rs", tmp.path());
 
-    engine.refresh_system_prompt(AppMode::Agent);
+    engine.refresh_system_prompt(AppMode::Limited);
 
     let prompt = match &engine.session.system_prompt {
         Some(SystemPrompt::Text(text)) => text.clone(),
@@ -1288,10 +1288,10 @@ fn refresh_system_prompt_is_noop_when_unchanged() {
     };
     let (mut engine, _handle) = Engine::new(config, &Config::default());
 
-    engine.refresh_system_prompt(AppMode::Agent);
+    engine.refresh_system_prompt(AppMode::Limited);
     let first_hash = engine.session.last_system_prompt_hash;
     let first_prompt = engine.session.system_prompt.clone();
-    engine.refresh_system_prompt(AppMode::Agent);
+    engine.refresh_system_prompt(AppMode::Limited);
 
     assert_eq!(engine.session.last_system_prompt_hash, first_hash);
     assert_eq!(engine.session.system_prompt, first_prompt);
@@ -1312,7 +1312,7 @@ fn compaction_summary_stays_in_stable_system_prompt() {
         .session
         .working_set
         .observe_user_message("continue in src/main.rs", tmp.path());
-    engine.refresh_system_prompt(AppMode::Agent);
+    engine.refresh_system_prompt(AppMode::Limited);
     engine.merge_compaction_summary(Some(SystemPrompt::Blocks(vec![SystemBlock {
         block_type: "text".to_string(),
         text: format!("{COMPACTION_SUMMARY_MARKER}\nsummary"),
@@ -1367,7 +1367,7 @@ async fn pre_request_refresh_skips_compaction_below_normal_threshold() {
     let before_len = engine.session.messages.len();
     let turn = TurnContext::new(10);
     let applied = engine
-        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Agent)
+        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Limited)
         .await;
     let after = engine.estimated_input_tokens();
 
@@ -1413,7 +1413,7 @@ async fn pre_request_refresh_invoked_when_medium_risk() {
     let before = engine.estimated_input_tokens();
     let turn = TurnContext::new(10);
     let applied = engine
-        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Agent)
+        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Limited)
         .await;
     let after = engine.estimated_input_tokens();
 
@@ -1460,12 +1460,12 @@ async fn post_tool_replay_invoked_when_high_non_severe_risk() {
 
     let registry = ToolRegistryBuilder::new()
         .with_read_only_file_tools()
-        .build(engine.build_tool_context(AppMode::Agent, false));
+        .build(engine.build_tool_context(AppMode::Limited, false));
 
     let restarted = engine
         .run_capacity_post_tool_checkpoint(
             &turn,
-            AppMode::Agent,
+            AppMode::Limited,
             Some(&registry),
             Arc::new(RwLock::new(())),
             None,
@@ -1526,7 +1526,7 @@ async fn error_escalation_triggers_replan_when_severe_or_repeated_failures() {
     let before_len = engine.session.messages.len();
     let turn = TurnContext::new(10);
     let restarted = engine
-        .run_capacity_error_escalation_checkpoint(&turn, AppMode::Agent, 2, 2, &[])
+        .run_capacity_error_escalation_checkpoint(&turn, AppMode::Limited, 2, 2, &[])
         .await;
 
     assert!(restarted);
@@ -1584,7 +1584,7 @@ async fn capacity_disabled_by_default_keeps_messages_intact() {
     let before_len = engine.session.messages.len();
     let turn = TurnContext::new(10);
     let restarted = engine
-        .run_capacity_error_escalation_checkpoint(&turn, AppMode::Agent, 2, 2, &[])
+        .run_capacity_error_escalation_checkpoint(&turn, AppMode::Limited, 2, 2, &[])
         .await;
 
     // Capacity is disabled → no replan, no message clear.
@@ -1622,7 +1622,7 @@ async fn controller_disabled_keeps_behavior_unchanged() {
     let before_len = engine.session.messages.len();
     let turn = TurnContext::new(10);
     let applied = engine
-        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Agent)
+        .run_capacity_pre_request_checkpoint(&turn, None, AppMode::Limited)
         .await;
     let after = engine.estimated_input_tokens();
     let after_len = engine.session.messages.len();
@@ -1684,7 +1684,7 @@ fn tool_search_activates_discovered_deferred_tools() {
             cache_control: None,
         },
     ];
-    ensure_advanced_tooling(&mut catalog, AppMode::Agent);
+    ensure_advanced_tooling(&mut catalog, AppMode::Limited);
     let mut active = initial_active_tools(&catalog);
     let result = execute_tool_search(
         TOOL_SEARCH_BM25_NAME,
@@ -1720,7 +1720,7 @@ fn plan_mode_catalog_skips_code_execution_tool() {
     );
 
     let mut agent_catalog = vec![api_tool("read_file")];
-    ensure_advanced_tooling(&mut agent_catalog, AppMode::Agent);
+    ensure_advanced_tooling(&mut agent_catalog, AppMode::Limited);
     assert!(
         agent_catalog
             .iter()

@@ -53,7 +53,7 @@ impl ToolSpec for TaskCreateTool {
                 "prompt": { "type": "string", "description": "Work prompt for the durable task." },
                 "model": { "type": "string" },
                 "workspace": { "type": "string", "description": "Workspace path; defaults to current workspace." },
-                "mode": { "type": "string", "enum": ["agent", "plan", "yolo"] },
+                "mode": { "type": "string", "enum": ["limited", "plan", "yolo"] },
                 "allow_shell": { "type": "boolean" },
                 "trust_mode": { "type": "boolean" },
                 "auto_approve": { "type": "boolean" }

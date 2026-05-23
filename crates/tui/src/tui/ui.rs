@@ -3885,6 +3885,7 @@ async fn dispatch_user_message(
                 locale_tag: app.ui_locale.tag(),
                 translation_enabled: app.translation_enabled,
                 parent_system_prompt: config.system_prompt.as_deref(),
+                agent_system_prompt_override: app.agent_system_prompt_override.as_deref(),
             },
             &app.extra_skills_dirs,
         ),

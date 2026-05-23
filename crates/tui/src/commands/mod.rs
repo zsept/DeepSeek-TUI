@@ -3,6 +3,7 @@
 //! This module provides a modular command system inspired by Codex-rs.
 //! Commands are organized by category and dispatched through a central registry.
 
+mod agent;
 mod anchor;
 mod attachment;
 mod change;
@@ -550,6 +551,7 @@ pub fn execute(cmd: &str, app: &mut App) -> CommandResult {
     // Match command or alias
     match command {
         // Core commands
+        "agent" | "zhinengti" | "智能体" => agent::agent(app, arg),
         "anchor" | "maodian" => anchor::anchor(app, arg),
         "help" | "?" | "bangzhu" | "帮助" => core::help(app, arg),
         "clear" | "qingping" => core::clear(app),
@@ -560,8 +562,7 @@ pub fn execute(cmd: &str, app: &mut App) -> CommandResult {
         "queue" | "queued" => queue::queue(app, arg),
         "stash" | "park" => stash::stash(app, arg),
         "hooks" | "hook" | "gouzi" => hooks::hooks(app, arg),
-        "subagents" | "agents" | "zhinengti" => core::subagents(app),
-        "agent" | "daili" => agent(app, arg),
+        "subagents" | "agents" => core::subagents(app),
         "links" | "dashboard" | "api" | "lianjie" => core::deepseek_links(app),
         "feedback" => feedback::feedback(app, arg),
         "home" | "stats" | "overview" | "zhuye" | "shouye" => core::home_dashboard(app),
@@ -745,31 +746,6 @@ pub fn rlm(app: &mut App, arg: Option<&str>) -> CommandResult {
 
     CommandResult::with_message_and_action(
         format!("Opening persistent RLM context at depth {max_depth}..."),
-        AppAction::SendMessage(message),
-    )
-}
-
-/// Open a persistent sub-agent session from a slash command.
-pub fn agent(_app: &mut App, arg: Option<&str>) -> CommandResult {
-    let (max_depth, task) = match parse_depth_prefixed_arg(arg, 1) {
-        Ok(parsed) => parsed,
-        Err(message) => return CommandResult::error(message),
-    };
-    let task = match task {
-        Some(task) if !task.trim().is_empty() => task.trim().to_string(),
-        _ => {
-            return CommandResult::error(
-                "Usage: /agent [N] <task>\n\n\
-                 Opens a persistent sub-agent session with recursive agent depth N (0-3, default 1).",
-            );
-        }
-    };
-    let message = format!(
-        "Open a persistent sub-agent session for this task. Call `agent_open` with name `slash_agent`, `prompt: {:?}`, and `max_depth: {max_depth}`. Use `agent_eval` to wait for the next terminal/current projection and `handle_read` on the returned transcript_handle if you need more detail. Verify any claimed side effects before reporting success.",
-        task
-    );
-    CommandResult::with_message_and_action(
-        format!("Opening persistent sub-agent at depth {max_depth}..."),
         AppAction::SendMessage(message),
     )
 }

@@ -4,9 +4,9 @@ use std::fmt::Write;
 use std::path::PathBuf;
 
 use crate::session_manager::create_saved_session_with_mode;
-use crate::tui::app::{App, AppAction};
-use crate::tui::history::{HistoryCell, history_cells_from_message};
-use crate::tui::session_picker::SessionPickerView;
+use crate::ui::app::{App, AppAction};
+use crate::ui::history::{HistoryCell, history_cells_from_message};
+use crate::ui::session_picker::SessionPickerView;
 
 use super::CommandResult;
 
@@ -126,7 +126,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
             crate::session_manager::truncate_id(&session.metadata.id),
             session.metadata.message_count
         ),
-        crate::tui::app::AppAction::SyncSession {
+        crate::ui::app::AppAction::SyncSession {
             session_id: app.current_session_id.clone(),
             messages: app.api_messages.clone(),
             system_prompt: app.system_prompt.clone(),
@@ -262,7 +262,7 @@ fn prune(_app: &mut App, days_arg: Option<&str>) -> CommandResult {
     }
 }
 
-fn render_tool_cell(tool: &crate::tui::history::ToolCell, width: u16) -> String {
+fn render_tool_cell(tool: &crate::ui::history::ToolCell, width: u16) -> String {
     tool.lines(width)
         .into_iter()
         .map(line_to_string)
@@ -270,7 +270,7 @@ fn render_tool_cell(tool: &crate::tui::history::ToolCell, width: u16) -> String 
         .join("\n")
 }
 
-fn render_agent_cell(cell: &crate::tui::history::AgentCell, width: u16) -> String {
+fn render_agent_cell(cell: &crate::ui::history::AgentCell, width: u16) -> String {
     cell.lines(width)
         .into_iter()
         .map(line_to_string)
@@ -289,7 +289,7 @@ fn line_to_string(line: ratatui::text::Line<'static>) -> String {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions, TurnCacheRecord};
+    use crate::ui::app::{App, TuiOptions, TurnCacheRecord};
     use std::time::Instant;
     use tempfile::TempDir;
 

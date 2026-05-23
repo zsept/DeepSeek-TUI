@@ -1,6 +1,6 @@
 //! /goal command — set a session objective with token budget and progress tracking.
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -36,7 +36,7 @@ pub fn goal(app: &mut App, arg: Option<&str>) -> CommandResult {
                 let elapsed = app
                     .goal
                     .goal_started_at
-                    .map(|t| crate::tui::notifications::humanize_duration(t.elapsed()))
+                    .map(|t| crate::ui::notifications::humanize_duration(t.elapsed()))
                     .unwrap_or_else(|| "unknown".to_string());
                 let budget_str = app
                     .goal
@@ -85,7 +85,7 @@ fn parse_goal_budget(text: &str) -> (String, Option<u32>) {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use std::path::PathBuf;
 
     fn create_test_app() -> App {

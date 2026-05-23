@@ -6,7 +6,7 @@
 //! toggle (cf. #657).
 
 use super::CommandResult;
-use crate::tui::app::{App, SidebarFocus};
+use crate::ui::app::{App, SidebarFocus};
 
 pub fn toggle(app: &mut App, arg: Option<&str>) -> CommandResult {
     let sub = arg
@@ -30,7 +30,7 @@ pub fn toggle(app: &mut App, arg: Option<&str>) -> CommandResult {
                 app.needs_redraw = true;
                 CommandResult::message("File tree closed")
             } else {
-                let state = crate::tui::file_tree::FileTreeState::new(&app.workspace);
+                let state = crate::ui::file_tree::FileTreeState::new(&app.workspace);
                 app.file_tree = Some(state);
                 app.status_message = Some(
                     "File tree: \u{2191}/\u{2193} navigate  Enter select  Esc close".to_string(),

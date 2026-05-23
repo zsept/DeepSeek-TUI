@@ -11,7 +11,7 @@ use crate::core::coherence::CoherenceState;
 use crate::error_taxonomy::ErrorEnvelope;
 use crate::models::{Message, SystemPrompt, Usage};
 use crate::tools::spec::{ToolError, ToolResult};
-use crate::tools::subagent::AgentResult;
+use crate::tools::agent::AgentResult;
 use crate::tools::user_input::UserInputRequest;
 
 /// Final status for a turn.
@@ -197,7 +197,7 @@ pub enum Event {
     /// envelope to the correct in-transcript card.
     SubAgentMailbox {
         seq: u64,
-        message: crate::tools::subagent::MailboxMessage,
+        message: crate::tools::agent::MailboxMessage,
     },
 
     // === System Events ===

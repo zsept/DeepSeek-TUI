@@ -14,10 +14,10 @@ use crate::commands;
 use crate::config::{Config, StatusItem, normalize_model_name};
 use crate::localization::{normalize_configured_locale, resolve_locale};
 use crate::settings::Settings;
-use crate::tui::app::{
+use crate::ui::app::{
     App, AppMode, ComposerDensity, ReasoningEffort, SidebarFocus, TranscriptSpacing,
 };
-use crate::tui::approval::ApprovalMode;
+use crate::ui::approval::ApprovalMode;
 
 #[cfg(feature = "web")]
 use schemaui::web::session::{ServeOptions, WebSessionBuilder, bind_session};
@@ -1063,7 +1063,7 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::test_support::lock_test_env;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use std::fs;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};

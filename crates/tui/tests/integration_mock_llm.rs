@@ -564,7 +564,7 @@ fn compaction_config_defaults_are_enabled_for_session_survivability() {
 // `#[ignore]` and these tests light up.
 //
 // Blocked on #402 P0: refactor engine + tools::registry +
-// rlm::bridge + tools::review + tools::subagent + cycle_manager + compaction
+// rlm::bridge + tools::review + tools::agent + cycle_manager + compaction
 // to take `Arc<dyn LlmClient>` instead of `Option<DeepSeekClient>`. Then the
 // mock plugs in directly and these `#[ignore]`s come off.
 

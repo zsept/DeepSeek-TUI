@@ -69,7 +69,7 @@ mod task_manager;
 #[cfg(test)]
 mod test_support;
 mod tools;
-mod tui;
+mod ui;
 mod utils;
 mod vision;
 mod working_set;
@@ -82,7 +82,7 @@ use crate::llm_client::LlmClient;
 use crate::mcp::{McpConfig, McpPool, McpServerConfig};
 use crate::models::{ContentBlock, Message, MessageRequest, SystemPrompt};
 use crate::session_manager::{SessionManager, create_saved_session, truncate_id};
-use crate::tui::history::{summarize_tool_args, summarize_tool_output};
+use crate::ui::history::{summarize_tool_args, summarize_tool_output};
 
 #[cfg(windows)]
 fn configure_windows_console_utf8() {
@@ -326,7 +326,7 @@ fn spawn_signal_cleanup_task() {
         static CLEANED_UP: std::sync::atomic::AtomicBool =
             std::sync::atomic::AtomicBool::new(false);
         if !CLEANED_UP.swap(true, std::sync::atomic::Ordering::SeqCst) {
-            crate::tui::ui::emergency_restore_terminal();
+            crate::ui::ui::emergency_restore_terminal();
         }
         std::process::exit(exit_code);
     });
@@ -681,7 +681,7 @@ async fn main() -> Result<()> {
         // in raw / alt-screen mode if the panic happens pre-TUI. Shared
         // with the signal handler installed below so both exit paths leave
         // the terminal in the same well-defined state.
-        crate::tui::ui::emergency_restore_terminal();
+        crate::ui::ui::emergency_restore_terminal();
 
         let msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
             s.to_string()
@@ -4332,9 +4332,9 @@ async fn run_interactive(
         ),
     }
 
-    tui::run_tui(
+    ui::run_tui(
         config,
-        tui::TuiOptions {
+        ui::TuiOptions {
             model,
             workspace,
             config_path: cli.config.clone(),
@@ -4361,7 +4361,7 @@ async fn run_interactive(
 
 struct CliAutoRoute {
     model: String,
-    reasoning_effort: Option<crate::tui::app::ReasoningEffort>,
+    reasoning_effort: Option<crate::ui::app::ReasoningEffort>,
     auto_model: bool,
 }
 
@@ -4385,7 +4385,7 @@ async fn resolve_cli_auto_route(config: &Config, model: &str, prompt: &str) -> C
             model: model.to_string(),
             reasoning_effort: config
                 .reasoning_effort()
-                .map(crate::tui::app::ReasoningEffort::from_setting),
+                .map(crate::ui::app::ReasoningEffort::from_setting),
             auto_model: false,
         }
     }
@@ -4594,7 +4594,7 @@ async fn run_exec_agent(
     use crate::models::compaction_threshold_for_model;
     use crate::tools::plan::new_shared_plan_state;
     use crate::tools::todo::new_shared_todo_list;
-    use crate::tui::app::AppMode;
+    use crate::ui::app::AppMode;
 
     let route = resolve_cli_auto_route(config, model, prompt).await;
     let auto_model = route.auto_model;
@@ -4646,7 +4646,7 @@ async fn run_exec_agent(
         capacity: crate::core::capacity::CapacityControllerConfig::from_app_config(config),
         todos: new_shared_todo_list(),
         plan_state: new_shared_plan_state(),
-        max_spawn_depth: crate::tools::subagent::DEFAULT_MAX_SPAWN_DEPTH,
+        max_spawn_depth: crate::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
         network_policy,
         snapshots_enabled: config.snapshots_config().enabled,
         snapshots_max_workspace_bytes: config
@@ -4727,12 +4727,12 @@ async fn run_exec_agent(
             auto_approve,
             translation_enabled: false,
             approval_mode: if auto_approve {
-                crate::tui::approval::ApprovalMode::Auto
+                crate::ui::approval::ApprovalMode::Auto
             } else {
                 config
                     .approval_policy
                     .as_deref()
-                    .and_then(crate::tui::approval::ApprovalMode::from_config_value)
+                    .and_then(crate::ui::approval::ApprovalMode::from_config_value)
                     .unwrap_or_default()
             },
         })

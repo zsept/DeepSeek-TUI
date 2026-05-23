@@ -899,7 +899,7 @@ impl Engine {
                 // resume instead of ending the turn. This fulfils the contract
                 // already documented in `prompts/base.md`: the parent is
                 // promised it'll see the sentinel when a child finishes.
-                let mut completions: Vec<crate::tools::subagent::AgentCompletion> = Vec::new();
+                let mut completions: Vec<crate::tools::agent::AgentCompletion> = Vec::new();
                 while let Ok(c) = self.rx_subagent_completion.try_recv() {
                     completions.push(c);
                 }

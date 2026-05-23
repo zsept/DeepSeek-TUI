@@ -1,5 +1,5 @@
 use super::CommandResult;
-use crate::tui::app::{App, AppAction};
+use crate::ui::app::{App, AppAction};
 
 const SECURITY_POLICY_URL: &str = "https://github.com/Hmbown/DeepSeek-TUI/security/policy";
 
@@ -130,7 +130,7 @@ fn parse_feedback_kind(input: &str) -> Option<FeedbackKind> {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn test_app() -> (App, TempDir) {

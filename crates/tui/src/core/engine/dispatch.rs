@@ -19,7 +19,7 @@ use serde_json::json;
 
 use crate::models::{Tool, ToolCaller};
 use crate::tools::spec::{ToolError, ToolResult};
-use crate::tui::app::AppMode;
+use crate::ui::app::AppMode;
 
 use super::ToolUseState;
 

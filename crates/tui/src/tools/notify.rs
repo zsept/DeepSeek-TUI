@@ -17,7 +17,7 @@ use super::spec::{
     ApprovalRequirement, ToolCapability, ToolContext, ToolError, ToolResult, ToolSpec,
     optional_str, required_str,
 };
-use crate::tui::notifications::{Method, notify_done};
+use crate::ui::notifications::{Method, notify_done};
 
 /// Maximum chars passed through for the title — keeps the OSC 9 escape
 /// reasonable on terminals that wrap long titles awkwardly.

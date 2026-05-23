@@ -1,6 +1,6 @@
 //! DeepSeek color palette and semantic roles.
 
-pub use crate::tui::theme::{Theme, ThemeId};
+pub use crate::ui::theme::{Theme, ThemeId};
 use ratatui::style::Color;
 
 pub const DEEPSEEK_BLUE_RGB: (u8, u8, u8) = (53, 120, 229); // #3578E5
@@ -221,7 +221,7 @@ pub fn theme_label_for_mode(mode: PaletteMode) -> &'static str {
     }
 }
 
-// ui_theme_from_settings now lives in crate::tui::theme — re-exported above.
+// ui_theme_from_settings now lives in crate::ui::theme — re-exported above.
 
 #[must_use]
 pub fn parse_hex_rgb_color(value: &str) -> Option<Color> {
@@ -616,7 +616,7 @@ mod tests {
         normalize_theme_name, parse_hex_rgb_color, pulse_brightness, reasoning_surface_tint,
         rgb_to_ansi256, theme_label_for_mode,
     };
-    use crate::tui::theme::{DARK_THEME, LIGHT_THEME, Theme};
+    use crate::ui::theme::{DARK_THEME, LIGHT_THEME, Theme};
     use ratatui::style::Color;
 
     #[test]
@@ -722,7 +722,7 @@ mod tests {
         assert_eq!(theme, DARK_THEME);
     }
 
-    // ui_theme_from_settings test moved to crate::tui::theme
+    // ui_theme_from_settings test moved to crate::ui::theme
 
     #[test]
     fn adapt_color_passes_through_truecolor() {

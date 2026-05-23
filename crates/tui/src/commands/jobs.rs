@@ -1,6 +1,6 @@
 //! Shell job-center commands.
 
-use crate::tui::app::{App, AppAction, ShellJobAction};
+use crate::ui::app::{App, AppAction, ShellJobAction};
 
 use super::CommandResult;
 
@@ -67,7 +67,7 @@ pub fn jobs(_app: &mut App, args: Option<&str>) -> CommandResult {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::TuiOptions;
+    use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 
     fn app() -> App {

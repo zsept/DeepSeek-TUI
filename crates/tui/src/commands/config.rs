@@ -11,10 +11,10 @@ use crate::llm_client::LlmClient;
 use crate::localization::resolve_locale;
 use crate::models::{ContentBlock, Message, MessageRequest, MessageResponse, SystemPrompt};
 use crate::settings::Settings;
-use crate::tui::app::{
+use crate::ui::app::{
     App, AppAction, AppMode, OnboardingState, ReasoningEffort, SidebarFocus, VimMode,
 };
-use crate::tui::approval::ApprovalMode;
+use crate::ui::approval::ApprovalMode;
 use anyhow::Result;
 
 /// Open the interactive config editor.
@@ -93,18 +93,18 @@ fn show_single_setting(app: &App, key: &str) -> CommandResult {
             crate::localization::Locale::Es419 => "es-419",
         }
     }
-    fn density_display(d: crate::tui::app::ComposerDensity) -> &'static str {
+    fn density_display(d: crate::ui::app::ComposerDensity) -> &'static str {
         match d {
-            crate::tui::app::ComposerDensity::Compact => "compact",
-            crate::tui::app::ComposerDensity::Comfortable => "comfortable",
-            crate::tui::app::ComposerDensity::Spacious => "spacious",
+            crate::ui::app::ComposerDensity::Compact => "compact",
+            crate::ui::app::ComposerDensity::Comfortable => "comfortable",
+            crate::ui::app::ComposerDensity::Spacious => "spacious",
         }
     }
-    fn spacing_display(s: crate::tui::app::TranscriptSpacing) -> &'static str {
+    fn spacing_display(s: crate::ui::app::TranscriptSpacing) -> &'static str {
         match s {
-            crate::tui::app::TranscriptSpacing::Compact => "compact",
-            crate::tui::app::TranscriptSpacing::Comfortable => "comfortable",
-            crate::tui::app::TranscriptSpacing::Spacious => "spacious",
+            crate::ui::app::TranscriptSpacing::Compact => "compact",
+            crate::ui::app::TranscriptSpacing::Comfortable => "comfortable",
+            crate::ui::app::TranscriptSpacing::Spacious => "spacious",
         }
     }
     let value = match key.as_str() {
@@ -510,7 +510,7 @@ pub fn set_config_value(app: &mut App, key: &str, value: &str, persist: bool) ->
             app.needs_redraw = true;
         }
         "theme" | "ui_theme" | "border_type" | "section_border_type" => {
-            app.theme = crate::tui::theme::Theme::from_settings(
+            app.theme = crate::ui::theme::Theme::from_settings(
                 &settings.theme,
                 settings.border_type.as_deref(),
                 settings.section_border_type.as_deref(),
@@ -524,7 +524,7 @@ pub fn set_config_value(app: &mut App, key: &str, value: &str, persist: bool) ->
         }
         "composer_density" | "composer" => {
             app.composer_density =
-                crate::tui::app::ComposerDensity::from_setting(&settings.composer_density);
+                crate::ui::app::ComposerDensity::from_setting(&settings.composer_density);
             app.needs_redraw = true;
         }
         "composer_border" | "border" => {
@@ -549,7 +549,7 @@ pub fn set_config_value(app: &mut App, key: &str, value: &str, persist: bool) ->
         }
         "transcript_spacing" | "spacing" => {
             app.transcript_spacing =
-                crate::tui::app::TranscriptSpacing::from_setting(&settings.transcript_spacing);
+                crate::ui::app::TranscriptSpacing::from_setting(&settings.transcript_spacing);
             app.mark_history_updated();
         }
         "default_mode" | "mode" => {
@@ -1251,8 +1251,8 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::test_support::lock_test_env;
-    use crate::tui::app::{App, TuiOptions};
-    use crate::tui::approval::ApprovalMode;
+    use crate::ui::app::{App, TuiOptions};
+    use crate::ui::approval::ApprovalMode;
     use std::env;
     use std::ffi::OsString;
     use std::fs;

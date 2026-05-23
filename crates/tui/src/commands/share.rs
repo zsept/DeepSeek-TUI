@@ -12,7 +12,7 @@ use std::io::Write;
 use std::path::Path;
 
 use super::CommandResult;
-use crate::tui::app::{App, AppAction};
+use crate::ui::app::{App, AppAction};
 
 /// Share the current session as a web URL.
 pub fn share(app: &mut App, arg: Option<&str>) -> CommandResult {

@@ -7,7 +7,7 @@
 //! table — the most-asked question once hooks start firing.
 
 use crate::hooks::HookEvent;
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 

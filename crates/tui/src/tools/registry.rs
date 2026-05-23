@@ -805,8 +805,8 @@ impl ToolRegistryBuilder {
         self,
         client: Option<DeepSeekClient>,
         model: String,
-        manager: super::subagent::SharedAgentManager,
-        runtime: super::subagent::AgentRuntime,
+        manager: super::agent::SharedAgentManager,
+        runtime: super::agent::AgentRuntime,
         allow_shell: bool,
         todo_list: super::todo::SharedTodoList,
         plan_state: super::plan::SharedPlanState,
@@ -845,10 +845,10 @@ impl ToolRegistryBuilder {
     #[must_use]
     pub fn with_agent_manager_tools(
         self,
-        manager: super::subagent::SharedAgentManager,
-        runtime: super::subagent::AgentRuntime,
+        manager: super::agent::SharedAgentManager,
+        runtime: super::agent::AgentRuntime,
     ) -> Self {
-        use super::subagent::{AgentCloseTool, AgentEvalTool, AgentOpenTool};
+        use super::agent::{AgentCloseTool, AgentEvalTool, AgentOpenTool};
 
         self.with_tool(Arc::new(AgentOpenTool::new(
             manager.clone(),

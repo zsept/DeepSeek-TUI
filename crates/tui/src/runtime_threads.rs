@@ -33,9 +33,9 @@ use crate::core::events::{Event as EngineEvent, TurnOutcomeStatus};
 use crate::core::ops::Op;
 use crate::models::{ContentBlock, Message, SystemPrompt, Usage, compaction_threshold_for_model};
 use crate::tools::plan::new_shared_plan_state;
-use crate::tools::subagent::AgentStatus;
+use crate::tools::agent::AgentStatus;
 use crate::tools::todo::new_shared_todo_list;
-use crate::tui::app::AppMode;
+use crate::ui::app::AppMode;
 
 const EVENT_CHANNEL_CAPACITY: usize = 1024;
 const MAX_ACTIVE_THREADS_DEFAULT: usize = 8;
@@ -1617,9 +1617,9 @@ impl RuntimeThreadManager {
                 auto_approve,
                 translation_enabled: false,
                 approval_mode: if auto_approve {
-                    crate::tui::approval::ApprovalMode::Auto
+                    crate::ui::approval::ApprovalMode::Auto
                 } else {
-                    crate::tui::approval::ApprovalMode::Suggest
+                    crate::ui::approval::ApprovalMode::Suggest
                 },
             })
             .await
@@ -1946,7 +1946,7 @@ impl RuntimeThreadManager {
             ),
             todos: new_shared_todo_list(),
             plan_state: new_shared_plan_state(),
-            max_spawn_depth: crate::tools::subagent::DEFAULT_MAX_SPAWN_DEPTH,
+            max_spawn_depth: crate::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
             network_policy,
             snapshots_enabled: self.config.snapshots_config().enabled,
             snapshots_max_workspace_bytes: self

@@ -6,7 +6,7 @@ use std::path::Path;
 use super::CommandResult;
 use crate::compaction::estimate_input_tokens_conservative;
 use crate::models::{LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, context_window_for_model};
-use crate::tui::app::App;
+use crate::ui::app::App;
 use crate::utils::{display_path, estimate_message_chars};
 
 /// Show a compact runtime status report for the current TUI session.
@@ -173,8 +173,8 @@ mod tests {
     use super::*;
     use crate::config::{ApiProvider, Config};
     use crate::models::{ContentBlock, Message};
-    use crate::tui::app::TuiOptions;
-    use crate::tui::history::HistoryCell;
+    use crate::ui::app::TuiOptions;
+    use crate::ui::history::HistoryCell;
 
     fn create_test_app(workspace: PathBuf) -> App {
         let options = TuiOptions {

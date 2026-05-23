@@ -6,7 +6,7 @@ use crate::cycle_manager::CycleBriefing;
 use crate::models::{Message, SystemPrompt, Usage};
 use crate::prefix_cache::PrefixStabilityManager;
 use crate::project_context::{ProjectContext, load_project_context_with_parents};
-use crate::tui::approval::ApprovalMode;
+use crate::ui::approval::ApprovalMode;
 use crate::working_set::WorkingSet;
 use chrono::{DateTime, Utc};
 use std::path::PathBuf;

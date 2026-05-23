@@ -9,7 +9,7 @@
 
 use super::CommandResult;
 use crate::snapshot::SnapshotRepo;
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 const LIST_LIMIT: usize = 10;
 
@@ -103,7 +103,7 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::test_support::lock_test_env;
-    use crate::tui::app::TuiOptions;
+    use crate::ui::app::TuiOptions;
     use std::sync::MutexGuard;
     use tempfile::TempDir;
 

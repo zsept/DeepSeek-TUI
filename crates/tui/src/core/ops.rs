@@ -5,8 +5,8 @@
 
 use crate::compaction::CompactionConfig;
 use crate::models::{Message, SystemPrompt};
-use crate::tui::app::AppMode;
-use crate::tui::approval::ApprovalMode;
+use crate::ui::app::AppMode;
+use crate::ui::approval::ApprovalMode;
 use std::path::PathBuf;
 
 /// Operations that can be submitted to the engine.

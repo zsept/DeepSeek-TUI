@@ -5,7 +5,7 @@
 //! preserve invariants like "This API's status field is unreliable" or
 //! ".ssh/ must never be touched".
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 use std::fs;
 use std::io::Write;
 
@@ -157,7 +157,7 @@ fn remove_anchor(app: &mut App, index_str: &str) -> CommandResult {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn create_test_app_with_tmpdir(tmpdir: &TempDir) -> App {

@@ -1,7 +1,7 @@
 //! `/rename` command — set a custom title for the current session.
 
 use crate::session_manager::{SessionManager, update_session};
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -72,7 +72,7 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::session_manager::{SessionManager, create_saved_session_with_mode};
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn make_app(tmpdir: &TempDir) -> App {

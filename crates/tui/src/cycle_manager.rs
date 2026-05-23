@@ -55,7 +55,7 @@ use crate::models::{
     ContentBlock, Message, MessageRequest, SystemBlock, SystemPrompt, context_window_for_model,
 };
 use crate::tools::plan::{PlanSnapshot, SharedPlanState};
-use crate::tools::subagent::{SharedAgentManager, AgentResult, AgentStatus};
+use crate::tools::agent::{SharedAgentManager, AgentResult, AgentStatus};
 use crate::tools::todo::{SharedTodoList, TodoListSnapshot};
 use crate::working_set::WorkingSet;
 

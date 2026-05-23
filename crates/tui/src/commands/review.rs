@@ -1,8 +1,8 @@
 //! Review command: activate review skill and send a target immediately.
 
 use crate::skills::{SkillRegistry, default_skills_dir};
-use crate::tui::app::{App, AppAction};
-use crate::tui::history::HistoryCell;
+use crate::ui::app::{App, AppAction};
+use crate::ui::history::HistoryCell;
 
 use super::CommandResult;
 
@@ -66,7 +66,7 @@ pub fn review(app: &mut App, args: Option<&str>) -> CommandResult {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn create_test_app_with_tmpdir(tmpdir: &TempDir) -> App {

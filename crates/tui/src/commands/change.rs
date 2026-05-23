@@ -11,7 +11,7 @@
 //! the user's language.
 
 use crate::localization::{Locale, MessageId, tr};
-use crate::tui::app::{App, AppAction};
+use crate::ui::app::{App, AppAction};
 
 use super::CommandResult;
 
@@ -311,7 +311,7 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::localization::Locale;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     fn make_app(tmpdir: &tempfile::TempDir, locale: Locale, has_api_key: bool) -> App {
         let mut config = Config::default();
         if has_api_key {

@@ -9,8 +9,8 @@ use crate::client::{PromptInspection, inspect_prompt_for_request};
 use crate::compaction::estimate_input_tokens_conservative;
 use crate::localization::{Locale, MessageId, tr};
 use crate::models::{ContentBlock, MessageRequest, SystemPrompt, context_window_for_model};
-use crate::tui::app::{App, AppAction, TurnCacheRecord};
-use crate::tui::history::HistoryCell;
+use crate::ui::app::{App, AppAction, TurnCacheRecord};
+use crate::ui::history::HistoryCell;
 
 fn token_count(value: Option<u32>, locale: Locale) -> String {
     value.map_or_else(
@@ -150,7 +150,7 @@ pub fn cache(app: &mut App, arg: Option<&str>) -> CommandResult {
     let cap = app.session.turn_cache_history.len();
     let count = want
         .min(cap)
-        .min(crate::tui::app::App::TURN_CACHE_HISTORY_CAP);
+        .min(crate::ui::app::App::TURN_CACHE_HISTORY_CAP);
 
     if cap == 0 {
         return CommandResult::message(tr(app.ui_locale, MessageId::CmdCacheNoData));
@@ -160,9 +160,9 @@ pub fn cache(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn format_cache_inspect(app: &mut App) -> String {
-    let reasoning_effort = if app.reasoning_effort == crate::tui::app::ReasoningEffort::Auto {
+    let reasoning_effort = if app.reasoning_effort == crate::ui::app::ReasoningEffort::Auto {
         app.last_effective_reasoning_effort
-            .and_then(crate::tui::app::ReasoningEffort::api_value)
+            .and_then(crate::ui::app::ReasoningEffort::api_value)
             .map(str::to_string)
     } else {
         app.reasoning_effort.api_value().map(str::to_string)
@@ -423,8 +423,8 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::models::{ContentBlock, Message, SystemBlock};
-    use crate::tui::app::{App, TuiOptions};
-    use crate::tui::history::{GenericToolCell, ToolCell, ToolStatus};
+    use crate::ui::app::{App, TuiOptions};
+    use crate::ui::history::{GenericToolCell, ToolCell, ToolStatus};
     use std::path::PathBuf;
 
     fn create_test_app() -> App {
@@ -814,7 +814,7 @@ mod tests {
     #[test]
     fn turn_cache_history_is_capped_at_50() {
         let mut app = create_test_app();
-        for i in 0..(crate::tui::app::App::TURN_CACHE_HISTORY_CAP + 12) {
+        for i in 0..(crate::ui::app::App::TURN_CACHE_HISTORY_CAP + 12) {
             app.push_turn_cache_record(TurnCacheRecord {
                 input_tokens: i as u32,
                 output_tokens: 1,
@@ -826,12 +826,12 @@ mod tests {
         }
         assert_eq!(
             app.session.turn_cache_history.len(),
-            crate::tui::app::App::TURN_CACHE_HISTORY_CAP
+            crate::ui::app::App::TURN_CACHE_HISTORY_CAP
         );
         // Oldest record was evicted; newest record is still at the back.
         assert_eq!(
             app.session.turn_cache_history.back().unwrap().input_tokens,
-            (crate::tui::app::App::TURN_CACHE_HISTORY_CAP + 11) as u32
+            (crate::ui::app::App::TURN_CACHE_HISTORY_CAP + 11) as u32
         );
     }
 

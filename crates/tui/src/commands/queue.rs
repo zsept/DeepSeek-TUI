@@ -1,6 +1,6 @@
 //! Queue commands: queue list/edit/drop/clear
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -132,7 +132,7 @@ fn truncate_preview(text: &str) -> String {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, QueuedMessage, TuiOptions};
+    use crate::ui::app::{App, QueuedMessage, TuiOptions};
     use tempfile::TempDir;
 
     fn create_test_app_with_tmpdir(tmpdir: &TempDir) -> App {

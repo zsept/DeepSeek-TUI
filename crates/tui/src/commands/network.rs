@@ -8,7 +8,7 @@ use toml::Value;
 
 use super::CommandResult;
 use crate::network_policy::host_from_url;
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 pub fn network(_app: &mut App, arg: Option<&str>) -> CommandResult {
     match network_inner(arg) {
@@ -269,7 +269,7 @@ fn display_list(values: &[String]) -> String {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use std::env;
     use std::ffi::OsString;
     use std::path::PathBuf;

@@ -3,7 +3,7 @@
 
 use std::fmt::Write;
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -143,7 +143,7 @@ fn first_line(text: &str, max_chars: usize) -> String {
 mod tests {
     use super::*;
     use crate::cycle_manager::CycleBriefing;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use chrono::Utc;
     use std::path::PathBuf;
 

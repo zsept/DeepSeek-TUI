@@ -21,7 +21,7 @@ use std::fs;
 use std::path::Path;
 
 use super::CommandResult;
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 const MEMORY_USAGE: &str = "/memory [show|path|clear|edit|help]";
 
@@ -89,7 +89,7 @@ pub fn memory(app: &mut App, arg: Option<&str>) -> CommandResult {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn create_test_app_with_memory(tmpdir: &TempDir, use_memory: bool) -> App {

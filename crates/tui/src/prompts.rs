@@ -9,8 +9,8 @@
 
 use crate::models::SystemPrompt;
 use crate::project_context::{ProjectContext, load_project_context_with_parents};
-use crate::tui::app::AppMode;
-use crate::tui::approval::ApprovalMode;
+use crate::ui::app::AppMode;
+use crate::ui::approval::ApprovalMode;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, Default)]

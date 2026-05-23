@@ -4,7 +4,7 @@ use std::fmt::Write;
 use std::io::Read;
 use std::path::Path;
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -214,7 +214,7 @@ fn extract_cargo_name(content: &str) -> Option<String> {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 
     fn create_test_app_with_tmpdir(tmpdir: &TempDir) -> App {

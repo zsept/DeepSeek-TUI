@@ -8,7 +8,7 @@
 
 use crate::artifacts::ArtifactRecord;
 use crate::models::{ContentBlock, Message, SystemPrompt};
-use crate::tui::file_mention::ContextReference;
+use crate::ui::file_mention::ContextReference;
 use crate::utils::write_atomic;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -1517,8 +1517,8 @@ mod tests {
         session.context_references.push(SessionContextReference {
             message_index: 0,
             reference: ContextReference {
-                kind: crate::tui::file_mention::ContextReferenceKind::File,
-                source: crate::tui::file_mention::ContextReferenceSource::AtMention,
+                kind: crate::ui::file_mention::ContextReferenceKind::File,
+                source: crate::ui::file_mention::ContextReferenceSource::AtMention,
                 badge: "file".to_string(),
                 label: "src/main.rs".to_string(),
                 target: tmp.path().join("src/main.rs").display().to_string(),

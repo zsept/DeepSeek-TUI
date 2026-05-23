@@ -1,6 +1,6 @@
 //! Role command: list and switch parent agent roles.
 
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -30,7 +30,7 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
     }
 
     // Check built-in types — these are child-agent only.
-    if crate::tools::subagent::AgentRole::from_str(input).is_some() {
+    if crate::tools::agent::AgentRole::from_str(input).is_some() {
         return CommandResult::message(format!(
             "'{input}' is a built-in agent role, not a switchable parent role.\n\
              Use agent_open(type=\"{input}\") to spawn it as a child agent.\n\

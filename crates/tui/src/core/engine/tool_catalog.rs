@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 
 use crate::models::Tool;
 use crate::tools::spec::{ToolError, ToolResult, required_str};
-use crate::tui::app::AppMode;
+use crate::ui::app::AppMode;
 
 pub(super) const MULTI_TOOL_PARALLEL_NAME: &str = "multi_tool_use.parallel";
 pub(super) const REQUEST_USER_INPUT_NAME: &str = "request_user_input";

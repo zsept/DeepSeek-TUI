@@ -11,7 +11,7 @@ use ratatui::style::Color;
 
 // Palette color constants used by contrast guardrail tests.
 // Inlined here so we don't #[path] embed palette.rs, which transitively
-// depends on crate::tui::theme and crate::tui that don't exist in the test crate.
+// depends on crate::ui::theme and crate::tui that don't exist in the test crate.
 const DEEPSEEK_INK: Color = Color::Rgb(11, 21, 38);
 const TEXT_BODY: Color = Color::Rgb(226, 232, 240);
 const TEXT_SECONDARY: Color = Color::Rgb(177, 190, 207);

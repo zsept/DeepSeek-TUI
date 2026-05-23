@@ -46,14 +46,14 @@ use crate::tools::plan::{SharedPlanState, new_shared_plan_state};
 use crate::tools::shell::{SharedShellManager, new_shared_shell_manager};
 use crate::tools::spec::RuntimeToolServices;
 use crate::tools::spec::{ApprovalRequirement, ToolError, ToolResult};
-use crate::tools::subagent::{
+use crate::tools::agent::{
     Mailbox, SharedAgentManager, AgentCompletion, AgentForkContext, AgentRuntime,
     AgentRole, new_shared_agent_manager, resolve_agent_assignment_route,
 };
 use crate::tools::todo::{SharedTodoList, new_shared_todo_list};
 use crate::tools::user_input::{UserInputRequest, UserInputResponse};
 use crate::tools::{ToolContext, ToolRegistryBuilder};
-use crate::tui::app::AppMode;
+use crate::ui::app::AppMode;
 use crate::utils::spawn_supervised;
 
 use super::capacity::{
@@ -199,7 +199,7 @@ impl Default for EngineConfig {
             capacity: CapacityControllerConfig::default(),
             todos: new_shared_todo_list(),
             plan_state: new_shared_plan_state(),
-            max_spawn_depth: crate::tools::subagent::DEFAULT_MAX_SPAWN_DEPTH,
+            max_spawn_depth: crate::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
             network_policy: None,
             snapshots_enabled: true,
             snapshots_max_workspace_bytes:
@@ -899,7 +899,7 @@ impl Engine {
         allow_shell: bool,
         trust_mode: bool,
         auto_approve: bool,
-        approval_mode: crate::tui::approval::ApprovalMode,
+        approval_mode: crate::ui::approval::ApprovalMode,
         translation_enabled: bool,
     ) {
         // Reset cancel token for fresh turn (in case previous was cancelled)
@@ -986,7 +986,7 @@ impl Engine {
         self.config.translation_enabled = translation_enabled;
         self.session.auto_approve = auto_approve;
         self.session.approval_mode = if auto_approve {
-            crate::tui::approval::ApprovalMode::Auto
+            crate::ui::approval::ApprovalMode::Auto
         } else {
             approval_mode
         };

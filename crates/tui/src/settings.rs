@@ -912,10 +912,10 @@ fn normalize_settings_theme(value: &str) -> String {
     // Preserve `file:`-prefixed custom theme references as-is
     if trimmed.starts_with("file:") && trimmed.len() > "file:".len() {
         let name = &trimmed["file:".len()..];
-        let path = crate::tui::theme::themes_dir()
+        let path = crate::ui::theme::themes_dir()
             .join(name)
             .with_extension("toml");
-        if path.exists() || crate::tui::theme::themes_dir().join(name).exists() {
+        if path.exists() || crate::ui::theme::themes_dir().join(name).exists() {
             return trimmed.to_string();
         }
         // File doesn't exist — fall through to built-in check
@@ -925,10 +925,10 @@ fn normalize_settings_theme(value: &str) -> String {
         return name.to_string();
     }
     // Try as bare custom theme file name
-    let path = crate::tui::theme::themes_dir()
+    let path = crate::ui::theme::themes_dir()
         .join(trimmed)
         .with_extension("toml");
-    if path.exists() || crate::tui::theme::themes_dir().join(trimmed).exists() {
+    if path.exists() || crate::ui::theme::themes_dir().join(trimmed).exists() {
         return format!("file:{trimmed}");
     }
     "system".to_string()
@@ -1005,17 +1005,17 @@ fn normalize_theme_setting(value: &str) -> Result<String> {
                 "Failed to update setting: invalid theme 'file:'. Expected a file name after 'file:'."
             );
         }
-        let path = crate::tui::theme::themes_dir()
+        let path = crate::ui::theme::themes_dir()
             .join(file_name)
             .with_extension("toml");
         if !path.exists() {
             // also try without .toml extension
-            let bare = crate::tui::theme::themes_dir().join(file_name);
+            let bare = crate::ui::theme::themes_dir().join(file_name);
             if !bare.exists() {
                 anyhow::bail!(
                     "Failed to update setting: custom theme file '{}' not found in {:?}",
                     file_name,
-                    crate::tui::theme::themes_dir()
+                    crate::ui::theme::themes_dir()
                 );
             }
         }
@@ -1028,13 +1028,13 @@ fn normalize_theme_setting(value: &str) -> Result<String> {
     }
 
     // Try as a custom theme file name
-    let path = crate::tui::theme::themes_dir()
+    let path = crate::ui::theme::themes_dir()
         .join(trimmed)
         .with_extension("toml");
     if path.exists() {
         return Ok(format!("file:{trimmed}"));
     }
-    let bare = crate::tui::theme::themes_dir().join(trimmed);
+    let bare = crate::ui::theme::themes_dir().join(trimmed);
     if bare.exists() {
         return Ok(format!("file:{trimmed}"));
     }

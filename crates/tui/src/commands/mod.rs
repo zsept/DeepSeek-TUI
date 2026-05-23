@@ -37,7 +37,7 @@ mod user_commands;
 use std::fmt::Write as _;
 
 use crate::localization::{Locale, MessageId, tr};
-use crate::tui::app::{App, AppAction};
+use crate::ui::app::{App, AppAction};
 
 /// Result of executing a command
 #[derive(Debug, Clone)]
@@ -688,7 +688,7 @@ pub fn persist_root_string_key(key: &str, value: &str) -> anyhow::Result<std::pa
     config::persist_root_string_key(key, value)
 }
 
-pub fn switch_mode(app: &mut App, mode: crate::tui::app::AppMode) -> String {
+pub fn switch_mode(app: &mut App, mode: crate::ui::app::AppMode) -> String {
     config::switch_mode(app, mode)
 }
 
@@ -1033,7 +1033,7 @@ mod tests {
     use crate::config::Config;
     use crate::tools::plan::{PlanItemArg, StepStatus, UpdatePlanArgs};
     use crate::tools::todo::TodoStatus;
-    use crate::tui::app::{App, AppAction, TuiOptions};
+    use crate::ui::app::{App, AppAction, TuiOptions};
     use std::ffi::OsString;
     use std::path::{Path, PathBuf};
     use std::sync::MutexGuard;

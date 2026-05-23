@@ -3343,7 +3343,7 @@ reasoning_effort = "max"
 /// keeps the default auth path to environment variables and
 /// `~/.deepseek/config.toml`.
 ///
-/// Used by [`crate::tui::app::App::new`] to decide whether to gate
+/// Used by [`crate::ui::app::App::new`] to decide whether to gate
 /// the user behind the in-TUI api-key onboarding screen — getting
 /// this wrong made users get prompted for credentials in situations
 /// where normal env/config auth was already available.
@@ -4015,7 +4015,7 @@ mod tests {
 
         assert_eq!(saved, temp_root.join(".deepseek").join("config.toml"));
         assert!(is_workspace_trusted(&workspace));
-        assert!(!crate::tui::onboarding::needs_trust(&workspace));
+        assert!(!crate::ui::onboarding::needs_trust(&workspace));
         assert!(
             !workspace.join(".deepseek").exists(),
             "trust persistence must not create a project-local .deepseek directory"
@@ -4058,7 +4058,7 @@ mod tests {
         )?;
 
         assert!(is_workspace_trusted(&workspace));
-        assert!(!crate::tui::onboarding::needs_trust(&workspace));
+        assert!(!crate::ui::onboarding::needs_trust(&workspace));
         Ok(())
     }
 

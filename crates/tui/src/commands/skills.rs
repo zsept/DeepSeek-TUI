@@ -8,8 +8,8 @@ use crate::skills::install::{
     self, DEFAULT_MAX_SIZE_BYTES, DEFAULT_REGISTRY_URL, InstallOutcome, InstallSource,
     RegistryFetchResult, SkillSyncOutcome, SyncResult, UpdateResult,
 };
-use crate::tui::app::App;
-use crate::tui::history::HistoryCell;
+use crate::ui::app::App;
+use crate::ui::history::HistoryCell;
 
 use super::CommandResult;
 
@@ -594,7 +594,7 @@ fn format_registry_error(prefix: &str, err: &anyhow::Error) -> String {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::{App, TuiOptions};
+    use crate::ui::app::{App, TuiOptions};
     use std::ffi::OsString;
     use tempfile::TempDir;
 

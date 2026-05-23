@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use crate::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
 use crate::localization::{MessageId, tr};
-use crate::tui::app::{App, AppAction, AppMode, ReasoningEffort};
-use crate::tui::views::{HelpView, ModalKind, SubAgentsView, agent_view_agents};
+use crate::ui::app::{App, AppAction, AppMode, ReasoningEffort};
+use crate::ui::views::{HelpView, ModalKind, SubAgentsView, agent_view_agents};
 
 use super::CommandResult;
 
@@ -373,8 +373,8 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use crate::models::Message;
-    use crate::tui::app::{App, AppMode, TuiOptions, TurnCacheRecord};
-    use crate::tui::history::HistoryCell;
+    use crate::ui::app::{App, AppMode, TuiOptions, TurnCacheRecord};
+    use crate::ui::history::HistoryCell;
     use std::path::PathBuf;
     use std::time::Instant;
     use tempfile::tempdir;
@@ -772,7 +772,7 @@ mod tests {
     fn test_home_dashboard_shows_queued_when_present() {
         let mut app = create_test_app();
         app.queued_messages
-            .push_back(crate::tui::app::QueuedMessage::new(
+            .push_back(crate::ui::app::QueuedMessage::new(
                 "test".to_string(),
                 None,
             ));

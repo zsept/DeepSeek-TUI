@@ -6,7 +6,7 @@
 //! point.
 
 use crate::composer_stash;
-use crate::tui::app::App;
+use crate::ui::app::App;
 
 use super::CommandResult;
 

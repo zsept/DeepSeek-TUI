@@ -5,7 +5,7 @@
 //! keeps the v0.6.6 CLI form for muscle-memory + scripted use.
 
 use crate::config::{ApiProvider, normalize_model_name};
-use crate::tui::app::{App, AppAction};
+use crate::ui::app::{App, AppAction};
 
 use super::CommandResult;
 
@@ -66,7 +66,7 @@ fn expand_model_alias(name: &str) -> String {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::TuiOptions;
+    use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 
     fn create_test_app() -> App {

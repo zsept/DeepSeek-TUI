@@ -1,6 +1,6 @@
 //! In-TUI MCP manager command parser.
 
-use crate::tui::app::{App, AppAction, McpUiAction};
+use crate::ui::app::{App, AppAction, McpUiAction};
 
 use super::CommandResult;
 
@@ -70,7 +70,7 @@ fn parse_add(parts: Vec<&str>) -> CommandResult {
 mod tests {
     use super::*;
     use crate::config::Config;
-    use crate::tui::app::TuiOptions;
+    use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 
     fn app() -> App {

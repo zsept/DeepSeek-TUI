@@ -30,6 +30,7 @@ mod skills;
 mod stash;
 mod status;
 mod task;
+mod toggle;
 mod user_commands;
 
 use std::fmt::Write as _;
@@ -365,6 +366,12 @@ pub const COMMANDS: &[CommandInfo] = &[
         description_id: MessageId::CmdThemeDescription,
     },
     CommandInfo {
+        name: "toggle",
+        aliases: &["qiehuan"],
+        usage: "/toggle [sidebar|filetree]",
+        description_id: MessageId::CmdToggleDescription,
+    },
+    CommandInfo {
         name: "verbose",
         aliases: &[],
         usage: "/verbose [on|off]",
@@ -588,6 +595,7 @@ pub fn execute(cmd: &str, app: &mut App) -> CommandResult {
         "jihua" => config::mode(app, Some("plan")),
         "zidong" => config::mode(app, Some("yolo")),
         "theme" => config::theme(app, arg),
+        "toggle" | "qiehuan" => toggle::toggle(app, arg),
         "verbose" => config::verbose(app, arg),
         "trust" | "xinren" => config::trust(app, arg),
         "logout" => config::logout(app),

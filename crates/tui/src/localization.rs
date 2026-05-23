@@ -282,6 +282,7 @@ pub enum MessageId {
     CmdNetworkDescription,
     CmdNoteDescription,
     CmdThemeDescription,
+    CmdToggleDescription,
     CmdProviderDescription,
     CmdQueueDescription,
     CmdRecallDescription,
@@ -950,6 +951,7 @@ fn english(id: MessageId) -> &'static str {
         MessageId::CmdNetworkDescription => "Manage network allow and deny rules",
         MessageId::CmdNoteDescription => "Add, list, edit, or remove workspace notes",
         MessageId::CmdThemeDescription => "Switch theme or open the theme picker",
+        MessageId::CmdToggleDescription => "Toggle sidebar or file-tree visibility",
         MessageId::CmdProviderDescription => {
             "Switch or view the active LLM backend (deepseek | nvidia-nim | ollama)"
         }
@@ -1333,6 +1335,9 @@ fn japanese(id: MessageId) -> Option<&'static str> {
         MessageId::CmdThemeDescription => {
             "テーマを切り替え（ダーク/ライト/グレースケール/システム）"
         }
+        MessageId::CmdToggleDescription => {
+            "サイドバーまたはファイルツリーの表示を切り替え"
+        }
         MessageId::CmdProviderDescription => {
             "現在の LLM バックエンドを切り替え・確認（deepseek | nvidia-nim | ollama）"
         }
@@ -1675,6 +1680,7 @@ fn chinese_simplified(id: MessageId) -> Option<&'static str> {
         MessageId::CmdNetworkDescription => "管理网络允许和拒绝规则",
         MessageId::CmdNoteDescription => "添加、列出、编辑或删除工作区笔记",
         MessageId::CmdThemeDescription => "切换主题：深色、浅色、灰度或系统",
+        MessageId::CmdToggleDescription => "切换侧边栏或文件树的显示/隐藏",
         MessageId::CmdProviderDescription => {
             "切换或查看当前 LLM 后端（deepseek | nvidia-nim | ollama）"
         }
@@ -2001,6 +2007,7 @@ fn portuguese_brazil(id: MessageId) -> Option<&'static str> {
         MessageId::CmdNetworkDescription => "Gerenciar regras de rede permitidas e bloqueadas",
         MessageId::CmdNoteDescription => "Adicionar, listar, editar ou remover notas do workspace",
         MessageId::CmdThemeDescription => "Alternar tema: escuro, claro, tons de cinza ou sistema",
+        MessageId::CmdToggleDescription => "Alternar visibilidade da barra lateral ou árvore de arquivos",
         MessageId::CmdProviderDescription => {
             "Trocar ou exibir o backend LLM ativo (deepseek | nvidia-nim | ollama)"
         }
@@ -2387,6 +2394,7 @@ fn spanish_latin_america(id: MessageId) -> Option<&'static str> {
         MessageId::CmdNetworkDescription => "Gestionar reglas de red permitidas y bloqueadas",
         MessageId::CmdNoteDescription => "Agregar nota al archivo persistente (.deepseek/notes.md)",
         MessageId::CmdThemeDescription => "Alternar entre tema claro y oscuro",
+        MessageId::CmdToggleDescription => "Alternar visibilidad de la barra lateral o árbol de archivos",
         MessageId::CmdProviderDescription => {
             "Cambiar o mostrar el backend LLM activo (deepseek | nvidia-nim | ollama)"
         }

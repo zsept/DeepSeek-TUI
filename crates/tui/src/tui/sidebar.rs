@@ -544,7 +544,7 @@ fn push_work_checklist_lines(
         let graph = build_graph_order(&summary.checklist_items);
         let max_rows = max_items.min(graph.len());
         for node in graph.iter().take(max_rows) {
-            let (prefix, color) = match node.item.status {
+            let (status_symbol, color) = match node.item.status {
                 TodoStatus::Pending => (theme.work_pending_symbol, palette::TEXT_MUTED),
                 TodoStatus::InProgress => (theme.work_in_progress_symbol, palette::STATUS_WARNING),
                 TodoStatus::Completed => (theme.work_completed_symbol, palette::STATUS_SUCCESS),
@@ -554,10 +554,15 @@ fn push_work_checklist_lines(
             } else {
                 format!("{:indent$}{}", "", if node.is_last { "└── " } else { "├── " }, indent = (node.depth - 1) * 4)
             };
-            let mut label = format!("{tree_prefix}{prefix} #{} {}", node.item.id, node.item.content);
-            if let Some(ref name) = node.item.agent_name {
-                label.push_str(&format!(" [{}]", name));
-            }
+            // Format: [status][agent_name] task_name [unmet_deps]
+            let agent_part = node
+                .item
+                .agent_name
+                .as_ref()
+                .map(|name| format!("[{name}]"))
+                .unwrap_or_default();
+            let mut label = format!("{tree_prefix}[{status_symbol}]{agent_part} #{} {}",
+                node.item.id, node.item.content);
             // Show unmet dependencies.
             let unmet: Vec<u32> = node
                 .item
@@ -592,12 +597,17 @@ fn push_work_checklist_lines(
             .saturating_add(max_items)
             .min(summary.checklist_items.len());
         for item in summary.checklist_items[start..end].iter() {
-            let (prefix, color) = match item.status {
+            let (status_symbol, color) = match item.status {
                 TodoStatus::Pending => (theme.work_pending_symbol, palette::TEXT_MUTED),
                 TodoStatus::InProgress => (theme.work_in_progress_symbol, palette::STATUS_WARNING),
                 TodoStatus::Completed => (theme.work_completed_symbol, palette::STATUS_SUCCESS),
             };
-            let text = format!("{prefix} #{} {}", item.id, item.content);
+            let agent_part = item
+                .agent_name
+                .as_ref()
+                .map(|name| format!("[{name}]"))
+                .unwrap_or_default();
+            let text = format!("[{status_symbol}]{agent_part} #{} {}", item.id, item.content);
             lines.push(Line::from(Span::styled(
                 truncate_line_to_width(&text, content_width),
                 Style::default().fg(color),

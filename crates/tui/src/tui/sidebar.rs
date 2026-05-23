@@ -563,7 +563,7 @@ fn push_work_checklist_lines(
                 .as_ref()
                 .map(|name| format!("[{name}]"))
                 .unwrap_or_default();
-            let mut label = format!("{tree_prefix}[{status_symbol}]{agent_part} #{} {}",
+            let mut label = format!("{tree_prefix}{status_symbol} {agent_part}#{} {}",
                 node.item.id, node.item.content);
             // Show unmet dependencies.
             let unmet: Vec<u32> = node
@@ -609,7 +609,7 @@ fn push_work_checklist_lines(
                 .as_ref()
                 .map(|name| format!("[{name}]"))
                 .unwrap_or_default();
-            let text = format!("[{status_symbol}]{agent_part} #{} {}", item.id, item.content);
+            let text = format!("{status_symbol} {agent_part}#{} {}", item.id, item.content);
             lines.push(Line::from(Span::styled(
                 truncate_line_to_width(&text, content_width),
                 Style::default().fg(color),

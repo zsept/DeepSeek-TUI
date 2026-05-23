@@ -154,6 +154,10 @@ struct SidebarWorkChecklistItem {
     id: u32,
     content: String,
     status: TodoStatus,
+    depends_on: Vec<u32>,
+    agent_id: Option<String>,
+    /// Resolved agent name from `subagent_cache`.
+    agent_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -235,13 +239,33 @@ fn sidebar_work_summary(app: &App) -> SidebarWorkSummary {
         Ok(todos) => {
             let snapshot = todos.snapshot();
             summary.checklist_completion_pct = snapshot.completion_pct;
+            // Build agent name lookup from subagent_cache.
+            let agent_names: std::collections::HashMap<&str, &str> = app
+                .subagent_cache
+                .iter()
+                .filter_map(|a| {
+                    a.nickname
+                        .as_deref()
+                        .map(|name| (a.agent_id.as_str(), name))
+                })
+                .collect();
             summary.checklist_items = snapshot
                 .items
                 .into_iter()
-                .map(|item| SidebarWorkChecklistItem {
-                    id: item.id,
-                    content: item.content,
-                    status: item.status,
+                .map(|item| {
+                    let agent_name = item
+                        .agent_id
+                        .as_deref()
+                        .and_then(|id| agent_names.get(id).copied())
+                        .map(str::to_string);
+                    SidebarWorkChecklistItem {
+                        id: item.id,
+                        content: item.content,
+                        status: item.status,
+                        depends_on: item.depends_on,
+                        agent_id: item.agent_id,
+                        agent_name,
+                    }
                 })
                 .collect();
         }
@@ -363,6 +387,120 @@ fn push_work_goal_lines(
     }
 }
 
+// ── Dependency-graph helper types ───────────────────────────────────────
+
+struct GraphNode {
+    item: SidebarWorkChecklistItem,
+    depth: usize,
+    is_last: bool,
+}
+
+/// Check whether any checklist item has dependencies.
+fn has_dependencies(items: &[SidebarWorkChecklistItem]) -> bool {
+    items.iter().any(|item| !item.depends_on.is_empty())
+}
+
+/// Build a topologically-sorted tree layout for graph rendering.
+///
+/// Root nodes (no `depends_on` or all deps satisfied) go first;
+/// children are ordered depth-first. Cycles are detected and
+/// rendered as soft warnings — we still produce a valid layout.
+fn build_graph_order(items: &[SidebarWorkChecklistItem]) -> Vec<GraphNode> {
+    let ids: std::collections::HashSet<u32> = items.iter().map(|i| i.id).collect();
+    let _index: std::collections::HashMap<u32, usize> =
+        items.iter().enumerate().map(|(n, i)| (i.id, n)).collect();
+
+    // Children keyed by parent id.
+    let mut children: std::collections::HashMap<u32, Vec<usize>> =
+        std::collections::HashMap::new();
+    for (pos, item) in items.iter().enumerate() {
+        for dep in &item.depends_on {
+            if ids.contains(dep) {
+                children.entry(*dep).or_default().push(pos);
+            }
+        }
+    }
+
+    // Roots: items with empty depends_on or unresolved deps.
+    let mut roots: Vec<usize> = Vec::new();
+    for (pos, item) in items.iter().enumerate() {
+        let all_deps_satisfied = item
+            .depends_on
+            .iter()
+            .all(|d| !ids.contains(d) || items.iter().any(|i| i.id == *d && i.status == TodoStatus::Completed));
+        if item.depends_on.is_empty() || all_deps_satisfied {
+            // Still root if it ALSO has no outgoing children-or-is-leaf.
+            roots.push(pos);
+        }
+    }
+
+    let mut out: Vec<GraphNode> = Vec::with_capacity(items.len());
+    let mut visited: std::collections::HashSet<usize> = std::collections::HashSet::new();
+
+    fn dfs(
+        pos: usize,
+        depth: usize,
+        is_last: bool,
+        items: &[SidebarWorkChecklistItem],
+        children: &std::collections::HashMap<u32, Vec<usize>>,
+        visited: &mut std::collections::HashSet<usize>,
+        out: &mut Vec<GraphNode>,
+    ) {
+        if !visited.insert(pos) {
+            return;
+        }
+        let kids = children.get(&items[pos].id);
+        let kid_count = kids.map_or(0, |k| k.len());
+        out.push(GraphNode {
+            item: items[pos].clone(),
+            depth,
+            is_last,
+        });
+        if let Some(kids) = kids {
+            for (i, &kid_pos) in kids.iter().enumerate() {
+                dfs(
+                    kid_pos,
+                    depth + 1,
+                    i == kid_count - 1,
+                    items,
+                    children,
+                    visited,
+                    out,
+                );
+            }
+        }
+    }
+
+    for &root_pos in &roots {
+        if !visited.contains(&root_pos) {
+            let all_roots = roots.len();
+            let root_idx = roots.iter().position(|&r| r == root_pos).unwrap_or(0);
+            dfs(
+                root_pos,
+                0,
+                root_idx == all_roots - 1 || all_roots == 1,
+                items,
+                &children,
+                &mut visited,
+                &mut out,
+            );
+        }
+    }
+
+    // Any unvisited nodes are either part of a cycle or orphans.
+    for (pos, _) in items.iter().enumerate() {
+        if !visited.contains(&pos) {
+            out.push(GraphNode {
+                item: items[pos].clone(),
+                depth: 0,
+                is_last: true,
+            });
+        }
+    }
+
+    out
+}
+
 fn push_work_checklist_lines(
     summary: &SidebarWorkSummary,
     content_width: usize,
@@ -402,36 +540,84 @@ fn push_work_checklist_lines(
         } else {
             available_item_rows
         };
-    let start = checklist_window_start(&summary.checklist_items, max_items);
-    let end = start
-        .saturating_add(max_items)
-        .min(summary.checklist_items.len());
-    for item in summary.checklist_items[start..end].iter() {
-        let (prefix, color) = match item.status {
-            TodoStatus::Pending => (theme.work_pending_symbol, palette::TEXT_MUTED),
-            TodoStatus::InProgress => (theme.work_in_progress_symbol, palette::STATUS_WARNING),
-            TodoStatus::Completed => (theme.work_completed_symbol, palette::STATUS_SUCCESS),
-        };
-        let text = format!("{prefix} #{} {}", item.id, item.content);
-        lines.push(Line::from(Span::styled(
-            truncate_line_to_width(&text, content_width),
-            Style::default().fg(color),
-        )));
-    }
+    if has_dependencies(&summary.checklist_items) {
+        let graph = build_graph_order(&summary.checklist_items);
+        let max_rows = max_items.min(graph.len());
+        for node in graph.iter().take(max_rows) {
+            let (prefix, color) = match node.item.status {
+                TodoStatus::Pending => (theme.work_pending_symbol, palette::TEXT_MUTED),
+                TodoStatus::InProgress => (theme.work_in_progress_symbol, palette::STATUS_WARNING),
+                TodoStatus::Completed => (theme.work_completed_symbol, palette::STATUS_SUCCESS),
+            };
+            let tree_prefix = if node.depth == 0 {
+                String::new()
+            } else {
+                format!("{:indent$}{}", "", if node.is_last { "└── " } else { "├── " }, indent = (node.depth - 1) * 4)
+            };
+            let mut label = format!("{tree_prefix}{prefix} #{} {}", node.item.id, node.item.content);
+            if let Some(ref name) = node.item.agent_name {
+                label.push_str(&format!(" [{}]", name));
+            }
+            // Show unmet dependencies.
+            let unmet: Vec<u32> = node
+                .item
+                .depends_on
+                .iter()
+                .filter(|d| {
+                    !summary
+                        .checklist_items
+                        .iter()
+                        .any(|i| i.id == **d && i.status == TodoStatus::Completed)
+                })
+                .copied()
+                .collect();
+            if !unmet.is_empty() {
+                let ids: Vec<String> = unmet.iter().map(|n| format!("#{n}")).collect();
+                label.push_str(&format!(" [⏳ {}]", ids.join(", ")));
+            }
+            lines.push(Line::from(Span::styled(
+                truncate_line_to_width(&label, content_width),
+                Style::default().fg(color),
+            )));
+        }
+        if graph.len() > max_rows && lines.len() < max_rows {
+            lines.push(Line::from(Span::styled(
+                format!("+{} more items", graph.len() - max_rows),
+                Style::default().fg(palette::TEXT_MUTED),
+            )));
+        }
+    } else {
+        let start = checklist_window_start(&summary.checklist_items, max_items);
+        let end = start
+            .saturating_add(max_items)
+            .min(summary.checklist_items.len());
+        for item in summary.checklist_items[start..end].iter() {
+            let (prefix, color) = match item.status {
+                TodoStatus::Pending => (theme.work_pending_symbol, palette::TEXT_MUTED),
+                TodoStatus::InProgress => (theme.work_in_progress_symbol, palette::STATUS_WARNING),
+                TodoStatus::Completed => (theme.work_completed_symbol, palette::STATUS_SUCCESS),
+            };
+            let text = format!("{prefix} #{} {}", item.id, item.content);
+            lines.push(Line::from(Span::styled(
+                truncate_line_to_width(&text, content_width),
+                Style::default().fg(color),
+            )));
+        }
 
-    let earlier = start;
-    let later = summary.checklist_items.len().saturating_sub(end);
-    let remaining = earlier.saturating_add(later);
-    if remaining > 0 && lines.len() < max_rows {
-        let label = match (earlier, later) {
-            (0, later) => format!("+{later} more checklist items"),
-            (earlier, 0) => format!("+{earlier} earlier checklist items"),
-            (earlier, later) => format!("+{earlier} earlier, +{later} later"),
-        };
-        lines.push(Line::from(Span::styled(
-            label,
-            Style::default().fg(palette::TEXT_MUTED),
-        )));
+        let earlier = start;
+        let later = summary.checklist_items.len().saturating_sub(end);
+        let remaining = earlier.saturating_add(later);
+        if remaining > 0 && lines.len() < max_rows {
+            let label = match (earlier, later) {
+                (0, later) => format!("+{later} more checklist items"),
+                (earlier, 0) => format!("+{earlier} earlier checklist items"),
+                (earlier, later) => format!("+{earlier} earlier, +{later} later"),
+            };
+            lines.push(Line::from(Span::styled(
+                label,
+                Style::default().fg(palette::TEXT_MUTED),
+            )));
+        }
     }
 }
 

@@ -50,6 +50,16 @@ pub struct TodoItem {
     pub id: u32,
     pub content: String,
     pub status: TodoStatus,
+    /// IDs of checklist items that must complete before this one
+    /// begins. Used by the sidebar Work panel to render a dependency
+    /// graph when any item carries at least one dependency.
+    #[serde(default)]
+    pub depends_on: Vec<u32>,
+    /// Optional sub-agent id. When set, the sidebar Work panel
+    /// resolves the agent name from `subagent_cache` and appends
+    /// it to the node label in graph mode.
+    #[serde(default)]
+    pub agent_id: Option<String>,
 }
 
 /// Snapshot of a todo list for display or serialization.
@@ -89,6 +99,17 @@ impl TodoList {
 
     /// Add a new todo item.
     pub fn add(&mut self, content: String, status: TodoStatus) -> TodoItem {
+        self.add_with_deps(content, status, Vec::new(), None)
+    }
+
+    /// Add a new todo item with dependency and agent metadata.
+    pub fn add_with_deps(
+        &mut self,
+        content: String,
+        status: TodoStatus,
+        depends_on: Vec<u32>,
+        agent_id: Option<String>,
+    ) -> TodoItem {
         let status = match status {
             TodoStatus::InProgress => {
                 self.set_single_in_progress(None);
@@ -101,6 +122,8 @@ impl TodoList {
             id: self.next_id,
             content,
             status,
+            depends_on,
+            agent_id,
         };
         self.next_id += 1;
         self.items.push(item.clone());
@@ -244,6 +267,15 @@ impl ToolSpec for TodoAddTool {
                     "type": "string",
                     "enum": ["pending", "in_progress", "completed"],
                     "description": "Task status (default: pending)"
+                },
+                "depends_on": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "description": "IDs of checklist items that must be completed first."
+                },
+                "agent_id": {
+                    "type": "string",
+                    "description": "Optional sub-agent id returned by agent_open."
                 }
             },
             "required": ["content"]
@@ -273,8 +305,24 @@ impl ToolSpec for TodoAddTool {
             .and_then(TodoStatus::from_str)
             .unwrap_or(TodoStatus::Pending);
 
+        let depends_on = input
+            .get("depends_on")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_u64().and_then(|n| u32::try_from(n).ok()))
+                    .collect::<Vec<u32>>()
+            })
+            .unwrap_or_default();
+
+        let agent_id = input
+            .get("agent_id")
+            .and_then(|v| v.as_str())
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+
         let mut list = self.todo_list.lock().await;
-        let item = list.add(content.to_string(), status);
+        let item = list.add_with_deps(content.to_string(), status, depends_on, agent_id);
         let snapshot = list.snapshot();
 
         let result = serde_json::to_string_pretty(&snapshot).unwrap_or_else(|_| "{}".to_string());
@@ -484,6 +532,15 @@ impl ToolSpec for TodoWriteTool {
                                 "type": "string",
                                 "enum": ["pending", "in_progress", "completed"],
                                 "description": "Task status"
+                            },
+                            "depends_on": {
+                                "type": "array",
+                                "items": { "type": "integer" },
+                                "description": "IDs of checklist items that must be completed before this one."
+                            },
+                            "agent_id": {
+                                "type": "string",
+                                "description": "Optional sub-agent id returned by agent_open. Links this item to an agent for graph display."
                             }
                         },
                         "required": ["content", "status"]
@@ -530,7 +587,23 @@ impl ToolSpec for TodoWriteTool {
 
             let status = TodoStatus::from_str(status_str).unwrap_or(TodoStatus::Pending);
 
-            list.add(content.to_string(), status);
+            let depends_on = item
+                .get("depends_on")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_u64().and_then(|n| u32::try_from(n).ok()))
+                        .collect::<Vec<u32>>()
+                })
+                .unwrap_or_default();
+
+            let agent_id = item
+                .get("agent_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty());
+
+            list.add_with_deps(content.to_string(), status, depends_on, agent_id);
         }
 
         let snapshot = list.snapshot();
@@ -555,6 +628,8 @@ fn checklist_metadata(snapshot: &TodoListSnapshot, tool_name: &str) -> serde_jso
                 "id": item.id,
                 "content": item.content,
                 "status": item.status.as_str(),
+                "depends_on": item.depends_on,
+                "agent_id": item.agent_id,
             })
         })
         .collect::<Vec<_>>();

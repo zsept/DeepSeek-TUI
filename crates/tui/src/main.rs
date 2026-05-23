@@ -4880,13 +4880,13 @@ async fn run_exec_agent(
             Event::AgentProgress { id, status }
                 if output_format == ExecOutputFormat::Text && !json_output =>
             {
-                eprintln!("sub-agent {id}: {status}");
+                eprintln!("agent {id}: {status}");
             }
             Event::AgentComplete { id, result }
                 if output_format == ExecOutputFormat::Text && !json_output =>
             {
                 eprintln!(
-                    "sub-agent {id} completed: {}",
+                    "agent {id} completed: {}",
                     summarize_tool_output(&result)
                 );
             }

@@ -25,7 +25,7 @@ pub enum ModalKind {
     PlanPrompt,
     CommandPalette,
     Help,
-    SubAgents,
+    Agents,
     Pager,
     LiveTranscript,
     SessionPicker,
@@ -117,7 +117,7 @@ pub enum ViewEvent {
         option: usize,
     },
     PlanPromptDismissed,
-    SubAgentsRefresh,
+    AgentsRefresh,
     /// Emitted by the file picker (`Ctrl+P`) when the user presses Enter on a
     /// candidate. The handler should insert `@<path>` at the composer's cursor
     /// position.
@@ -222,7 +222,7 @@ pub trait ModalView: std::any::Any {
         ViewAction::None
     }
     fn render(&self, area: Rect, buf: &mut Buffer);
-    fn update_subagents(&mut self, _agents: &[AgentResult]) -> bool {
+    fn update_agents(&mut self, _agents: &[AgentResult]) -> bool {
         false
     }
     fn tick(&mut self) -> ViewAction {
@@ -282,10 +282,10 @@ impl ViewStack {
         }
     }
 
-    pub fn update_subagents(&mut self, agents: &[AgentResult]) -> bool {
+    pub fn update_agents(&mut self, agents: &[AgentResult]) -> bool {
         self.views
             .last_mut()
-            .map(|view| view.update_subagents(agents))
+            .map(|view| view.update_agents(agents))
             .unwrap_or(false)
     }
 
@@ -1508,12 +1508,12 @@ pub mod help;
 
 pub use help::HelpView;
 
-pub struct SubAgentsView {
+pub struct AgentsView {
     agents: Vec<AgentResult>,
     scroll: usize,
 }
 
-/// Build the agent rows shown by `/subagents`.
+/// Build the agent rows shown by `/agents`.
 ///
 /// The engine manager is the durable source of truth, but live UI cards can
 /// briefly be ahead of the manager-list refresh. Include those live rows so
@@ -1529,7 +1529,7 @@ pub(crate) fn agent_view_agents(
 
     for (agent_id, progress) in &app.agent_progress {
         if seen.insert(agent_id.clone()) {
-            agents.push(live_subagent_result(
+            agents.push(live_agent_result(
                 agent_id,
                 AgentRole::General,
                 AgentStatus::Running,
@@ -1546,10 +1546,10 @@ pub(crate) fn agent_view_agents(
             {
                 let agent_type =
                     AgentRole::from_str(&card.agent_type).unwrap_or(AgentRole::General);
-                agents.push(live_subagent_result(
+                agents.push(live_agent_result(
                     &card.agent_id,
                     agent_type,
-                    lifecycle_to_subagent_status(card.status),
+                    lifecycle_to_agent_status(card.status),
                     card.summary.as_deref().unwrap_or(card.agent_type.as_str()),
                     Some("transcript"),
                 ));
@@ -1562,10 +1562,10 @@ pub(crate) fn agent_view_agents(
                             summarize_tool_output(&card.kind),
                             summarize_tool_output(&worker.worker_id)
                         );
-                        agents.push(live_subagent_result(
+                        agents.push(live_agent_result(
                             &worker.agent_id,
                             AgentRole::General,
-                            lifecycle_to_subagent_status(worker.status),
+                            lifecycle_to_agent_status(worker.status),
                             &objective,
                             Some(card.kind.as_str()),
                         ));
@@ -1579,7 +1579,7 @@ pub(crate) fn agent_view_agents(
     agents
 }
 
-fn lifecycle_to_subagent_status(status: AgentLifecycle) -> AgentStatus {
+fn lifecycle_to_agent_status(status: AgentLifecycle) -> AgentStatus {
     match status {
         AgentLifecycle::Pending | AgentLifecycle::Running => AgentStatus::Running,
         AgentLifecycle::Completed => AgentStatus::Completed,
@@ -1588,7 +1588,7 @@ fn lifecycle_to_subagent_status(status: AgentLifecycle) -> AgentStatus {
     }
 }
 
-fn live_subagent_result(
+fn live_agent_result(
     agent_id: &str,
     agent_type: AgentRole,
     status: AgentStatus,
@@ -1615,15 +1615,15 @@ fn live_subagent_result(
     }
 }
 
-impl SubAgentsView {
+impl AgentsView {
     pub fn new(agents: Vec<AgentResult>) -> Self {
         Self { agents, scroll: 0 }
     }
 }
 
-impl ModalView for SubAgentsView {
+impl ModalView for AgentsView {
     fn kind(&self) -> ModalKind {
-        ModalKind::SubAgents
+        ModalKind::Agents
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
@@ -1636,7 +1636,7 @@ impl ModalView for SubAgentsView {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => ViewAction::Close,
             KeyCode::Enter | KeyCode::Char('r') | KeyCode::Char('R') => {
-                ViewAction::Emit(ViewEvent::SubAgentsRefresh)
+                ViewAction::Emit(ViewEvent::AgentsRefresh)
             }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.scroll = self.scroll.saturating_sub(1);
@@ -1650,7 +1650,7 @@ impl ModalView for SubAgentsView {
         }
     }
 
-    fn update_subagents(&mut self, agents: &[AgentResult]) -> bool {
+    fn update_agents(&mut self, agents: &[AgentResult]) -> bool {
         self.agents = agents.to_vec();
         self.scroll = self.scroll.min(self.agents.len().saturating_sub(1));
         true
@@ -1709,7 +1709,7 @@ impl ModalView for SubAgentsView {
             ];
 
             lines.push(Line::from(Span::styled(
-                "Sub-agents",
+                "Agents",
                 Style::default().fg(palette::DEEPSEEK_SKY).bold(),
             )));
 
@@ -1755,35 +1755,35 @@ impl ModalView for SubAgentsView {
                 order.then_with(|| a.agent_id.cmp(&b.agent_id))
             });
 
-            append_subagent_group(
+            append_agent_group(
                 &mut lines,
                 "Running",
                 palette::STATUS_WARNING.into(),
                 &running,
                 content_width,
             );
-            append_subagent_group(
+            append_agent_group(
                 &mut lines,
                 "Completed",
                 palette::STATUS_SUCCESS.into(),
                 &completed,
                 content_width,
             );
-            append_subagent_group(
+            append_agent_group(
                 &mut lines,
                 "Interrupted",
                 palette::STATUS_WARNING.into(),
                 &interrupted,
                 content_width,
             );
-            append_subagent_group(
+            append_agent_group(
                 &mut lines,
                 "Failed",
                 palette::DEEPSEEK_RED.into(),
                 &failed,
                 content_width,
             );
-            append_subagent_group(
+            append_agent_group(
                 &mut lines,
                 "Cancelled",
                 palette::TEXT_MUTED.into(),
@@ -1807,7 +1807,7 @@ impl ModalView for SubAgentsView {
             .block(
                 Block::default()
                     .title(Line::from(vec![Span::styled(
-                        " Sub-agents ",
+                        " Agents ",
                         Style::default().fg(palette::DEEPSEEK_BLUE).bold(),
                     )]))
                     .title_bottom(Line::from(vec![
@@ -1826,7 +1826,7 @@ impl ModalView for SubAgentsView {
     }
 }
 
-fn append_subagent_group(
+fn append_agent_group(
     lines: &mut Vec<ratatui::text::Line<'static>>,
     title: &str,
     section_style: ratatui::style::Style,

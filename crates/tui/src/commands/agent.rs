@@ -33,7 +33,7 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
     if crate::tools::agent::AgentRole::from_str(input).is_some() {
         return CommandResult::message(format!(
             "'{input}' is a built-in agent role, not a switchable parent role.\n\
-             Use agent_open(type=\"{input}\") to spawn it as a child agent.\n\
+             Use agent_open(agent_role=\"{input}\") to spawn it as a child agent.\n\
              To switch the parent agent, define a custom type in roles/{input}/role.toml."
         ));
     }
@@ -45,7 +45,7 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn list_agents(app: &App) -> CommandResult {
-    let mut out = String::from("Available sub-agent types:\n\n");
+    let mut out = String::from("Available agent types:\n\n");
 
     // Built-in
     let builtins: &[(&str, &str)] = &[
@@ -57,7 +57,7 @@ fn list_agents(app: &App) -> CommandResult {
         ("verifier",     "Run tests and validation gates, report pass/fail"),
         ("custom",       "Narrowed toolset defined at spawn time"),
     ];
-    out.push_str("── Built-in (sub-agent only) ──\n");
+    out.push_str("── Built-in (agent only) ──\n");
     for (name, desc) in builtins {
         out.push_str(&format!("  {name:<14} {desc}\n"));
     }
@@ -87,7 +87,7 @@ fn list_agents(app: &App) -> CommandResult {
             out.push_str("Use /role reset to restore default parent behavior.\n");
         }
     } else {
-        out.push_str("\nNo custom types defined. Add them in [subagents.types] to create switchable parent roles.\n");
+        out.push_str("\nNo custom types defined. Add them in [roles] to create switchable parent roles.\n");
     }
 
     CommandResult::message(out)

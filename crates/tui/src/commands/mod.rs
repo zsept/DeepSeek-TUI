@@ -204,9 +204,9 @@ pub const COMMANDS: &[CommandInfo] = &[
     },
     CommandInfo {
         name: "agents",
-        aliases: &["subagents"],
+        aliases: &[],
         usage: "/agents",
-        description_id: MessageId::CmdSubagentsDescription,
+        description_id: MessageId::CmdAgentsDescription,
     },
     CommandInfo {
         name: "role",
@@ -562,7 +562,7 @@ pub fn execute(cmd: &str, app: &mut App) -> CommandResult {
         "queue" | "queued" => queue::queue(app, arg),
         "stash" | "park" => stash::stash(app, arg),
         "hooks" | "hook" => hooks::hooks(app, arg),
-        "agents" | "subagents" => core::subagents(app),
+        "agents" => core::agents(app),
         "links" | "dashboard" | "api" => core::deepseek_links(app),
         "feedback" => feedback::feedback(app, arg),
         "home" | "stats" | "overview" => core::home_dashboard(app),

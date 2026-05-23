@@ -900,7 +900,7 @@ impl Engine {
                 // already documented in `prompts/base.md`: the parent is
                 // promised it'll see the sentinel when a child finishes.
                 let mut completions: Vec<crate::tools::agent::AgentCompletion> = Vec::new();
-                while let Ok(c) = self.rx_subagent_completion.try_recv() {
+                while let Ok(c) = self.rx_agent_completion.try_recv() {
                     completions.push(c);
                 }
                 if completions.is_empty() {
@@ -908,7 +908,7 @@ impl Engine {
                         let mgr = self.agent_manager.read().await;
                         mgr.running_count()
                     };
-                    if should_hold_turn_for_subagents(completions.len(), running) {
+                    if should_hold_turn_for_agents(completions.len(), running) {
                         let _ = self
                             .tx_event
                             .send(Event::status(format!(
@@ -926,9 +926,9 @@ impl Engine {
                                     .await;
                                 return (TurnOutcomeStatus::Interrupted, None);
                             }
-                            Some(c) = self.rx_subagent_completion.recv() => {
+                            Some(c) = self.rx_agent_completion.recv() => {
                                 completions.push(c);
-                                while let Ok(extra) = self.rx_subagent_completion.try_recv() {
+                                while let Ok(extra) = self.rx_agent_completion.try_recv() {
                                     completions.push(extra);
                                 }
                             }
@@ -959,7 +959,7 @@ impl Engine {
                 if !completions.is_empty() {
                     let count = completions.len();
                     for c in completions {
-                        self.add_session_message(subagent_completion_runtime_message(&c.payload))
+                        self.add_session_message(agent_completion_runtime_message(&c.payload))
                             .await;
                     }
                     let _ = self
@@ -1936,16 +1936,16 @@ impl Engine {
     }
 }
 
-fn subagent_completion_runtime_message(payload: &str) -> Message {
+fn agent_completion_runtime_message(payload: &str) -> Message {
     Message {
         role: "system".to_string(),
         content: vec![ContentBlock::Text {
             text: format!(
-                "<deepseek:runtime_event kind=\"subagent_completion\" visibility=\"internal\">\n\
-This is an internal runtime event, not user input. Use the sub-agent completion \
+                "<deepseek:runtime_event kind=\"agent_completion\" visibility=\"internal\">\n\
+This is an internal runtime event, not user input. Use the agent completion \
 data below to continue coordinating the current task. Do not tell the user they \
 pasted sentinels, do not explain the sentinel protocol, and do not quote the raw \
-XML unless the user explicitly asks to debug sub-agent internals.\n\n\
+XML unless the user explicitly asks to debug agent internals.\n\n\
 {payload}\n\
 </deepseek:runtime_event>"
             ),
@@ -1954,7 +1954,7 @@ XML unless the user explicitly asks to debug sub-agent internals.\n\n\
     }
 }
 
-fn should_hold_turn_for_subagents(queued_completions: usize, running_children: usize) -> bool {
+fn should_hold_turn_for_agents(queued_completions: usize, running_children: usize) -> bool {
     queued_completions > 0 || running_children > 0
 }
 
@@ -2017,8 +2017,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn subagent_completion_handoff_is_internal_system_message() {
-        let message = subagent_completion_runtime_message(
+    fn agent_completion_handoff_is_internal_system_message() {
+        let message = agent_completion_runtime_message(
             "Build passed\n<deepseek:agent.done>{\"agent_id\":\"agent_a\"}</deepseek:agent.done>",
         );
 
@@ -2034,10 +2034,10 @@ mod tests {
     }
 
     #[test]
-    fn turn_holds_open_for_running_or_completed_subagents() {
-        assert!(should_hold_turn_for_subagents(1, 0));
-        assert!(should_hold_turn_for_subagents(0, 1));
-        assert!(!should_hold_turn_for_subagents(0, 0));
+    fn turn_holds_open_for_running_or_completed_agents() {
+        assert!(should_hold_turn_for_agents(1, 0));
+        assert!(should_hold_turn_for_agents(0, 1));
+        assert!(!should_hold_turn_for_agents(0, 0));
     }
 
     /// Regression test for the OpenAI streaming batch tool_calls bug.

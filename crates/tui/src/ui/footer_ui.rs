@@ -10,7 +10,7 @@ use crate::ui::app::App;
 use crate::ui::format_helpers;
 use crate::ui::history::{HistoryCell, ToolCell, ToolStatus, summarize_tool_output};
 use crate::ui::key_shortcuts;
-use crate::ui::subagent_routing::{active_fanout_counts, running_agent_count};
+use crate::ui::agent_routing::{active_fanout_counts, running_agent_count};
 use crate::ui::ui::{
     active_foreground_shell_running, context_usage_snapshot, selected_detail_footer_label,
     status_color,
@@ -74,7 +74,7 @@ pub(crate) fn render_footer(f: &mut Frame, area: Rect, app: &mut App) {
         // Surface one compact live status row in the footer whenever a turn
         // is live. Tool turns get the current action plus active/done counts;
         // non-tool work falls back to the existing dot-pulse label.
-        props.state_label = active_subagent_status_label(app)
+        props.state_label = active_agent_status_label(app)
             .or_else(|| active_tool_status_label(app))
             .unwrap_or_else(|| crate::ui::widgets::footer_working_label(dot_frame, app.ui_locale));
         props.state_color = palette::DEEPSEEK_SKY;
@@ -119,7 +119,7 @@ pub(crate) fn is_noisy_agent_progress(status: &str) -> bool {
     status.contains("requesting model response")
 }
 
-pub(crate) fn subagent_objective_summary(app: &App, id: &str) -> Option<String> {
+pub(crate) fn agent_objective_summary(app: &App, id: &str) -> Option<String> {
     app.agent_cache
         .iter()
         .find(|agent| agent.agent_id == id)
@@ -132,7 +132,7 @@ pub(crate) fn friendly_agent_progress(app: &App, id: &str, status: &str) -> Stri
         return summarize_tool_output(status);
     }
 
-    if let Some(summary) = subagent_objective_summary(app, id) {
+    if let Some(summary) = agent_objective_summary(app, id) {
         return format!("working on {summary}");
     }
     if let Some(existing) = app.agent_progress.get(id)
@@ -144,7 +144,7 @@ pub(crate) fn friendly_agent_progress(app: &App, id: &str, status: &str) -> Stri
     "working".to_string()
 }
 
-pub(crate) fn active_subagent_status_label(app: &App) -> Option<String> {
+pub(crate) fn active_agent_status_label(app: &App) -> Option<String> {
     let running = running_agent_count(app);
     let fanout = active_fanout_counts(app);
     let (display_running, total) = if let Some((fanout_running, fanout_total)) = fanout {

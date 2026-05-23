@@ -200,7 +200,7 @@ pub struct StructuredState {
     pub working_set_summary: Option<String>,
     pub todo_snapshot: Option<TodoListSnapshot>,
     pub plan_snapshot: Option<PlanSnapshot>,
-    pub subagent_snapshots: Vec<AgentResult>,
+    pub agent_snapshots: Vec<AgentResult>,
 }
 
 impl StructuredState {
@@ -213,7 +213,7 @@ impl StructuredState {
         working_set: &WorkingSet,
         todos: &SharedTodoList,
         plan_state: &SharedPlanState,
-        subagents: Option<&SharedAgentManager>,
+        agents: Option<&SharedAgentManager>,
     ) -> Self {
         let working_set_summary = working_set.summary_block(&workspace);
 
@@ -236,7 +236,7 @@ impl StructuredState {
             }
         };
 
-        let subagent_snapshots = if let Some(handle) = subagents {
+        let agent_snapshots = if let Some(handle) = agents {
             let guard = handle.read().await;
             guard
                 .list()
@@ -254,7 +254,7 @@ impl StructuredState {
             working_set_summary,
             todo_snapshot,
             plan_snapshot,
-            subagent_snapshots,
+            agent_snapshots,
         }
     }
 
@@ -305,9 +305,9 @@ impl StructuredState {
             }
         }
 
-        if !self.subagent_snapshots.is_empty() {
-            out.push_str("\n### Open Sub-Agents\n");
-            for s in &self.subagent_snapshots {
+        if !self.agent_snapshots.is_empty() {
+            out.push_str("\n### Open Agents\n");
+            for s in &self.agent_snapshots {
                 let role = s.assignment.role.as_deref().unwrap_or("—");
                 let goal = if s.assignment.objective.is_empty() {
                     "(no objective set)"
@@ -973,7 +973,7 @@ mod tests {
             working_set_summary: None,
             todo_snapshot: None,
             plan_snapshot: None,
-            subagent_snapshots: Vec::new(),
+            agent_snapshots: Vec::new(),
         };
         let block = state.to_system_block().expect("renders");
         assert!(block.contains("Mode: `agent`"));
@@ -1005,7 +1005,7 @@ mod tests {
                     status: crate::tools::plan::StepStatus::Pending,
                 }],
             }),
-            subagent_snapshots: Vec::new(),
+            agent_snapshots: Vec::new(),
         };
 
         let block = state.to_system_block().expect("renders");

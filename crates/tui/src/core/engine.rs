@@ -108,7 +108,7 @@ pub struct EngineConfig {
     pub translation_enabled: bool,
     /// Maximum number of assistant steps before stopping.
     pub max_steps: u32,
-    /// Maximum number of concurrently active subagents.
+    /// Maximum number of concurrently active agents.
     pub max_concurrent_agents: usize,
     /// Feature flags controlling tool availability.
     pub features: Features,
@@ -302,7 +302,7 @@ pub struct Engine {
     /// Receiver paired with `tx_agent_completion`. Drained at the
     /// turn-loop's empty-tool_uses branch to surface `<deepseek:agent.done>`
     /// sentinels into the parent's transcript before deciding to end the turn.
-    pub(super) rx_subagent_completion: mpsc::UnboundedReceiver<AgentCompletion>,
+    pub(super) rx_agent_completion: mpsc::UnboundedReceiver<AgentCompletion>,
     cancel_token: CancellationToken,
     shared_cancel_token: Arc<StdMutex<CancellationToken>>,
     /// Latched reason for the current cancellation, mirrored to
@@ -405,7 +405,7 @@ impl Engine {
         let (tx_approval, rx_approval) = mpsc::channel(64);
         let (tx_user_input, rx_user_input) = mpsc::channel(32);
         let (tx_steer, rx_steer) = mpsc::channel(64);
-        let (tx_agent_completion, rx_subagent_completion) = mpsc::unbounded_channel();
+        let (tx_agent_completion, rx_agent_completion) = mpsc::unbounded_channel();
         let cancel_token = CancellationToken::new();
         let shared_cancel_token = Arc::new(StdMutex::new(cancel_token.clone()));
         let cancel_reason: Arc<StdMutex<Option<CancelReason>>> = Arc::new(StdMutex::new(None));
@@ -555,7 +555,7 @@ impl Engine {
             rx_steer,
             tx_event,
             tx_agent_completion,
-            rx_subagent_completion,
+            rx_agent_completion,
             cancel_token: cancel_token.clone(),
             shared_cancel_token: shared_cancel_token.clone(),
             cancel_reason: cancel_reason.clone(),
@@ -636,7 +636,7 @@ impl Engine {
                         .send(Event::status(format!("Denied tool call: {id}")))
                         .await;
                 }
-                Op::SpawnSubAgent { prompt } => {
+                Op::SpawnAgent { prompt } => {
                     let Some(client) = self.deepseek_client.clone() else {
                         let message = self
                             .deepseek_client_error
@@ -706,7 +706,7 @@ impl Engine {
                         }
                     }
                 }
-                Op::ListSubAgents => {
+                Op::ListAgents => {
                     let agents = {
                         let mut manager = self.agent_manager.write().await;
                         manager.cleanup(Duration::from_secs(60 * 60));
@@ -1002,7 +1002,7 @@ impl Engine {
         let tool_context = self.build_tool_context(mode, auto_approve);
         let builder = self.build_turn_tool_registry_builder(mode, todo_list, plan_state);
 
-        let fork_context_for_runtime = if self.config.features.enabled(Feature::Subagents) {
+        let fork_context_for_runtime = if self.config.features.enabled(Feature::Agents) {
             let state = StructuredState::capture(
                 mode.label(),
                 self.config.workspace.clone(),
@@ -1027,12 +1027,12 @@ impl Engine {
         // envelopes into `Event::SubAgentMailbox` so the UI can route them
         // to the matching in-transcript card. The drainer exits naturally
         // when every cloned sender is dropped at turn-end.
-        let mailbox_for_runtime = if self.config.features.enabled(Feature::Subagents) {
+        let mailbox_for_runtime = if self.config.features.enabled(Feature::Agents) {
             let cancel_token = self.cancel_token.child_token();
             let (mailbox, mut receiver) = Mailbox::new(cancel_token.clone());
             let tx_event_clone = self.tx_event.clone();
             spawn_supervised(
-                "subagent-mailbox-drainer",
+                "agent-mailbox-drainer",
                 std::panic::Location::caller(),
                 async move {
                     while let Some(envelope) = receiver.recv().await {
@@ -1056,7 +1056,7 @@ impl Engine {
 
         let tool_registry = match mode {
             AppMode::Limited | AppMode::Yolo => {
-                if self.config.features.enabled(Feature::Subagents) {
+                if self.config.features.enabled(Feature::Agents) {
                     let runtime = if let Some(client) = self.deepseek_client.clone() {
                         let mut rt = AgentRuntime::new(
                             client,

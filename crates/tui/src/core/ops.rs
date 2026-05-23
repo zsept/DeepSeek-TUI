@@ -45,12 +45,12 @@ pub enum Op {
     #[allow(dead_code)]
     DenyToolCall { id: String },
 
-    /// Spawn a sub-agent
+    /// Spawn an agent
     #[allow(dead_code)]
-    SpawnSubAgent { prompt: String },
+    SpawnAgent { prompt: String },
 
-    /// List current sub-agents and their status
-    ListSubAgents,
+    /// List current agents and their status
+    ListAgents,
 
     /// Change the operating mode
     #[allow(dead_code)]

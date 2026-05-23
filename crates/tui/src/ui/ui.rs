@@ -87,7 +87,7 @@ use crate::ui::shell_job_routing::{
     add_shell_job_message, format_shell_job_list, format_shell_poll, open_shell_job_pager,
 };
 use crate::ui::streaming_thinking;
-use crate::ui::subagent_routing::{
+use crate::ui::agent_routing::{
     format_task_list, handle_agent_mailbox, open_task_pager, reconcile_agent_activity_state,
     running_agent_count, sort_agents_in_place, task_mode_label, task_summary_to_panel_entry,
 };
@@ -1240,7 +1240,7 @@ async fn run_event_loop(
                                 | "agent_result"
                                 | "agent_status"
                         ) {
-                            let _ = engine_handle.send(Op::ListSubAgents).await;
+                            let _ = engine_handle.send(Op::ListAgents).await;
                         }
                     }
                     EngineEvent::TurnStarted { turn_id } => {
@@ -1334,7 +1334,7 @@ async fn run_event_loop(
                             crate::core::events::TurnOutcomeStatus::Interrupted
                                 | crate::core::events::TurnOutcomeStatus::Failed
                         ) {
-                            let _ = engine_handle.send(Op::ListSubAgents).await;
+                            let _ = engine_handle.send(Op::ListAgents).await;
                         }
                         let turn_tokens = usage.input_tokens + usage.output_tokens;
                         app.session.total_tokens =
@@ -1605,8 +1605,8 @@ async fn run_event_loop(
                             app.agent_activity_started_at = Some(Instant::now());
                         }
                         app.status_message =
-                            Some(format!("Sub-agent {id} starting: {prompt_summary}"));
-                        let _ = engine_handle.send(Op::ListSubAgents).await;
+                            Some(format!("Agent {id} starting: {prompt_summary}"));
+                        let _ = engine_handle.send(Op::ListAgents).await;
                     }
                     EngineEvent::AgentProgress { id, status } => {
                         let display = friendly_agent_progress(app, &id, &status);
@@ -1620,15 +1620,15 @@ async fn run_event_loop(
                         if app.agent_activity_started_at.is_none() {
                             app.agent_activity_started_at = Some(Instant::now());
                         }
-                        app.status_message = Some(format!("Sub-agent {id}: {display}"));
+                        app.status_message = Some(format!("Agent {id}: {display}"));
                     }
                     EngineEvent::AgentComplete { id, result } => {
-                        let subagent_elapsed = app
+                        let agent_elapsed = app
                             .agent_activity_started_at
                             .or(app.turn_started_at)
                             .map(|started| started.elapsed())
                             .unwrap_or_default();
-                        let has_other_running_subagents =
+                        let has_other_running_agents =
                             app.agent_progress.keys().any(|agent_id| agent_id != &id)
                                 || app.agent_cache.iter().any(|agent| {
                                     agent.agent_id != id
@@ -1636,28 +1636,28 @@ async fn run_event_loop(
                                 });
                         app.agent_progress.remove(&id);
                         app.status_message = Some(format!(
-                            "Sub-agent {id} completed: {}",
+                            "Agent {id} completed: {}",
                             summarize_tool_output(&result)
                         ));
                         let should_recapture_terminal =
-                            !has_other_running_subagents && app.use_alt_screen;
-                        if !has_other_running_subagents
+                            !has_other_running_agents && app.use_alt_screen;
+                        if !has_other_running_agents
                             && let Some((method, threshold, include_summary)) =
                                 notifications::settings(config)
                         {
                             let in_tmux = std::env::var("TMUX").is_ok_and(|v| !v.is_empty());
-                            let msg = notifications::subagent_completion_message(
+                            let msg = notifications::agent_completion_message(
                                 &id,
                                 &result,
                                 include_summary,
-                                subagent_elapsed,
+                                agent_elapsed,
                             );
                             crate::ui::notifications::notify_done(
                                 method,
                                 in_tmux,
                                 &msg,
                                 threshold,
-                                subagent_elapsed,
+                                agent_elapsed,
                             );
                         }
                         if should_recapture_terminal {
@@ -1672,7 +1672,7 @@ async fn run_event_loop(
                             terminal_paused_at = None;
                             app.needs_redraw = true;
                         }
-                        let _ = engine_handle.send(Op::ListSubAgents).await;
+                        let _ = engine_handle.send(Op::ListAgents).await;
                     }
                     EngineEvent::AgentList { agents } => {
                         let mut sorted = agents.clone();
@@ -1681,9 +1681,9 @@ async fn run_event_loop(
                         app.agent_cache = sorted.clone();
                         reconcile_agent_activity_state(app);
                         let view_agents = agent_view_agents(app, &sorted);
-                        if app.view_stack.update_subagents(&view_agents) {
+                        if app.view_stack.update_agents(&view_agents) {
                             app.status_message =
-                                Some(format!("Sub-agents: {} total", view_agents.len()));
+                                Some(format!("Agents: {} total", view_agents.len()));
                         }
                         // Individual spawn/complete events already log to history;
                         // full list available via /agents command.
@@ -4386,8 +4386,8 @@ async fn apply_command_result(
                 let queued = build_queued_message(app, content);
                 submit_or_steer_message(app, config, engine_handle, queued).await?;
             }
-            AppAction::ListSubAgents => {
-                let _ = engine_handle.send(Op::ListSubAgents).await;
+            AppAction::ListAgents => {
+                let _ = engine_handle.send(Op::ListAgents).await;
             }
             AppAction::FetchModels => {
                 if crate::config::provider_passes_model_through(config.api_provider()) {
@@ -5916,9 +5916,9 @@ async fn handle_view_events(
                     }
                 }
             }
-            ViewEvent::SubAgentsRefresh => {
-                app.status_message = Some("Refreshing sub-agents...".to_string());
-                let _ = engine_handle.send(Op::ListSubAgents).await;
+            ViewEvent::AgentsRefresh => {
+                app.status_message = Some("Refreshing agents...".to_string());
+                let _ = engine_handle.send(Op::ListAgents).await;
             }
             ViewEvent::FilePickerSelected { path } => {
                 // Insert `@<path>` at the composer's cursor with surrounding
@@ -7387,7 +7387,7 @@ pub(crate) fn open_details_pager_for_cell(app: &mut App, cell_index: usize) -> b
         HistoryCell::Error { .. } => "Error".to_string(),
         HistoryCell::Thinking { .. } => "Reasoning".to_string(),
         HistoryCell::Tool(_) => "Message".to_string(),
-        HistoryCell::Agent(_) => "Sub-agent".to_string(),
+        HistoryCell::Agent(_) => "Agent".to_string(),
         HistoryCell::ArchivedContext { .. } => "Archived Context".to_string(),
     };
     let width = app

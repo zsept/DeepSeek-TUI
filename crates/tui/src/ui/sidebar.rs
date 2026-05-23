@@ -24,7 +24,7 @@ use crate::ui::theme::Theme;
 
 use super::app::{App, SidebarFocus, TaskPanelEntry};
 use super::history::{GenericToolCell, HistoryCell, ToolCell, ToolStatus, summarize_tool_output};
-use super::subagent_routing::active_fanout_counts;
+use super::agent_routing::active_fanout_counts;
 use super::ui_text::{concise_shell_command_label, truncate_line_to_width};
 
 /// Tolerance for floating-point cost comparison in the sidebar breakdown.

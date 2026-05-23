@@ -5575,29 +5575,29 @@ fn completed_turn_notification_truncates_long_text() {
 }
 
 #[test]
-fn subagent_completion_notification_uses_summary_line_not_sentinel() {
-    let msg = crate::ui::notifications::subagent_completion_message(
+fn agent_completion_notification_uses_summary_line_not_sentinel() {
+    let msg = crate::ui::notifications::agent_completion_message(
         "agent_live",
         "Finished the docs audit.\n<deepseek:agent.done>{}</deepseek:agent.done>",
         false,
         Duration::from_secs(42),
     );
 
-    assert_eq!(msg, "sub-agent agent_live: Finished the docs audit.");
-    assert!(!msg.contains("deepseek:subagent.done"));
+    assert_eq!(msg, "agent agent_live: Finished the docs audit.");
+    assert!(!msg.contains("deepseek:agent.done"));
 }
 
 #[test]
-fn subagent_completion_notification_can_include_elapsed_summary() {
-    let msg = crate::ui::notifications::subagent_completion_message(
+fn agent_completion_notification_can_include_elapsed_summary() {
+    let msg = crate::ui::notifications::agent_completion_message(
         "agent_live",
         "",
         true,
         Duration::from_secs(65),
     );
 
-    assert!(msg.contains("deepseek: sub-agent agent_live complete"));
-    assert!(msg.contains("deepseek: sub-agent complete (1m 5s)"));
+    assert!(msg.contains("deepseek: agent agent_live complete"));
+    assert!(msg.contains("deepseek: agent complete (1m 5s)"));
 }
 
 #[test]

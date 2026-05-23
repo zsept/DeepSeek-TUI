@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use crate::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
 use crate::localization::{MessageId, tr};
 use crate::ui::app::{App, AppAction, AppMode, ReasoningEffort};
-use crate::ui::views::{HelpView, ModalKind, SubAgentsView, agent_view_agents};
+use crate::ui::views::{HelpView, ModalKind, AgentsView, agent_view_agents};
 
 use super::CommandResult;
 
@@ -156,14 +156,14 @@ pub fn models(_app: &mut App) -> CommandResult {
     CommandResult::action(AppAction::FetchModels)
 }
 
-/// List sub-agent status from the engine
-pub fn subagents(app: &mut App) -> CommandResult {
-    if app.view_stack.top_kind() != Some(ModalKind::SubAgents) {
+/// List agent status from the engine
+pub fn agents(app: &mut App) -> CommandResult {
+    if app.view_stack.top_kind() != Some(ModalKind::Agents) {
         let agents = agent_view_agents(app, &app.agent_cache);
-        app.view_stack.push(SubAgentsView::new(agents));
+        app.view_stack.push(AgentsView::new(agents));
     }
-    app.status_message = Some(tr(app.ui_locale, MessageId::SubagentsFetching).to_string());
-    CommandResult::action(AppAction::ListSubAgents)
+    app.status_message = Some(tr(app.ui_locale, MessageId::AgentsFetching).to_string());
+    CommandResult::action(AppAction::ListAgents)
 }
 
 /// Switch to a configured profile.
@@ -298,14 +298,14 @@ pub fn home_dashboard(app: &mut App) -> CommandResult {
         );
     }
 
-    // Sub-agents
-    let subagent_count = app.agent_cache.len();
-    if subagent_count > 0 {
+    // Agents
+    let agent_count = app.agent_cache.len();
+    if agent_count > 0 {
         let _ = writeln!(
             stats,
             "{} {} active",
-            tr(locale, MessageId::HomeSubagents),
-            subagent_count
+            tr(locale, MessageId::HomeAgents),
+            agent_count
         );
     }
 
@@ -327,7 +327,7 @@ pub fn home_dashboard(app: &mut App) -> CommandResult {
     let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickConfig));
     let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickSettings));
     let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickModel));
-    let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickSubagents));
+    let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickAgents));
     let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickTaskList));
     let _ = writeln!(stats, "{}", tr(locale, MessageId::HomeQuickHelp));
 
@@ -727,15 +727,15 @@ mod tests {
     }
 
     #[test]
-    fn test_subagents_pushes_view_and_sets_status() {
+    fn test_agents_pushes_view_and_sets_status() {
         let mut app = create_test_app();
-        let result = subagents(&mut app);
+        let result = agents(&mut app);
         assert!(result.message.is_none());
-        assert!(matches!(result.action, Some(AppAction::ListSubAgents)));
-        assert_eq!(app.view_stack.top_kind(), Some(ModalKind::SubAgents));
+        assert!(matches!(result.action, Some(AppAction::ListAgents)));
+        assert_eq!(app.view_stack.top_kind(), Some(ModalKind::Agents));
         assert_eq!(
             app.status_message,
-            Some("Fetching sub-agent status...".to_string())
+            Some("Fetching agent status...".to_string())
         );
     }
 

@@ -130,7 +130,7 @@ fn tool_result_metadata_summary(metadata: Option<&serde_json::Value>) -> Option<
     None
 }
 
-fn summarize_subagent_status(status: &serde_json::Value) -> String {
+fn summarize_agent_status(status: &serde_json::Value) -> String {
     if let Some(raw) = status.as_str() {
         return raw.to_string();
     }
@@ -145,9 +145,9 @@ fn summarize_subagent_status(status: &serde_json::Value) -> String {
     status.to_string()
 }
 
-fn summarize_subagent_snapshot(snapshot: &serde_json::Value, index: usize) -> String {
+fn summarize_agent_snapshot(snapshot: &serde_json::Value, index: usize) -> String {
     if let Some(inner) = snapshot.get("snapshot") {
-        return summarize_subagent_snapshot(inner, index);
+        return summarize_agent_snapshot(inner, index);
     }
 
     let Some(obj) = snapshot.as_object() else {
@@ -167,7 +167,7 @@ fn summarize_subagent_snapshot(snapshot: &serde_json::Value, index: usize) -> St
         .unwrap_or("agent");
     let status = obj
         .get("status")
-        .map(summarize_subagent_status)
+        .map(summarize_agent_status)
         .unwrap_or_else(|| "unknown".to_string());
     let objective = obj
         .get("assignment")
@@ -205,7 +205,7 @@ fn summarize_subagent_snapshot(snapshot: &serde_json::Value, index: usize) -> St
     lines.join("\n")
 }
 
-fn compact_subagent_tool_result_for_context(tool_name: &str, raw: &str) -> Option<String> {
+fn compact_agent_tool_result_for_context(tool_name: &str, raw: &str) -> Option<String> {
     if !matches!(
         tool_name,
         "agent_open" | "agent_eval" | "agent_close" | "agent_result" | "agent_wait" | "wait"
@@ -233,7 +233,7 @@ fn compact_subagent_tool_result_for_context(tool_name: &str, raw: &str) -> Optio
             ));
             break;
         }
-        out.push_str(&summarize_subagent_snapshot(snapshot, idx + 1));
+        out.push_str(&summarize_agent_snapshot(snapshot, idx + 1));
         out.push('\n');
     }
     Some(out.trim_end().to_string())
@@ -268,7 +268,7 @@ pub(crate) fn compact_tool_result_for_context(
         return String::new();
     }
 
-    if let Some(summary) = compact_subagent_tool_result_for_context(tool_name, raw) {
+    if let Some(summary) = compact_agent_tool_result_for_context(tool_name, raw) {
         return summary;
     }
 

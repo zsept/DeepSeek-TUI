@@ -354,10 +354,10 @@ pub fn completed_turn_message(
     msg
 }
 
-/// Compose a notification body for a sub-agent completion. Falls back
-/// to a generic "sub-agent X complete" if no human-readable line can
+/// Compose a notification body for an agent completion. Falls back
+/// to a generic "agent X complete" if no human-readable line can
 /// be teased out of the child's transcript.
-pub fn subagent_completion_message(
+pub fn agent_completion_message(
     id: &str,
     result: &str,
     include_summary: bool,
@@ -369,13 +369,13 @@ pub fn subagent_completion_message(
         .find(|line| !line.is_empty() && !line.starts_with("<deepseek:agent.done>"));
     let mut msg = result_line
         .and_then(text_summary)
-        .map(|summary| format!("sub-agent {id}: {summary}"))
-        .unwrap_or_else(|| format!("deepseek: sub-agent {id} complete"));
+        .map(|summary| format!("agent {id}: {summary}"))
+        .unwrap_or_else(|| format!("deepseek: agent {id} complete"));
 
     if include_summary {
         let human = humanize_duration(elapsed);
         msg.push('\n');
-        msg.push_str(&format!("deepseek: sub-agent complete ({human})"));
+        msg.push_str(&format!("deepseek: agent complete ({human})"));
     }
 
     msg

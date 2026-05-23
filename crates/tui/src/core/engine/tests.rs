@@ -982,7 +982,7 @@ fn v4_tool_outputs_keep_large_file_reads_in_context() {
 }
 
 #[test]
-fn subagent_results_are_summarized_before_parent_context_insertion() {
+fn agent_results_are_summarized_before_parent_context_insertion() {
     let long_result = "verified detail\n".repeat(1_000);
     let output = ToolResult::success(
         json!({

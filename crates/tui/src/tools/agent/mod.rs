@@ -1814,21 +1814,13 @@ impl ToolSpec for AgentOpenTool {
                     "description": "Structured input items (text, mention, skill, local_image, image)",
                     "items": { "type": "object" }
                 },
-                "type": {
+                "agent_role": {
                     "type": "string",
-                    "description": "Agent type: general, explore, plan, review, implementer, verifier, custom"
-                },
-                "agent_type": {
-                    "type": "string",
-                    "description": "Alias for type"
+                    "description": "Agent role: general, explore, plan, review, implementer, verifier, custom, or role alias (worker, explorer, awaiter, default)"
                 },
                 "role": {
                     "type": "string",
-                    "description": "Role alias: worker, explorer, awaiter, default"
-                },
-                "agent_role": {
-                    "type": "string",
-                    "description": "Alias for role"
+                    "description": "Alias for agent_role"
                 },
                 "allowed_tools": {
                     "type": "array",
@@ -1959,25 +1951,13 @@ impl ToolSpec for AgentSpawnTool {
                         "type": "object"
                     }
                 },
-                "type": {
+                "agent_role": {
                     "type": "string",
-                    "description": "Agent type: general, explore, plan, review, implementer, verifier, custom, or a user-defined name from roles/ directory in config. See docs/AGENT_ROLES.md for posture per role."
-                },
-                "agent_type": {
-                    "type": "string",
-                    "description": "Alias for type"
-                },
-                "agent_name": {
-                    "type": "string",
-                    "description": "Alias for type"
+                    "description": "Agent role: general, explore, plan, review, implementer, verifier, custom, or a user-defined name from roles/ directory. Role alias (worker, explorer, awaiter, default) also accepted. See docs/AGENT_ROLES.md."
                 },
                 "role": {
                     "type": "string",
-                    "description": "Role alias: worker, explorer, awaiter, default"
-                },
-                "agent_role": {
-                    "type": "string",
-                    "description": "Alias for role"
+                    "description": "Alias for agent_role"
                 },
                 "allowed_tools": {
                     "type": "array",
@@ -3031,33 +3011,21 @@ impl ToolSpec for DelegateToAgentTool {
 
     fn description(&self) -> &'static str {
         "Delegate a task to a specialized agent. Compatibility wrapper around agent_spawn; \
-         defaults fork_context=true so the child inherits the parent transcript. Use `type` \
-         (or `agent_name`, `agent_type`) to pick the agent flavor."
+         defaults fork_context=true so the child inherits the parent transcript. Use `agent_role` \
+         (or `role`) to pick the agent flavor."
     }
 
     fn input_schema(&self) -> Value {
         json!({
             "type": "object",
             "properties": {
-                "agent_name": {
+                "agent_role": {
                     "type": "string",
-                    "description": "Name/type alias for the agent (general, explore, plan, review, implementer, verifier, worker, explorer, awaiter, builder, validator, tester)"
-                },
-                "type": {
-                    "type": "string",
-                    "description": "Alias for agent_name"
-                },
-                "agent_type": {
-                    "type": "string",
-                    "description": "Alias for agent_name"
+                    "description": "Agent role: general, explore, plan, review, implementer, verifier, custom, or role alias (worker, explorer, awaiter, default)"
                 },
                 "role": {
                     "type": "string",
-                    "description": "Role alias: worker, explorer, awaiter, default"
-                },
-                "agent_role": {
-                    "type": "string",
-                    "description": "Alias for role"
+                    "description": "Alias for agent_role"
                 },
                 "objective": {
                     "type": "string",
@@ -3915,39 +3883,17 @@ fn parse_spawn_request(input: &Value) -> Result<SpawnRequest, ToolError> {
         .map(validate_session_name)
         .transpose()?;
 
-    let type_input = optional_input_str(input, &["type", "agent_type", "agent_name"]);
     let role_input = optional_input_str(input, &["role", "agent_role"]);
 
-    let parsed_type = type_input
+    let agent_type = role_input
         .map(|kind| {
             AgentRole::from_str(kind).ok_or_else(|| {
                 ToolError::invalid_input(format!(
-                    "Invalid agent type '{kind}'. Use: {VALID_AGENT_ROLES}"
+                    "Invalid agent role '{kind}'. Use: {VALID_AGENT_ROLES}"
                 ))
             })
         })
-        .transpose()?;
-
-    let parsed_role_type = role_input
-        .map(|role| {
-            AgentRole::from_str(role).ok_or_else(|| {
-                ToolError::invalid_input(format!(
-                    "Invalid role alias '{role}'. Use: worker, explorer, awaiter, default"
-                ))
-            })
-        })
-        .transpose()?;
-
-    if let (Some(type_kind), Some(role_kind)) = (&parsed_type, &parsed_role_type)
-        && type_kind != role_kind
-    {
-        return Err(ToolError::invalid_input(
-            "Conflicting type/agent_type and role/agent_role values".to_string(),
-        ));
-    }
-
-    let agent_type = parsed_type
-        .or(parsed_role_type)
+        .transpose()?
         .unwrap_or(AgentRole::General);
 
     if let Some(role) = role_input
@@ -3960,7 +3906,6 @@ fn parse_spawn_request(input: &Value) -> Result<SpawnRequest, ToolError> {
 
     let role = role_input
         .and_then(normalize_role_alias)
-        .or_else(|| type_input.and_then(normalize_role_alias))
         .map(str::to_string);
 
     let allowed_tools = input

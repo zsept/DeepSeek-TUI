@@ -246,10 +246,10 @@ fn test_verifier_allowed_tools_include_test_runner_but_no_writes() {
 }
 
 #[test]
-fn test_parse_spawn_request_accepts_message_and_agent_type_aliases() {
+fn test_parse_spawn_request_accepts_message_and_agent_role_aliases() {
     let input = json!({
         "message": "Find references to Foo",
-        "agent_type": "explorer"
+        "agent_role": "explorer"
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert_eq!(parsed.prompt, "Find references to Foo");
@@ -276,7 +276,7 @@ fn test_parse_spawn_request_accepts_items_payload() {
             {"type": "text", "text": "Analyze module"},
             {"type": "mention", "name": "drive", "path": "app://drive"}
         ],
-        "agent_name": "explorer"
+        "agent_role": "explorer"
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert!(parsed.prompt.contains("Analyze module"));
@@ -448,17 +448,16 @@ fn test_parse_spawn_request_rejects_invalid_role() {
 }
 
 #[test]
-fn test_parse_spawn_request_rejects_conflicting_type_and_role() {
+fn test_parse_spawn_request_role_takes_precedence_over_legacy_type() {
+    // Since 0.6.8 the `type` / `agent_type` / `agent_name` parameters are
+    // no longer accepted; only `agent_role` / `role`. The old conflicting-
+    // type-and-role test is replaced by this smoke test.
     let input = json!({
         "prompt": "inspect internals",
-        "type": "explore",
-        "role": "worker"
+        "agent_role": "explore"
     });
-    let err = parse_spawn_request(&input).expect_err("conflicting type+role should fail");
-    assert!(
-        err.to_string()
-            .contains("Conflicting type/agent_type and role/agent_role")
-    );
+    let parsed = parse_spawn_request(&input).expect("spawn request should parse");
+    assert_eq!(parsed.agent_type, AgentRole::Explore);
 }
 
 #[test]

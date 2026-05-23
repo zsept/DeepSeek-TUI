@@ -1865,7 +1865,7 @@ impl App {
         self.refresh_displayed_cost_high_water();
     }
 
-    /// Copy current session/subagent cost accumulators into session metadata
+    /// Copy current session/agent cost accumulators into session metadata
     /// for persistence.
     pub fn sync_cost_to_metadata(&self, metadata: &mut crate::session_manager::SessionMetadata) {
         metadata.cost.session_cost_usd = self.session.session_cost;
@@ -4098,7 +4098,7 @@ pub enum AppAction {
     },
     /// Send a message to the AI (normal chat mode).
     SendMessage(String),
-    ListSubAgents,
+    ListAgents,
     FetchModels,
     CacheWarmup,
     /// Switch the active LLM backend (DeepSeek vs NVIDIA NIM) without

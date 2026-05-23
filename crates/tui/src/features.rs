@@ -34,8 +34,8 @@ impl Stage {
 pub enum Feature {
     /// Enable the default shell tool.
     ShellTool,
-    /// Enable background sub-agent tooling.
-    Subagents,
+    /// Enable background agent tooling.
+    Agents,
     /// Enable web search tool.
     WebSearch,
     /// Enable apply_patch tool.
@@ -180,7 +180,7 @@ pub const FEATURES: &[FeatureSpec] = &[
         default_enabled: true,
     },
     FeatureSpec {
-        id: Feature::Subagents,
+        id: Feature::Agents,
         key: "agents",
         stage: Stage::Experimental,
         default_enabled: true,

@@ -790,13 +790,13 @@ impl ToolRegistryBuilder {
     }
 
     /// Include the full agent tool surface: every tool family the parent gets
-    /// in Agent mode, including review, RLM, and the sub-agent management
+    /// in Agent mode, including review, RLM, and the agent management
     /// family (so children can recurse). Used by both the parent's Agent-mode
-    /// registry build (`core/engine.rs`) and by every sub-agent
-    /// (`subagent::AgentToolRegistry`) — keeping them in lockstep.
+    /// registry build (`core/engine.rs`) and by every agent
+    /// (`agent::AgentToolRegistry`) — keeping them in lockstep.
     ///
     /// `allow_shell` mirrors the session's shell permission. `manager` and
-    /// `runtime` are the sub-agent runtime — children pass through their own
+    /// `runtime` are the agent runtime — children pass through their own
     /// runtime so grandchildren can spawn within the same depth/cancellation
     /// envelope.
     #[must_use]

@@ -42,12 +42,12 @@ fn test_agent_type_from_str() {
     );
     assert_eq!(
         AgentRole::from_str("explore"),
-        Some(AgentRole::Explore)
+        Some(AgentRole::Named("explore".to_string()))
     );
-    assert_eq!(AgentRole::from_str("PLAN"), Some(AgentRole::Plan));
+    assert_eq!(AgentRole::from_str("PLAN"), Some(AgentRole::Named("plan".to_string())));
     assert_eq!(
         AgentRole::from_str("code-review"),
-        Some(AgentRole::Review)
+        Some(AgentRole::Named("review".to_string()))
     );
     assert_eq!(
         AgentRole::from_str("worker"),
@@ -59,9 +59,9 @@ fn test_agent_type_from_str() {
     );
     assert_eq!(
         AgentRole::from_str("explorer"),
-        Some(AgentRole::Explore)
+        Some(AgentRole::Named("explore".to_string()))
     );
-    assert_eq!(AgentRole::from_str("awaiter"), Some(AgentRole::Plan));
+    assert_eq!(AgentRole::from_str("awaiter"), Some(AgentRole::Named("plan".to_string())));
     assert_eq!(
         AgentRole::from_str("invalid"),
         Some(AgentRole::Named("invalid".to_string()))
@@ -75,14 +75,14 @@ fn test_agent_type_implementer_aliases() {
     for alias in ["implementer", "implement", "implementation", "builder"] {
         assert_eq!(
             AgentRole::from_str(alias),
-            Some(AgentRole::Implementer),
+            Some(AgentRole::Named("implementer".to_string())),
             "alias {alias} should resolve to Implementer"
         );
     }
     // Case-insensitive.
     assert_eq!(
         AgentRole::from_str("IMPLEMENTER"),
-        Some(AgentRole::Implementer)
+        Some(AgentRole::Named("implementer".to_string()))
     );
 }
 
@@ -93,13 +93,13 @@ fn test_agent_type_verifier_aliases() {
     for alias in ["verifier", "verify", "verification", "validator", "tester"] {
         assert_eq!(
             AgentRole::from_str(alias),
-            Some(AgentRole::Verifier),
+            Some(AgentRole::Named("verifier".to_string())),
             "alias {alias} should resolve to Verifier"
         );
     }
     assert_eq!(
         AgentRole::from_str("VERIFY"),
-        Some(AgentRole::Verifier)
+        Some(AgentRole::Named("verifier".to_string()))
     );
 }
 
@@ -110,12 +110,12 @@ fn test_agent_type_round_trips_via_as_str() {
     // role.
     for t in [
         AgentRole::General,
-        AgentRole::Explore,
-        AgentRole::Plan,
-        AgentRole::Review,
-        AgentRole::Implementer,
-        AgentRole::Verifier,
-        AgentRole::Custom,
+        AgentRole::Named("explore".to_string()),
+        AgentRole::Named("plan".to_string()),
+        AgentRole::Named("review".to_string()),
+        AgentRole::Named("implementer".to_string()),
+        AgentRole::Named("verifier".to_string()),
+        AgentRole::Named("custom".to_string()),
     ] {
         let label = t.as_str();
         let back = AgentRole::from_str(label)
@@ -129,9 +129,10 @@ fn test_implementer_and_verifier_have_distinct_prompts() {
     // The whole point of adding the types is that they carry distinct
     // posture. Defensive guard: catch the easy bug where copy-paste
     // leaves two new variants with the same prompt as `General`.
-    let implementer = AgentRole::Implementer.system_prompt();
-    let verifier = AgentRole::Verifier.system_prompt();
-    let general = AgentRole::General.system_prompt();
+    let builtins = crate::tools::agent::builtin_role_configs();
+    let implementer = builtins.get("implementer").map(|c| c.system_prompt.clone()).unwrap_or_default();
+    let verifier = builtins.get("verifier").map(|c| c.system_prompt.clone()).unwrap_or_default();
+    let general = format!("{}{}", crate::tools::agent::GENERAL_AGENT_INTRO, crate::tools::agent::AGENT_OUTPUT_FORMAT);
     assert_ne!(
         implementer, general,
         "Implementer prompt must differ from General"
@@ -161,16 +162,24 @@ fn test_implementer_and_verifier_have_distinct_prompts() {
 
 #[test]
 fn test_agent_type_prompts_include_shared_output_contract_once() {
-    for (agent_type, marker) in [
-        (AgentRole::General, "general-purpose agent"),
-        (AgentRole::Explore, "exploration agent"),
-        (AgentRole::Plan, "planning agent"),
-        (AgentRole::Review, "code review agent"),
-        (AgentRole::Implementer, "implementation agent"),
-        (AgentRole::Verifier, "verification agent"),
-        (AgentRole::Custom, "custom agent"),
-    ] {
-        let prompt = agent_type.system_prompt();
+    let role_configs = crate::tools::agent::builtin_role_configs();
+    let assignment = crate::tools::agent::AgentAssignment::new("test".to_string(), None);
+    let test_cases: &[(&str, &str)] = &[
+        ("general", "general-purpose agent"),
+        ("explore", "exploration agent"),
+        ("plan", "planning agent"),
+        ("review", "code review agent"),
+        ("implementer", "implementation agent"),
+        ("verifier", "verification agent"),
+        ("custom", "custom agent"),
+    ];
+    for (name, marker) in test_cases {
+        let agent_type = if *name == "general" {
+            crate::tools::agent::AgentRole::General
+        } else {
+            crate::tools::agent::AgentRole::Named(name.to_string())
+        };
+        let prompt = crate::tools::agent::build_agent_system_prompt(&agent_type, &assignment, &role_configs);
         assert!(prompt.contains(marker));
         assert_eq!(
             prompt.matches("## Output contract (mandatory)").count(),
@@ -183,7 +192,8 @@ fn test_agent_type_prompts_include_shared_output_contract_once() {
 
 #[test]
 fn explore_prompt_orients_before_searching() {
-    let prompt = AgentRole::Explore.system_prompt();
+    let builtins = crate::tools::agent::builtin_role_configs();
+    let prompt = builtins.get("explore").map(|c| c.system_prompt.clone()).unwrap_or_default();
     assert!(prompt.contains("role: `explore`"));
     assert!(prompt.contains("AGENTS.md/README"));
     assert!(prompt.contains("workspace/project root"));
@@ -219,31 +229,9 @@ fn new_session_tools_use_open_eval_close_names() {
     assert_eq!(AgentCloseTool::new(manager).name(), "agent_close");
 }
 
-#[test]
-fn test_implementer_allowed_tools_include_writes() {
-    // Implementer is the write-heavy role; the deprecated
-    // `allowed_tools()` advisory list should reflect that the role
-    // can write/edit/patch even if today's runtime grants full
-    // inheritance.
-    #[allow(deprecated)]
-    let tools = AgentRole::Implementer.allowed_tools();
-    assert!(tools.contains(&"write_file"));
-    assert!(tools.contains(&"edit_file"));
-    assert!(tools.contains(&"apply_patch"));
-}
+// test_implementer_allowed_tools removed — allowed_tools() method deleted
 
-#[test]
-fn test_verifier_allowed_tools_include_test_runner_but_no_writes() {
-    // Verifier runs validation; it should not have write tools in
-    // its advisory list. The runtime will still gate writes through
-    // approval, but the advisory list signals intent.
-    #[allow(deprecated)]
-    let tools = AgentRole::Verifier.allowed_tools();
-    assert!(tools.contains(&"run_tests"));
-    assert!(tools.contains(&"diagnostics"));
-    assert!(!tools.contains(&"write_file"));
-    assert!(!tools.contains(&"apply_patch"));
-}
+// test_verifier_allowed_tools removed — allowed_tools() method deleted
 
 #[test]
 fn test_parse_spawn_request_accepts_message_and_agent_role_aliases() {
@@ -253,7 +241,7 @@ fn test_parse_spawn_request_accepts_message_and_agent_role_aliases() {
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert_eq!(parsed.prompt, "Find references to Foo");
-    assert_eq!(parsed.agent_type, AgentRole::Explore);
+    assert_eq!(parsed.agent_type, AgentRole::Named("explore".to_string()));
     assert_eq!(parsed.assignment.role.as_deref(), Some("explorer"));
 }
 
@@ -265,7 +253,7 @@ fn test_parse_spawn_request_accepts_objective_and_role_alias() {
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert_eq!(parsed.prompt, "Coordinate and wait");
-    assert_eq!(parsed.agent_type, AgentRole::Plan);
+    assert_eq!(parsed.agent_type, AgentRole::Named("plan".to_string()));
     assert_eq!(parsed.assignment.role.as_deref(), Some("awaiter"));
 }
 
@@ -281,7 +269,7 @@ fn test_parse_spawn_request_accepts_items_payload() {
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
     assert!(parsed.prompt.contains("Analyze module"));
     assert!(parsed.prompt.contains("[mention:$drive](app://drive)"));
-    assert_eq!(parsed.agent_type, AgentRole::Explore);
+    assert_eq!(parsed.agent_type, AgentRole::Named("explore".to_string()));
 }
 
 #[test]
@@ -420,7 +408,7 @@ fn forked_subagent_messages_preserve_parent_prefix_then_append_task() {
 fn fresh_subagent_messages_keep_existing_single_turn_shape() {
     let assignment = AgentAssignment::new("list files".to_string(), None);
     let messages =
-        build_initial_agent_messages("list files", &assignment, &AgentRole::Explore, None, &HashMap::new());
+        build_initial_agent_messages("list files", &assignment, &AgentRole::Named("explore".to_string()), None, &HashMap::new());
 
     assert_eq!(messages.len(), 1);
     assert_eq!(messages[0].role, "user");
@@ -457,7 +445,7 @@ fn test_parse_spawn_request_role_takes_precedence_over_legacy_type() {
         "agent_role": "explore"
     });
     let parsed = parse_spawn_request(&input).expect("spawn request should parse");
-    assert_eq!(parsed.agent_type, AgentRole::Explore);
+    assert_eq!(parsed.agent_type, AgentRole::Named("explore".to_string()));
 }
 
 #[test]
@@ -515,7 +503,7 @@ fn test_build_allowed_tools_independent_of_allow_shell() {
 #[test]
 fn test_allowed_tools_are_deduplicated() {
     let tools = build_allowed_tools(
-        &AgentRole::Custom,
+        &AgentRole::Named("custom".to_string()),
         Some(vec![
             "read_file".to_string(),
             "read_file".to_string(),
@@ -533,7 +521,7 @@ fn test_allowed_tools_are_deduplicated() {
 
 #[test]
 fn test_custom_agent_requires_allowed_tools() {
-    let err = build_allowed_tools(&AgentRole::Custom, None, true).unwrap_err();
+    let err = build_allowed_tools(&AgentRole::Named("custom".to_string()), None, true).unwrap_err();
     assert!(err.to_string().contains("requires"));
 }
 
@@ -593,7 +581,7 @@ fn test_build_assignment_prompt_includes_metadata() {
     let prompt = build_assignment_prompt(
         "Inspect parser behavior",
         &assignment,
-        &AgentRole::Explore,
+        &AgentRole::Named("explore".to_string()),
     );
     assert!(prompt.contains("Assignment metadata"));
     assert!(prompt.contains("resolved_type: explore"));
@@ -706,7 +694,7 @@ fn test_review_agent_tools_exclude_agent_spawn() {
         Arc::new(Mutex::new(TodoList::new())),
         Arc::new(Mutex::new(PlanState::default())),
     );
-    let tools = registry.tools_for_model(&AgentRole::Review);
+    let tools = registry.tools_for_model(&AgentRole::Named("review".to_string()));
     let names: Vec<_> = tools.iter().map(|t| t.name.as_str()).collect();
     assert!(
         !names.contains(&"agent_spawn"),
@@ -719,7 +707,7 @@ async fn test_wait_for_result_reports_timeout_when_still_running() {
     let manager = Arc::new(RwLock::new(AgentManager::new(PathBuf::from("."), 2)));
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let agent = Agent::new(
-        AgentRole::Explore,
+        AgentRole::Named("explore".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -746,7 +734,7 @@ async fn test_running_count_counts_only_agents_with_live_task_handles() {
     let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let mut agent = Agent::new(
-        AgentRole::Explore,
+        AgentRole::Named("explore".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -777,7 +765,7 @@ fn test_running_count_ignores_running_status_without_task_handle() {
     let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let mut agent = Agent::new(
-        AgentRole::Explore,
+        AgentRole::Named("explore".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -797,7 +785,7 @@ async fn test_running_count_ignores_finished_task_handles() {
     let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let mut agent = Agent::new(
-        AgentRole::Explore,
+        AgentRole::Named("explore".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -862,7 +850,7 @@ fn test_assign_rejects_message_for_non_running_agent() {
     let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let mut agent = Agent::new(
-        AgentRole::Explore,
+        AgentRole::Named("explore".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -886,7 +874,7 @@ fn test_assign_updates_non_running_metadata_without_message() {
     let mut manager = AgentManager::new(PathBuf::from("."), 1);
     let (input_tx, _input_rx) = mpsc::unbounded_channel();
     let mut agent = Agent::new(
-        AgentRole::Plan,
+        AgentRole::Named("plan".to_string()),
         "prompt".to_string(),
         make_assignment(),
         "deepseek-v4-flash".to_string(),
@@ -973,7 +961,7 @@ fn build_allowed_tools_general_returns_none_for_full_inheritance() {
 fn build_allowed_tools_explore_returns_none_for_full_inheritance() {
     // Per-type allowlists are now advisory — Explore also gets the full
     // surface unless an explicit list is passed.
-    let result = build_allowed_tools(&AgentRole::Explore, None, true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Named("explore".to_string()), None, true).unwrap();
     assert!(
         result.is_none(),
         "Explore with no explicit_tools should default to full inheritance"
@@ -983,7 +971,7 @@ fn build_allowed_tools_explore_returns_none_for_full_inheritance() {
 #[test]
 fn build_allowed_tools_custom_requires_explicit_list() {
     // Custom is the one type that REQUIRES explicit allowed_tools.
-    let err = build_allowed_tools(&AgentRole::Custom, None, true).unwrap_err();
+    let err = build_allowed_tools(&AgentRole::Named("custom".to_string()), None, true).unwrap_err();
     assert!(
         err.to_string().contains("Custom agent requires"),
         "got: {err}"
@@ -993,7 +981,7 @@ fn build_allowed_tools_custom_requires_explicit_list() {
 #[test]
 fn build_allowed_tools_explicit_list_returned_as_some() {
     let explicit = vec!["read_file".to_string(), "list_dir".to_string()];
-    let result = build_allowed_tools(&AgentRole::Custom, Some(explicit.clone()), true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Named("custom".to_string()), Some(explicit.clone()), true).unwrap();
     assert_eq!(result, Some(explicit));
 }
 
@@ -1005,7 +993,7 @@ fn build_allowed_tools_explicit_list_dedupes_and_trims() {
         "list_dir".to_string(),
         "".to_string(), // skip empty
     ];
-    let result = build_allowed_tools(&AgentRole::Custom, Some(explicit), true).unwrap();
+    let result = build_allowed_tools(&AgentRole::Named("custom".to_string()), Some(explicit), true).unwrap();
     assert_eq!(
         result,
         Some(vec!["read_file".to_string(), "list_dir".to_string()])

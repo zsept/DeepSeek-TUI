@@ -1916,13 +1916,15 @@ fn append_agent_group(
 fn agent_role_order(agent_type: &AgentRole) -> u8 {
     match agent_type {
         AgentRole::General => 0,
-        AgentRole::Explore => 1,
-        AgentRole::Plan => 2,
-        AgentRole::Implementer => 3,
-        AgentRole::Verifier => 4,
-        AgentRole::Review => 5,
-        AgentRole::Custom => 6,
-        AgentRole::Named(_) => 7,
+        AgentRole::Named(name) => match name.as_str() {
+            "explore" => 1,
+            "plan" => 2,
+            "implementer" => 3,
+            "verifier" => 4,
+            "review" => 5,
+            "custom" => 6,
+            _ => 7,
+        },
     }
 }
 
@@ -2025,7 +2027,7 @@ mod tests {
             agent_id: id.to_string(),
             context_mode: "fresh".to_string(),
             fork_context: false,
-            agent_type: AgentRole::Explore,
+            agent_type: AgentRole::Named("explore".to_string()),
             assignment: AgentAssignment {
                 objective: "read the docs".to_string(),
                 role: None,
@@ -2084,7 +2086,7 @@ mod tests {
         let agents = agent_view_agents(&app, &manager);
 
         assert_eq!(agents.len(), 1);
-        assert_eq!(agents[0].agent_type, AgentRole::Explore);
+        assert_eq!(agents[0].agent_type, AgentRole::Named("explore".to_string()));
         assert_eq!(agents[0].assignment.objective, "read the docs");
     }
 

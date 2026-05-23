@@ -1858,13 +1858,18 @@ impl Config {
     /// Keys are role names the model can reference in `agent_open`.
     #[must_use]
     pub fn agent_role_configs(&self) -> std::collections::HashMap<String, AgentRoleConfig> {
-        let mut roles = self.load_roles_from_directory();
-        // Config-based roles merged in (directory roles take precedence)
+        // Layer 1: built-in defaults (compiled into the binary).
+        let mut roles = crate::tools::agent::builtin_role_configs();
+        // Layer 2: ~/.deepseek/roles/<name>/role.toml overrides built-ins.
+        for (name, config) in self.load_roles_from_directory() {
+            roles.insert(name, config);
+        }
+        // Layer 3: config.toml [agents.types.<name>] has highest priority.
         if let Some(cfg) = self.agent_roles.as_ref()
             && let Some(types) = &cfg.types
         {
             for (name, config) in types {
-                roles.entry(name.clone()).or_insert_with(|| config.clone());
+                roles.insert(name.clone(), config.clone());
             }
         }
         roles

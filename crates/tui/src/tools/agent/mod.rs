@@ -78,8 +78,8 @@ const AGENT_STATE_SCHEMA_VERSION: u32 = 1;
 const AGENT_STATE_FILE: &str = "agents.v1.json";
 const AGENT_RESTART_REASON: &str = "Interrupted by process restart";
 
-const VALID_AGENT_ROLES: &str = "general, explore, plan, review, implementer, verifier, custom, \
-     worker, explorer, awaiter, default, implement, builder, verify, validator, tester";
+const VALID_AGENT_ROLES: &str = "general, worker, default, \
+     or any custom role name defined in roles/<name>/role.toml";
 /// Whale species names rotated through `whale_nickname_for_index` to label
 /// agents in the UI. English and Simplified-Chinese names are interleaved
 /// so any newly spawned agent has a roughly even chance of either — the goal
@@ -216,54 +216,88 @@ impl AgentAssignment {
     }
 }
 
-/// Agent execution types with specialized behavior and tool access.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+/// Agent execution type.
+///
+/// Only `General` and user-defined custom types (`Named`) remain here.
+/// All other built-in postures (explore, plan, review, implementer, verifier,
+/// custom) are now defined as default configurations in
+/// `crates/tui/assets/builtin-roles/` and resolved at runtime via
+/// `AgentRoleConfig`.
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentRole {
     /// General purpose - full tool access for multi-step tasks.
     #[default]
     General,
-    /// Fast exploration - read-only tools for codebase search.
-    Explore,
-    /// Planning - analysis tools only for architectural planning.
-    Plan,
-    /// Code review - read + analysis tools.
-    Review,
-    /// Implementation — focused on writing / patching code to satisfy
-    /// a specific change. Distinct from `General` in that the prompt
-    /// posture pushes hard on landing the change cleanly with the
-    /// minimum surrounding edit (#404).
-    Implementer,
-    /// Verification — focused on running the test suite or other
-    /// validation gates and reporting pass/fail with evidence.
-    /// Distinct from `Review` in that Review reads code and grades it;
-    /// Verifier *runs* tests and reports the outcome (#404).
-    Verifier,
-    /// Custom tool access defined at spawn time.
-    Custom,
-    /// User-defined custom type from `roles/<name>/role.toml` in config.
-    /// Carries the type name so the spawn path can look up system prompt,
-    /// allowed tools, model, and knowledge paths from config.
+    /// User-defined or built-in role resolved from config.
+    /// Carries the type name so the spawn path can look up
+    /// system prompt, allowed tools, model, and knowledge paths.
     Named(String),
 }
 
+impl<'de> Deserialize<'de> for AgentRole {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct AgentRoleVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for AgentRoleVisitor {
+            type Value = AgentRole;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a string like \"general\" or an object {\"named\": \"...\"}")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<AgentRole, E> {
+                Ok(AgentRole::from_str(v).unwrap_or_else(|| AgentRole::Named(v.to_string())))
+            }
+
+            fn visit_map<M: serde::de::MapAccess<'de>>(self, mut map: M) -> Result<AgentRole, M::Error> {
+                let mut name: Option<String> = None;
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "named" => {
+                            if name.is_some() {
+                                return Err(serde::de::Error::duplicate_field("named"));
+                            }
+                            name = Some(map.next_value()?);
+                        }
+                        other => {
+                            return Err(serde::de::Error::unknown_field(other, &["named"]));
+                        }
+                    }
+                }
+                match name {
+                    Some(n) => Ok(AgentRole::Named(n)),
+                    None => Err(serde::de::Error::missing_field("named")),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(AgentRoleVisitor)
+    }
+}
+
 impl AgentRole {
-    /// Parse a agent type from user input.
-    ///
-    /// Returns `None` only for the empty string. All unrecognised names
-    /// are treated as user-defined custom types (`Named`).
+    /// Parse an agent type from user input.
     #[must_use]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
-            "general" | "general-purpose" | "general_purpose" | "worker" | "default" => {
-                Some(Self::General)
-            }
-            "explore" | "exploration" | "explorer" => Some(Self::Explore),
-            "plan" | "planning" | "awaiter" => Some(Self::Plan),
-            "review" | "code-review" | "code_review" | "reviewer" => Some(Self::Review),
-            "implementer" | "implement" | "implementation" | "builder" => Some(Self::Implementer),
-            "verifier" | "verify" | "verification" | "validator" | "tester" => Some(Self::Verifier),
-            "custom" => Some(Self::Custom),
+            "general" | "general-purpose" | "general_purpose" | "worker" | "default"
+                => Some(Self::General),
+            // Canonicalize built-in aliases to their config names.
+            "explore" | "exploration" | "explorer"
+                => Some(Self::Named("explore".to_string())),
+            "plan" | "planning" | "awaiter"
+                => Some(Self::Named("plan".to_string())),
+            "review" | "code-review" | "code_review" | "reviewer"
+                => Some(Self::Named("review".to_string())),
+            "implementer" | "implement" | "implementation" | "builder"
+                => Some(Self::Named("implementer".to_string())),
+            "verifier" | "verify" | "verification" | "validator" | "tester"
+                => Some(Self::Named("verifier".to_string())),
+            "custom" => Some(Self::Named("custom".to_string())),
             "" => None,
             other => Some(Self::Named(other.to_string())),
         }
@@ -273,163 +307,10 @@ impl AgentRole {
     pub fn as_str(&self) -> &str {
         match self {
             Self::General => "general",
-            Self::Explore => "explore",
-            Self::Plan => "plan",
-            Self::Review => "review",
-            Self::Implementer => "implementer",
-            Self::Verifier => "verifier",
-            Self::Custom => "custom",
             Self::Named(name) => name.as_str(),
         }
     }
 
-    /// Return the canonical string for display. For `Named` types
-    /// this returns the config-defined name.
-    #[must_use]
-    pub fn display_name(&self) -> std::borrow::Cow<'static, str> {
-        match self {
-            Self::General => "General".into(),
-            Self::Explore => "Explore".into(),
-            Self::Plan => "Plan".into(),
-            Self::Review => "Review".into(),
-            Self::Implementer => "Implementer".into(),
-            Self::Verifier => "Verifier".into(),
-            Self::Custom => "Custom".into(),
-            Self::Named(name) => name.clone().into(),
-        }
-    }
-
-    /// Get the system prompt for this agent type.
-    ///
-    /// For `Named` types this returns a placeholder — the real
-    /// prompt is resolved from `AgentRoleConfig` config at
-    /// spawn time by `build_agent_system_prompt`.
-    #[must_use]
-    pub fn system_prompt(&self) -> String {
-        let role_intro = match self {
-            Self::General => GENERAL_AGENT_INTRO,
-            Self::Explore => EXPLORE_AGENT_INTRO,
-            Self::Plan => PLAN_AGENT_INTRO,
-            Self::Review => REVIEW_AGENT_INTRO,
-            Self::Implementer => IMPLEMENTER_AGENT_INTRO,
-            Self::Verifier => VERIFIER_AGENT_INTRO,
-            Self::Custom => CUSTOM_AGENT_INTRO,
-            Self::Named(_) => CUSTOM_AGENT_INTRO,
-        };
-        format!("{role_intro}{AGENT_OUTPUT_FORMAT}")
-    }
-
-    /// Get the default allowed tools for this agent type.
-    ///
-    /// **Deprecated since v0.6.6.** Default agents now inherit the full
-    /// parent registry; the per-type allowlist is advisory only. Pass an explicit
-    /// `allowed_tools` array for narrow Custom roles instead.
-    #[must_use]
-    #[deprecated(
-        since = "0.6.6",
-        note = "Default agents inherit the full parent registry; pass an explicit allowed_tools list only for narrow Custom roles."
-    )]
-    pub fn allowed_tools(&self) -> Vec<&'static str> {
-        match self {
-            Self::General => vec![
-                "list_dir",
-                "read_file",
-                "write_file",
-                "edit_file",
-                "apply_patch",
-                "grep_files",
-                "file_search",
-                "web.run",
-                "web_search",
-                "exec_shell",
-                "exec_shell_wait",
-                "exec_shell_interact",
-                "exec_wait",
-                "exec_interact",
-                "note",
-                "checklist_write",
-                "checklist_add",
-                "checklist_update",
-                "checklist_list",
-                "todo_write",
-                "todo_add",
-                "todo_update",
-                "todo_list",
-                "update_plan",
-            ],
-            Self::Explore => vec![
-                "list_dir",
-                "read_file",
-                "grep_files",
-                "file_search",
-                "web.run",
-                "web_search",
-                "exec_shell",
-                "exec_shell_wait",
-                "exec_shell_interact",
-                "exec_wait",
-                "exec_interact",
-            ],
-            Self::Plan => vec![
-                "list_dir",
-                "read_file",
-                "grep_files",
-                "file_search",
-                "web.run",
-                "note",
-                "update_plan",
-                "checklist_write",
-                "checklist_add",
-                "checklist_update",
-                "checklist_list",
-                "todo_write",
-                "todo_add",
-                "todo_update",
-                "todo_list",
-            ],
-            Self::Review => vec!["list_dir", "read_file", "grep_files", "file_search", "note"],
-            Self::Implementer => vec![
-                "list_dir",
-                "read_file",
-                "write_file",
-                "edit_file",
-                "apply_patch",
-                "grep_files",
-                "file_search",
-                "exec_shell",
-                "exec_shell_wait",
-                "exec_shell_interact",
-                "exec_wait",
-                "exec_interact",
-                "note",
-                "checklist_write",
-                "checklist_add",
-                "checklist_update",
-                "checklist_list",
-                "todo_write",
-                "todo_add",
-                "todo_update",
-                "todo_list",
-                "update_plan",
-            ],
-            Self::Verifier => vec![
-                "list_dir",
-                "read_file",
-                "grep_files",
-                "file_search",
-                "exec_shell",
-                "exec_shell_wait",
-                "exec_shell_interact",
-                "exec_wait",
-                "exec_interact",
-                "run_tests",
-                "diagnostics",
-                "note",
-            ],
-            Self::Custom => vec![], // Must be provided by caller.
-            Self::Named(_) => vec![], // Must be provided by caller (config).
-        }
-    }
 }
 
 /// Status of a agent execution.
@@ -3098,15 +2979,16 @@ fn build_agent_system_prompt(
     assignment: &AgentAssignment,
     role_configs: &HashMap<String, crate::config::AgentRoleConfig>,
 ) -> String {
-    let base = if let AgentRole::Named(name) = agent_type {
-        if let Some(ct) = role_configs.get(name) {
-            format!("{}\n\n{}", ct.system_prompt.trim(), AGENT_OUTPUT_FORMAT)
-        } else {
-            // Named type not found in config — fall back to generic custom intro.
-            agent_type.system_prompt()
+    let base = match agent_type {
+        AgentRole::General => format!("{GENERAL_AGENT_INTRO}{AGENT_OUTPUT_FORMAT}"),
+        AgentRole::Named(name) => {
+            if let Some(ct) = role_configs.get(name) {
+                format!("{}\n\n{}", ct.system_prompt.trim(), AGENT_OUTPUT_FORMAT)
+            } else {
+                // Unknown role name — use a minimal fallback.
+                format!("You are a `{name}` agent.\n\n{AGENT_OUTPUT_FORMAT}")
+            }
         }
-    } else {
-        agent_type.system_prompt()
     };
     match assignment.role.as_deref() {
         Some(role) if !role.trim().is_empty() => {
@@ -4373,7 +4255,7 @@ impl AgentToolRegistry {
     fn tools_for_model(&self, agent_type: &AgentRole) -> Vec<Tool> {
         let disallowed = match agent_type {
             // Review agents should not spawn agents (#1489).
-            AgentRole::Review => &["agent_spawn"][..],
+            AgentRole::Named(name) if name == "review" => &["agent_spawn"][..],
             _ => &[][..],
         };
         let api_tools = self.registry.to_api_tools();
@@ -4468,7 +4350,7 @@ fn build_allowed_tools(
                 deduped.push(name.to_string());
             }
         }
-        if matches!(agent_type, AgentRole::Custom) && deduped.is_empty() {
+        if matches!(agent_type, AgentRole::Named(name) if name == "custom") && deduped.is_empty() {
             return Err(anyhow!(
                 "Custom agent requires a non-empty allowed_tools list"
             ));
@@ -4476,7 +4358,7 @@ fn build_allowed_tools(
         return Ok(Some(deduped));
     }
 
-    if matches!(agent_type, AgentRole::Custom) {
+    if matches!(agent_type, AgentRole::Named(name) if name == "custom") {
         return Err(anyhow!(
             "Custom agent requires a non-empty allowed_tools list"
         ));
@@ -4568,48 +4450,39 @@ const GENERAL_AGENT_INTRO: &str = concat!(
     "Plan multi-step work with `checklist_write`; add `update_plan` for complex strategy.\n\n"
 );
 
-const EXPLORE_AGENT_INTRO: &str = concat!(
-    "You are an exploration agent (role: `explore`). Map the relevant code quickly and stay read-only.\n",
-    "Orient first: confirm the workspace/project root, read relevant AGENTS.md/README guidance when the tree is unfamiliar, then search only the likely scope.\n",
-    "Use list_dir/file_search, grep_files, and read_file; use RLM only for long inputs or many semantic slices, not basic path discovery.\n",
-    "DeepSeek V4 can hold broad evidence, but your value is compressed reconnaissance: cite `path:line-range` for each finding and stop once evidence is sufficient.\n",
-    "CHANGES will almost always be \"None.\" for an explorer.\n\n"
-);
+/// Embedded default configurations for built-in agent roles.
+///
+/// Each TOML file lives in `crates/tui/assets/builtin-roles/` and is compiled
+/// into the binary via `include_str!`. At runtime these defaults are overlaid by
+/// `~/.deepseek/roles/<name>/role.toml` and `config.toml [agents.types.<name>]`
+/// entries, which take precedence.
+const BUILTIN_ROLE_EXPLORE: &str = include_str!("../../../assets/builtin-roles/explore.toml");
+const BUILTIN_ROLE_PLAN: &str = include_str!("../../../assets/builtin-roles/plan.toml");
+const BUILTIN_ROLE_REVIEW: &str = include_str!("../../../assets/builtin-roles/review.toml");
+const BUILTIN_ROLE_IMPLEMENTER: &str = include_str!("../../../assets/builtin-roles/implementer.toml");
+const BUILTIN_ROLE_VERIFIER: &str = include_str!("../../../assets/builtin-roles/verifier.toml");
+const BUILTIN_ROLE_CUSTOM: &str = include_str!("../../../assets/builtin-roles/custom.toml");
 
-const PLAN_AGENT_INTRO: &str = concat!(
-    "You are a planning agent. Produce a grounded, prioritized plan, not patches.\n",
-    "Read enough code to avoid guessing; each step names its artifact and verification.\n",
-    "Use update_plan/checklist_write for plan artifacts and explain key trade-offs.\n",
-    "CHANGES should list plan artifacts only, not future speculative edits.\n\n"
-);
-
-const REVIEW_AGENT_INTRO: &str = concat!(
-    "You are a code review agent. Stay read-only and report severity-scored findings.\n",
-    "Read the diff/files, grep sibling patterns/tests, then order EVIDENCE by severity.\n",
-    "Use BLOCKER/MAJOR/MINOR/NIT and include path:line-range plus suggested fix.\n",
-    "If no MAJOR+ issues exist, say so plainly in SUMMARY.\n",
-    "CHANGES will almost always be \"None.\" for a reviewer.\n\n"
-);
-
-const CUSTOM_AGENT_INTRO: &str = concat!(
-    "You are a custom agent with a narrowed tool registry.\n",
-    "Use only tools available at runtime; put missing capabilities under BLOCKERS and stop.\n",
-    "Stay tightly scoped to the assigned objective.\n\n"
-);
-
-const IMPLEMENTER_AGENT_INTRO: &str = concat!(
-    "You are an implementation agent. Land the assigned change with minimal surrounding edits.\n",
-    "Read target files before editing; prefer edit_file for narrow changes and apply_patch for hunks.\n",
-    "Run relevant verification after edit batches; write needed tests with the implementation.\n",
-    "CHANGES is load-bearing: list every modified file with a one-line why.\n\n"
-);
-
-const VERIFIER_AGENT_INTRO: &str = concat!(
-    "You are a verification agent. Run requested gates and stay read-only.\n",
-    "Report PASS/FAIL/FLAKY at the top of SUMMARY with exact command evidence.\n",
-    "Capture failing assertion and file:line; put obvious fixes under RISKS.\n",
-    "CHANGES will almost always be \"None.\" for a verifier.\n\n"
-);
+/// Returns the built-in default agent role configurations.
+///
+/// These are the base layer that `~/.deepseek/roles/` and
+/// `config.toml [agents.types]` overlay at runtime.
+pub fn builtin_role_configs() -> std::collections::HashMap<String, crate::config::AgentRoleConfig> {
+    let mut map = std::collections::HashMap::new();
+    for (name, toml_str) in [
+        ("explore", BUILTIN_ROLE_EXPLORE),
+        ("plan", BUILTIN_ROLE_PLAN),
+        ("review", BUILTIN_ROLE_REVIEW),
+        ("implementer", BUILTIN_ROLE_IMPLEMENTER),
+        ("verifier", BUILTIN_ROLE_VERIFIER),
+        ("custom", BUILTIN_ROLE_CUSTOM),
+    ] {
+        if let Ok(config) = toml::from_str::<crate::config::AgentRoleConfig>(toml_str) {
+            map.insert(name.to_string(), config);
+        }
+    }
+    map
+}
 
 // === Tests ===
 

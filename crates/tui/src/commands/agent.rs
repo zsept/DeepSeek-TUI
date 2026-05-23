@@ -29,12 +29,17 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
         ));
     }
 
-    // Check built-in types — these are child-agent only.
-    if crate::tools::agent::AgentRole::from_str(input).is_some() {
+    // Check if input matches a known agent role (general or from config).
+    if let Some(role) = crate::tools::agent::AgentRole::from_str(input) {
+        if matches!(role, crate::tools::agent::AgentRole::General) {
+            return CommandResult::message(
+                "'general' is the default parent role. Use /role reset to restore it."
+            );
+        }
         return CommandResult::message(format!(
-            "'{input}' is a built-in agent role, not a switchable parent role.\n\
+            "'{input}' is a sub-agent role, not a switchable parent role.\n\
              Use agent_open(agent_role=\"{input}\") to spawn it as a child agent.\n\
-             To switch the parent agent, define a custom type in roles/{input}/role.toml."
+             To use it as a parent role, define it in roles/{input}/role.toml or [agents.types.{input}] in config.toml."
         ));
     }
 
@@ -47,29 +52,23 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
 fn list_agents(app: &App) -> CommandResult {
     let mut out = String::from("Available agent types:\n\n");
 
-    // Built-in
-    let builtins: &[(&str, &str)] = &[
-        ("general",      "Full tool access, multi-step autonomous tasks"),
-        ("explore",      "Read-only codebase reconnaissance"),
-        ("plan",         "Architectural planning, no code edits"),
-        ("review",       "Code review with severity-scored findings"),
-        ("implementer",  "Focused code changes, minimal surrounding edits"),
-        ("verifier",     "Run tests and validation gates, report pass/fail"),
-        ("custom",       "Narrowed toolset defined at spawn time"),
-    ];
-    out.push_str("── Built-in (agent only) ──\n");
-    for (name, desc) in builtins {
-        out.push_str(&format!("  {name:<14} {desc}\n"));
-    }
+    // General is always available as the default.
+    out.push_str("── General ──\n");
+    out.push_str("  general         Full tool access, multi-step autonomous tasks\n");
 
-    // User-defined custom types
+    // All roles from config (built-in defaults + user overrides).
     if !app.agent_role_configs.is_empty() {
+        // Sort for stable output: general first, then alphabetical.
+        let mut names: Vec<&String> = app.agent_role_configs.keys().collect();
+        names.sort();
+
         out.push_str(&format!(
-            "\n── Custom ({}) ──\n",
+            "\n── Agent roles ({}) ──\n",
             app.agent_role_configs.len()
         ));
-        for (name, ct) in &app.agent_role_configs {
-            let marker = if app.active_agent_type.as_deref() == Some(name) {
+        for name in names {
+            let ct = &app.agent_role_configs[name];
+            let marker = if app.active_agent_type.as_deref() == Some(name.as_str()) {
                 " [active]"
             } else {
                 ""
@@ -79,16 +78,22 @@ fn list_agents(app: &App) -> CommandResult {
                 .unwrap_or_else(|| "full".to_string());
             let model = ct.model.as_deref().unwrap_or("inherit");
             let effort = ct.reasoning_effort.as_deref().unwrap_or("inherit");
+            // Show a one-line summary from the system prompt.
+            let summary = ct.system_prompt
+                .lines()
+                .next()
+                .map(|line| line.trim().trim_end_matches('.'))
+                .unwrap_or("");
             out.push_str(&format!(
-                "  {name}{marker}\n    model={model}  think={effort}  tools=[{tools}]\n\n"
+                "  {name:<14}{marker}\n    {summary}\n    model={model}  think={effort}  tools=[{tools}]\n\n"
             ));
         }
         if app.active_agent_type.is_some() {
             out.push_str("Use /role reset to restore default parent behavior.\n");
         }
-    } else {
-        out.push_str("\nNo custom types defined. Add them in [roles] to create switchable parent roles.\n");
     }
+
+    out.push_str("\nOverride built-in roles in ~/.deepseek/roles/<name>/role.toml or [agents.types.<name>] in config.toml.\n");
 
     CommandResult::message(out)
 }

@@ -1101,11 +1101,13 @@ mod tests {
         let mut app = create_test_app();
         let result = execute("/role 0 inspect the parser", &mut app);
         assert!(!result.is_error);
-        let Some(AppAction::SendMessage(message)) = result.action else {
-            panic!("expected SendMessage action");
-        };
-        assert!(message.contains("agent_open"));
-        assert!(message.contains("max_depth: 0"));
+        // Unknown role names now produce a help message instead of a tool
+        // instruction, since all recognized names are resolved from config.
+        let msg = result.message.as_deref().unwrap_or("");
+        assert!(
+            msg.contains("sub-agent role") || msg.contains("Unknown agent type"),
+            "expected role help message, got: {msg}"
+        );
     }
 
     #[test]

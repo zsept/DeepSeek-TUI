@@ -98,6 +98,7 @@ impl TodoList {
     }
 
     /// Add a new todo item.
+    #[allow(dead_code)]
     pub fn add(&mut self, content: String, status: TodoStatus) -> TodoItem {
         self.add_with_deps(content, status, Vec::new(), None)
     }

@@ -155,6 +155,8 @@ struct SidebarWorkChecklistItem {
     content: String,
     status: TodoStatus,
     depends_on: Vec<u32>,
+    /// Carried for future use; rendering reads `agent_name` instead.
+    #[allow(dead_code)]
     agent_id: Option<String>,
     /// Resolved agent name from `subagent_cache`.
     agent_name: Option<String>,

@@ -622,18 +622,31 @@ impl Renderable for ComposerWidget<'_> {
                 None
             };
 
+            let mode_color = match self.app.mode {
+                crate::tui::app::AppMode::Limited => self.app.theme.mode_agent,
+                crate::tui::app::AppMode::Yolo => self.app.theme.mode_yolo,
+                crate::tui::app::AppMode::Plan => self.app.theme.mode_plan,
+            };
+            let mut title_line = Line::from(Span::styled(
+                if self.app.is_history_search_active() {
+                    self.app
+                        .tr(crate::localization::MessageId::HistorySearchTitle)
+                } else if is_draft_mode {
+                    "Draft"
+                } else {
+                    "Composer"
+                },
+                Style::default().fg(palette::TEXT_MUTED),
+            ));
+            if !self.app.is_history_search_active() && !is_draft_mode {
+                let mode_label = self.app.mode.label();
+                title_line.push_span(Span::styled(" · ", Style::default().fg(palette::TEXT_DIM)));
+                title_line.push_span(
+                    Span::styled(mode_label, Style::default().fg(mode_color).bold()),
+                );
+            }
             let mut block = Block::default()
-                .title(Line::from(Span::styled(
-                    if self.app.is_history_search_active() {
-                        self.app
-                            .tr(crate::localization::MessageId::HistorySearchTitle)
-                    } else if is_draft_mode {
-                        "Draft"
-                    } else {
-                        "Composer"
-                    },
-                    Style::default().fg(palette::TEXT_MUTED),
-                )))
+                .title(title_line)
                 .borders(Borders::ALL)
                 .border_type(self.app.theme.border_type)
                 .border_style(Style::default().fg(border_color))

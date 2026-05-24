@@ -11,8 +11,8 @@
 use std::io::Write;
 use std::path::Path;
 
-use super::CommandResult;
 use crate::ui::app::{App, AppAction};
+use super::CommandResult;
 
 /// Share the current session as a web URL.
 pub fn share(app: &mut App, arg: Option<&str>) -> CommandResult {
@@ -57,11 +57,11 @@ fn do_share(app: &mut App) -> CommandResult {
              The session will be rendered as static HTML and uploaded to a GitHub Gist.\n\
              This requires the `gh` CLI to be installed and authenticated."
         ),
-        AppAction::ShareSession {
+        super::CommandAction::App(AppAction::ShareSession {
             history_len,
             model: model.clone(),
             mode: mode.to_string(),
-        },
+        }),
     )
 }
 

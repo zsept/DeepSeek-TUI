@@ -3,10 +3,7 @@
 use std::fmt::Write;
 use std::path::PathBuf;
 
-use crate::session_manager::create_saved_session_with_mode;
-use crate::ui::app::{App, AppAction};
-use crate::ui::history::{HistoryCell, history_cells_from_message};
-use crate::ui::session_picker::SessionPickerView;
+use deepseek_tui::session::manager::create_saved_session_with_mode;
 
 use super::CommandResult;
 
@@ -48,7 +45,7 @@ pub fn save(app: &mut App, path: Option<&str>) -> CommandResult {
                     CommandResult::message(format!(
                         "Session saved to {} (ID: {})",
                         save_path.display(),
-                        crate::session_manager::truncate_id(&session.metadata.id)
+                        deepseek_tui::session::manager::truncate_id(&session.metadata.id)
                     ))
                 }
                 Err(e) => CommandResult::error(format!("Failed to save session: {e}")),
@@ -77,7 +74,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
         }
     };
 
-    let session: crate::session_manager::SavedSession = match serde_json::from_str(&content) {
+    let session: deepseek_tui::session::manager::SavedSession = match serde_json::from_str(&content) {
         Ok(s) => s,
         Err(e) => {
             return CommandResult::error(format!("Failed to parse session file: {e}"));
@@ -115,7 +112,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
     app.current_session_id = Some(session.metadata.id.clone());
     app.session_artifacts = session.artifacts.clone();
     if let Some(sp) = session.system_prompt {
-        app.system_prompt = Some(crate::models::SystemPrompt::Text(sp));
+        app.system_prompt = Some(deepseek_models::SystemPrompt::Text(sp));
     }
     app.scroll_to_bottom();
 
@@ -123,7 +120,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
         format!(
             "Session loaded from {} (ID: {}, {} messages)",
             load_path.display(),
-            crate::session_manager::truncate_id(&session.metadata.id),
+            deepseek_tui::session::manager::truncate_id(&session.metadata.id),
             session.metadata.message_count
         ),
         crate::ui::app::AppAction::SyncSession {
@@ -171,8 +168,8 @@ pub fn export(app: &mut App, path: Option<&str>) -> CommandResult {
             HistoryCell::Assistant { content, .. } => ("**Assistant:**", content.clone()),
             HistoryCell::System { content } => ("*System:*", content.clone()),
             HistoryCell::Error { message, severity } => match severity {
-                crate::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
-                crate::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
+                deepseek_tui::core::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
+                deepseek_tui::core::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
                 _ => ("**Error:**", message.clone()),
             },
             HistoryCell::Thinking { content, .. } => ("*Thinking:*", content.clone()),
@@ -223,7 +220,7 @@ pub fn sessions(app: &mut App, arg: Option<&str>) -> CommandResult {
 
 /// Prune persisted sessions older than `<days>` from
 /// `~/.deepseek/sessions/`. Wraps
-/// [`crate::session_manager::SessionManager::prune_sessions_older_than`]
+/// [`deepseek_tui::session::manager::SessionManager::prune_sessions_older_than`]
 /// so users can run a safe cleanup without leaving the TUI. Skips
 /// the checkpoint subdirectory (the helper guarantees that already).
 fn prune(_app: &mut App, days_arg: Option<&str>) -> CommandResult {
@@ -244,7 +241,7 @@ fn prune(_app: &mut App, days_arg: Option<&str>) -> CommandResult {
         }
     };
 
-    let manager = match crate::session_manager::SessionManager::default_location() {
+    let manager = match deepseek_tui::session::manager::SessionManager::default_location() {
         Ok(m) => m,
         Err(err) => {
             return CommandResult::error(format!("could not open sessions directory: {err}"));
@@ -288,7 +285,7 @@ fn line_to_string(line: ratatui::text::Line<'static>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions, TurnCacheRecord};
     use std::time::Instant;
     use tempfile::TempDir;
@@ -339,9 +336,9 @@ mod tests {
         let mut app = create_test_app_with_tmpdir(&tmpdir);
         let save_path = tmpdir.path().join("artifact_session.json");
         app.session_artifacts
-            .push(crate::artifacts::ArtifactRecord {
+            .push(deepseek_tui::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: crate::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_tui::artifacts::ArtifactKind::ToolOutput,
                 session_id: "artifact-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -354,7 +351,7 @@ mod tests {
         let result = save(&mut app, Some(save_path.to_str().unwrap()));
 
         assert!(!result.is_error);
-        let saved: crate::session_manager::SavedSession =
+        let saved: deepseek_tui::session::manager::SavedSession =
             serde_json::from_str(&std::fs::read_to_string(save_path).unwrap()).unwrap();
         assert_eq!(saved.artifacts, app.session_artifacts);
     }
@@ -423,9 +420,9 @@ mod tests {
         let tmpdir = TempDir::new().unwrap();
         let mut app1 = create_test_app_with_tmpdir(&tmpdir);
         // Set up some state to save
-        app1.api_messages.push(crate::models::Message {
+        app1.api_messages.push(deepseek_models::Message {
             role: "user".to_string(),
-            content: vec![crate::models::ContentBlock::Text {
+            content: vec![deepseek_models::ContentBlock::Text {
                 text: "Hello".to_string(),
                 cache_control: None,
             }],
@@ -454,9 +451,9 @@ mod tests {
         let mut saved_app = create_test_app_with_tmpdir(&tmpdir);
         saved_app
             .session_artifacts
-            .push(crate::artifacts::ArtifactRecord {
+            .push(deepseek_tui::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: crate::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_tui::artifacts::ArtifactKind::ToolOutput,
                 session_id: "artifact-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -470,9 +467,9 @@ mod tests {
 
         let mut app = create_test_app_with_tmpdir(&tmpdir);
         app.session_artifacts
-            .push(crate::artifacts::ArtifactRecord {
+            .push(deepseek_tui::artifacts::ArtifactRecord {
                 id: "art_stale".to_string(),
-                kind: crate::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_tui::artifacts::ArtifactKind::ToolOutput,
                 session_id: "stale-session".to_string(),
                 tool_call_id: "stale".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -492,9 +489,9 @@ mod tests {
     fn load_resets_cache_history_and_cost() {
         let tmpdir = TempDir::new().unwrap();
         let mut saved_app = create_test_app_with_tmpdir(&tmpdir);
-        saved_app.api_messages.push(crate::models::Message {
+        saved_app.api_messages.push(deepseek_models::Message {
             role: "user".to_string(),
-            content: vec![crate::models::ContentBlock::Text {
+            content: vec![deepseek_models::ContentBlock::Text {
                 text: "checkpoint".to_string(),
                 cache_control: None,
             }],

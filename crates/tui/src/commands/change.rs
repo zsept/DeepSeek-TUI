@@ -10,8 +10,7 @@
 //! `SendMessage` action that asks the model to translate the changelog into
 //! the user's language.
 
-use crate::localization::{Locale, MessageId, tr};
-use crate::ui::app::{App, AppAction};
+use deepseek_tui::localization::{Locale, MessageId, tr};
 
 use super::CommandResult;
 
@@ -19,7 +18,7 @@ use super::CommandResult;
 /// If the changelog section exceeds this, we truncate and show a notice.
 /// 4096 chars is large enough for most version entries.
 const MAX_INLINE_CHANGELOG_CHARS: usize = 4096;
-const DEEPSEEK_TUI_CHANGELOG: &str = include_str!("../../CHANGELOG.md");
+const DEEPSEEK_TUI_CHANGELOG: &str = include_str!("../../../tui/CHANGELOG.md");
 
 /// Execute the `/change` command.
 ///
@@ -309,8 +308,8 @@ fn next_contentful_version_after(lines: &[&str], mut pos: usize) -> Option<Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::localization::Locale;
+    use deepseek_tui::config::Config;
+    use deepseek_tui::localization::Locale;
     use crate::ui::app::{App, TuiOptions};
     fn make_app(tmpdir: &tempfile::TempDir, locale: Locale, has_api_key: bool) -> App {
         let mut config = Config::default();

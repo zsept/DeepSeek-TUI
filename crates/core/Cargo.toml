@@ -9,11 +9,10 @@ description = "Core runtime boundaries for DeepSeek workspace architecture"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
-deepseek-agent = { path = "../agent", version = "0.8.38" }
+deepseek-agent = { path = "../engine/src/agent", version = "0.8.38" }
 deepseek-config = { path = "../config", version = "0.8.38" }
-deepseek-execpolicy = { path = "../execpolicy", version = "0.8.38" }
-deepseek-hooks = { path = "../hooks", version = "0.8.38" }
-deepseek-mcp = { path = "../mcp", version = "0.8.38" }
+deepseek-execpolicy = { path = "../engine/src/execpolicy", version = "0.8.38" }
+deepseek-mcp = { path = "../engine/src/mcp", version = "0.8.38" }
 deepseek-protocol = { path = "../protocol", version = "0.8.38" }
 deepseek-state = { path = "../state", version = "0.8.38" }
 deepseek-tools = { path = "../tools", version = "0.8.38" }

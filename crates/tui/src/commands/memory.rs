@@ -21,7 +21,6 @@ use std::fs;
 use std::path::Path;
 
 use super::CommandResult;
-use crate::ui::app::App;
 
 const MEMORY_USAGE: &str = "/memory [show|path|clear|edit|help]";
 
@@ -88,7 +87,7 @@ pub fn memory(app: &mut App, arg: Option<&str>) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

@@ -17,7 +17,6 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use crate::ui::app::{App, AppAction};
 
 use super::CommandResult;
 
@@ -175,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_try_dispatch_nonexistent_command() {
-        use crate::config::Config;
+        use deepseek_tui::config::Config;
         use crate::ui::app::TuiOptions;
 
         let options = TuiOptions {
@@ -303,7 +302,7 @@ mod tests {
 
     #[test]
     fn try_dispatch_uses_workspace_local_command() {
-        use crate::config::Config;
+        use deepseek_tui::config::Config;
         use crate::ui::app::TuiOptions;
 
         let tmp = TempDir::new().unwrap();

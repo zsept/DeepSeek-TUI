@@ -4,7 +4,6 @@ use std::fmt::Write;
 use std::io::Read;
 use std::path::Path;
 
-use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -213,7 +212,7 @@ fn extract_cargo_name(content: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

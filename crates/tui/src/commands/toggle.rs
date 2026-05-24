@@ -6,7 +6,6 @@
 //! toggle (cf. #657).
 
 use super::CommandResult;
-use crate::ui::app::{App, SidebarFocus};
 
 pub fn toggle(app: &mut App, arg: Option<&str>) -> CommandResult {
     let sub = arg

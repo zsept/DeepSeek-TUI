@@ -5,8 +5,7 @@
 //! surface; Ctrl+S in the composer is the corresponding push entry
 //! point.
 
-use crate::composer_stash;
-use crate::ui::app::App;
+use deepseek_tui::session::stash;
 
 use super::CommandResult;
 
@@ -31,7 +30,7 @@ pub fn stash(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn list() -> CommandResult {
-    let entries = composer_stash::load_stash();
+    let entries = deepseek_tui::session::stash::load_stash();
     if entries.is_empty() {
         return CommandResult::message(
             "Stash empty. Press Ctrl+S in the composer to park the current draft.",
@@ -53,7 +52,7 @@ fn list() -> CommandResult {
 }
 
 fn clear() -> CommandResult {
-    match composer_stash::clear_stash() {
+    match deepseek_tui::session::stash::clear_stash() {
         Ok(0) => CommandResult::message("Stash already empty — nothing to clear."),
         Ok(n) => CommandResult::message(format!("Cleared {n} parked draft(s) from the stash.")),
         Err(err) => CommandResult::error(format!("Failed to clear stash: {err}")),
@@ -61,7 +60,7 @@ fn clear() -> CommandResult {
 }
 
 fn pop(app: &mut App) -> CommandResult {
-    match composer_stash::pop_stash() {
+    match deepseek_tui::session::stash::pop_stash() {
         Some(entry) => {
             // Replace the current composer contents with the popped
             // draft. We don't merge — replacing is the predictable
@@ -74,7 +73,7 @@ fn pop(app: &mut App) -> CommandResult {
             // Tell the user how many drafts remain so they can plan
             // whether to keep popping or move on. Matches the
             // confirmation pattern used by the queue surface.
-            let remaining = composer_stash::load_stash().len();
+            let remaining = deepseek_tui::session::stash::load_stash().len();
             let suffix = match remaining {
                 0 => " (stash now empty)".to_string(),
                 1 => " (1 more parked)".to_string(),

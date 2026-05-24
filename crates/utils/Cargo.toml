@@ -1,0 +1,23 @@
+[package]
+name = "deepseek-utils"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared utilities for DeepSeek workspace architecture"
+
+[lib]
+path = "mod.rs"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+colored = "3.0.0"
+dirs.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3.16"

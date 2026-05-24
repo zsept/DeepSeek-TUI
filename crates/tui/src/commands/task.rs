@@ -1,6 +1,5 @@
 //! Task commands: add/list/show/cancel
 
-use crate::ui::app::{App, AppAction};
 
 use super::CommandResult;
 
@@ -43,7 +42,7 @@ pub fn task(_app: &mut App, args: Option<&str>) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 

@@ -1,6 +1,5 @@
 //! Note command: manage persistent workspace notes.
 
-use crate::ui::app::App;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -265,7 +264,7 @@ fn parse_note_index(rest: Option<&str>, note_count: usize, usage: &str) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::path::PathBuf;
     use tempfile::TempDir;

@@ -3,7 +3,6 @@
 use std::path::{Path, PathBuf};
 
 use super::CommandResult;
-use crate::ui::app::App;
 
 pub fn attach(app: &mut App, arg: Option<&str>) -> CommandResult {
     let Some(raw_path) = arg.map(str::trim).filter(|value| !value.is_empty()) else {
@@ -63,7 +62,7 @@ fn media_kind(path: &Path) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::TuiOptions;
     use tempfile::TempDir;
 

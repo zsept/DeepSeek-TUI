@@ -1167,28 +1167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deepseek-app-server"
-version = "0.8.38"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "deepseek-agent",
- "deepseek-config",
- "deepseek-core",
- "deepseek-execpolicy",
- "deepseek-hooks",
- "deepseek-mcp",
- "deepseek-protocol",
- "deepseek-state",
- "deepseek-tools",
- "serde",
- "serde_json",
- "tokio",
- "tower-http",
-]
-
-[[package]]
 name = "deepseek-config"
 version = "0.8.38"
 dependencies = [
@@ -1209,7 +1187,6 @@ dependencies = [
  "deepseek-agent",
  "deepseek-config",
  "deepseek-execpolicy",
- "deepseek-hooks",
  "deepseek-mcp",
  "deepseek-protocol",
  "deepseek-state",
@@ -1223,22 +1200,31 @@ name = "deepseek-execpolicy"
 version = "0.8.38"
 dependencies = [
  "anyhow",
+ "clap",
  "deepseek-protocol",
+ "dirs",
+ "fd-lock",
+ "multimap",
+ "regex",
  "serde",
+ "serde_json",
+ "shlex",
+ "starlark",
+ "thiserror 2.0.17",
+ "toml 0.9.11+spec-1.1.0",
 ]
 
 [[package]]
-name = "deepseek-hooks"
+name = "deepseek-lsp"
 version = "0.8.38"
 dependencies = [
  "anyhow",
  "async-trait",
- "chrono",
- "deepseek-protocol",
- "reqwest",
+ "futures-util",
  "serde",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1246,6 +1232,15 @@ name = "deepseek-mcp"
 version = "0.8.38"
 dependencies = [
  "anyhow",
+ "deepseek-models",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "deepseek-models"
+version = "0.8.38"
+dependencies = [
  "serde",
  "serde_json",
 ]
@@ -1254,6 +1249,18 @@ dependencies = [
 name = "deepseek-protocol"
 version = "0.8.38"
 dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "deepseek-sandbox"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "libc",
+ "reqwest",
  "serde",
  "serde_json",
 ]
@@ -1268,6 +1275,39 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "deepseek-skills"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dirs",
+ "flate2",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tar",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "deepseek-snapshot"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dirs",
+ "ignore",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
  "tracing",
 ]
 
@@ -1311,8 +1351,16 @@ dependencies = [
  "clap_complete",
  "colored",
  "crossterm 0.28.1",
+ "deepseek-execpolicy",
+ "deepseek-lsp",
+ "deepseek-mcp",
+ "deepseek-models",
+ "deepseek-sandbox",
  "deepseek-secrets",
+ "deepseek-skills",
+ "deepseek-snapshot",
  "deepseek-tools",
+ "deepseek-utils",
  "dirs",
  "dotenvy",
  "fd-lock",
@@ -1368,7 +1416,6 @@ dependencies = [
  "clap",
  "clap_complete",
  "deepseek-agent",
- "deepseek-app-server",
  "deepseek-config",
  "deepseek-execpolicy",
  "deepseek-mcp",
@@ -1385,8 +1432,91 @@ dependencies = [
 ]
 
 [[package]]
-name = "deepseek-tui-core"
+name = "deepseek-tui-legacy"
 version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "async-stream",
+ "async-trait",
+ "axum",
+ "base64",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "colored",
+ "crossterm 0.28.1",
+ "deepseek-execpolicy",
+ "deepseek-lsp",
+ "deepseek-mcp",
+ "deepseek-models",
+ "deepseek-sandbox",
+ "deepseek-secrets",
+ "deepseek-skills",
+ "deepseek-snapshot",
+ "deepseek-tools",
+ "deepseek-tui",
+ "deepseek-utils",
+ "dirs",
+ "dotenvy",
+ "fd-lock",
+ "flate2",
+ "futures-util",
+ "ignore",
+ "image",
+ "libc",
+ "multimap",
+ "pdf-extract",
+ "portable-pty",
+ "pretty_assertions",
+ "ratatui",
+ "regex",
+ "reqwest",
+ "rustyline 15.0.0",
+ "schemars",
+ "schemaui",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "shellexpand",
+ "shlex",
+ "similar",
+ "starlark",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tiny_http",
+ "tokio",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "tower-http",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+ "uuid",
+ "vt100",
+ "wait-timeout",
+ "windows",
+ "wiremock",
+ "zeroize",
+]
+
+[[package]]
+name = "deepseek-utils"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "colored",
+ "dirs",
+ "libc",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "deltae"

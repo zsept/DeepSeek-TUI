@@ -5,12 +5,10 @@
 use std::time::Instant;
 
 use super::CommandResult;
-use crate::client::{PromptInspection, inspect_prompt_for_request};
-use crate::compaction::estimate_input_tokens_conservative;
-use crate::localization::{Locale, MessageId, tr};
-use crate::models::{ContentBlock, MessageRequest, SystemPrompt, context_window_for_model};
-use crate::ui::app::{App, AppAction, TurnCacheRecord};
-use crate::ui::history::HistoryCell;
+use deepseek_tui::core::client::{PromptInspection, inspect_prompt_for_request};
+use deepseek_tui::core::compaction::estimate_input_tokens_conservative;
+use deepseek_tui::localization::{Locale, MessageId, tr};
+use deepseek_models::{ContentBlock, MessageRequest, SystemPrompt, context_window_for_model};
 
 fn token_count(value: Option<u32>, locale: Locale) -> String {
     value.map_or_else(
@@ -160,9 +158,9 @@ pub fn cache(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn format_cache_inspect(app: &mut App) -> String {
-    let reasoning_effort = if app.reasoning_effort == crate::ui::app::ReasoningEffort::Auto {
+    let reasoning_effort = if app.reasoning_effort == deepseek_tui::mode_types::ReasoningEffort::Auto {
         app.last_effective_reasoning_effort
-            .and_then(crate::ui::app::ReasoningEffort::api_value)
+            .and_then(deepseek_tui::mode_types::ReasoningEffort::api_value)
             .map(str::to_string)
     } else {
         app.reasoning_effort.api_value().map(str::to_string)
@@ -421,8 +419,8 @@ fn humanize_age(d: std::time::Duration) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::models::{ContentBlock, Message, SystemBlock};
+    use deepseek_tui::config::Config;
+    use deepseek_models::{ContentBlock, Message, SystemBlock};
     use crate::ui::app::{App, TuiOptions};
     use crate::ui::history::{GenericToolCell, ToolCell, ToolStatus};
     use std::path::PathBuf;
@@ -450,9 +448,9 @@ mod tests {
             initial_input: None,
         };
         let mut app = App::new(options, &Config::default());
-        app.ui_locale = crate::localization::Locale::En;
-        app.cost_currency = crate::pricing::CostCurrency::Usd;
-        app.api_provider = crate::config::ApiProvider::Deepseek;
+        app.ui_locale = deepseek_tui::localization::Locale::En;
+        app.cost_currency = deepseek_tui::pricing::CostCurrency::Usd;
+        app.api_provider = deepseek_tui::config::ApiProvider::Deepseek;
         app
     }
 
@@ -607,14 +605,14 @@ mod tests {
         ));
         app.api_messages.push(Message {
             role: "assistant".to_string(),
-            content: vec![crate::models::ContentBlock::Text {
+            content: vec![deepseek_models::ContentBlock::Text {
                 text: "Prior answer".to_string(),
                 cache_control: None,
             }],
         });
         app.api_messages.push(Message {
             role: "user".to_string(),
-            content: vec![crate::models::ContentBlock::Text {
+            content: vec![deepseek_models::ContentBlock::Text {
                 text: "First task".to_string(),
                 cache_control: None,
             }],
@@ -626,7 +624,7 @@ mod tests {
         assert!(first.contains("Static base prefix stability: no previous request"));
 
         if let Some(last) = app.api_messages.last_mut()
-            && let Some(crate::models::ContentBlock::Text { text, .. }) = last.content.first_mut()
+            && let Some(deepseek_models::ContentBlock::Text { text, .. }) = last.content.first_mut()
         {
             *text = "Second task".to_string();
         }
@@ -949,8 +947,8 @@ mod tests {
 
     #[test]
     fn test_patch_undo_requests_session_resync_after_restore() {
-        use crate::snapshot::SnapshotRepo;
-        use crate::test_support::lock_test_env;
+        use deepseek_snapshot::SnapshotRepo;
+        use deepseek_tui::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1017,8 +1015,8 @@ mod tests {
 
     #[test]
     fn test_patch_undo_walks_back_to_older_snapshot_on_repeat() {
-        use crate::snapshot::SnapshotRepo;
-        use crate::test_support::lock_test_env;
+        use deepseek_snapshot::SnapshotRepo;
+        use deepseek_tui::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1076,8 +1074,8 @@ mod tests {
 
     #[test]
     fn test_patch_undo_prunes_tool_turn_context() {
-        use crate::snapshot::SnapshotRepo;
-        use crate::test_support::lock_test_env;
+        use deepseek_snapshot::SnapshotRepo;
+        use deepseek_tui::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1207,8 +1205,8 @@ mod tests {
 
     #[test]
     fn test_patch_undo_prunes_pre_turn_context() {
-        use crate::snapshot::SnapshotRepo;
-        use crate::test_support::lock_test_env;
+        use deepseek_snapshot::SnapshotRepo;
+        use deepseek_tui::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1533,7 +1531,7 @@ fn tool_result_id(block: &ContentBlock) -> Option<&String> {
 pub fn patch_undo(app: &mut App) -> CommandResult {
     let workspace = app.workspace.clone();
 
-    let repo = match crate::snapshot::SnapshotRepo::open_or_init(&workspace) {
+    let repo = match deepseek_snapshot::SnapshotRepo::open_or_init(&workspace) {
         Ok(r) => r,
         Err(e) => {
             return CommandResult::error(format!(

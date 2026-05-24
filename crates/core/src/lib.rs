@@ -9,7 +9,24 @@ use deepseek_execpolicy::{
     AskForApproval, ExecApprovalRequirement, ExecPolicyContext, ExecPolicyDecision,
     ExecPolicyEngine,
 };
-use deepseek_hooks::{HookDispatcher, HookEvent};
+// Minimal no-op hooks stub (hooks subsystem removed during refactor)
+#[derive(Debug, Clone)]
+struct HookDispatcher;
+
+impl HookDispatcher {
+    async fn emit(&self, _event: HookEvent) {}
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+enum HookEvent {
+    ResponseStart { response_id: String },
+    ResponseEnd { response_id: String },
+    ResponseDelta { response_id: String, delta: String },
+    ToolLifecycle { response_id: String, tool_name: String, phase: String, payload: serde_json::Value },
+    ApprovalLifecycle { approval_id: String, phase: String, reason: Option<String> },
+    GenericEventFrame { frame: deepseek_protocol::EventFrame },
+}
 use deepseek_mcp::{
     McpManager, McpStartupCompleteEvent, McpStartupStatus as McpManagerStartupStatus,
 };

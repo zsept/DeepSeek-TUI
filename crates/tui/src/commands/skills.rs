@@ -2,19 +2,29 @@
 
 use std::fmt::Write;
 
-use crate::network_policy::NetworkPolicy;
-use crate::skills::SkillRegistry;
-use crate::skills::install::{
+use deepseek_tui::network_policy::{self, NetworkPolicy};
+
+fn to_skills_np(np: &network_policy::NetworkPolicy) -> deepseek_skills::network_policy::NetworkPolicy {
+    deepseek_skills::network_policy::NetworkPolicy {
+        default: match np.default {
+            network_policy::DecisionToml::Allow => deepseek_skills::network_policy::DecisionToml::Allow,
+            network_policy::DecisionToml::Deny => deepseek_skills::network_policy::DecisionToml::Deny,
+            network_policy::DecisionToml::Prompt => deepseek_skills::network_policy::DecisionToml::Prompt,
+        },
+        allow: np.allow.clone(),
+        deny: np.deny.clone(),
+    }
+}
+use deepseek_skills::SkillRegistry;
+use deepseek_skills::install::{
     self, DEFAULT_MAX_SIZE_BYTES, DEFAULT_REGISTRY_URL, InstallOutcome, InstallSource,
     RegistryFetchResult, SkillSyncOutcome, SyncResult, UpdateResult,
 };
-use crate::ui::app::App;
-use crate::ui::history::HistoryCell;
 
 use super::CommandResult;
 
 fn discover_visible_skills(app: &App) -> SkillRegistry {
-    crate::skills::discover_for_workspace_and_dir(&app.workspace, &app.skills_dir, &app.extra_skills_dirs)
+    deepseek_skills::discover_for_workspace_and_dir(&app.workspace, &app.skills_dir, &app.extra_skills_dirs)
 }
 
 fn render_skill_warnings(registry: &SkillRegistry) -> String {
@@ -79,7 +89,7 @@ pub fn list_skills(app: &mut App, arg: Option<&str>) -> CommandResult {
         return CommandResult::message(msg);
     }
 
-    let filtered: Vec<&crate::skills::Skill> = if let Some(p) = prefix.as_deref() {
+    let filtered: Vec<&deepseek_skills::Skill> = if let Some(p) = prefix.as_deref() {
         registry
             .list()
             .iter()
@@ -126,11 +136,11 @@ pub fn list_skills(app: &mut App, arg: Option<&str>) -> CommandResult {
         // their full description; bundled skills render compactly when
         // numerous so the whole menu fits in a typical terminal viewport.
         let (user_skills, bundled_skills): (
-            Vec<&&crate::skills::Skill>,
-            Vec<&&crate::skills::Skill>,
+            Vec<&&deepseek_skills::Skill>,
+            Vec<&&deepseek_skills::Skill>,
         ) = filtered
             .iter()
-            .partition(|s| !crate::skills::is_bundled_skill_name(&s.name));
+            .partition(|s| !deepseek_skills::is_bundled_skill_name(&s.name));
 
         if !user_skills.is_empty() {
             let _ = writeln!(output, "Your skills ({}):", user_skills.len());
@@ -276,7 +286,7 @@ fn install_skill(app: &mut App, spec: &str) -> CommandResult {
             source,
             &skills_dir,
             max_size,
-            &network,
+            &to_skills_np(&network),
             false,
             &registry_url,
         )
@@ -312,7 +322,7 @@ fn update_skill(app: &mut App, name: &str) -> CommandResult {
     let (network, max_size, registry_url) = installer_settings(app);
     let owned_name = name.to_string();
     let outcome = run_async(async move {
-        install::update_with_registry(&owned_name, &skills_dir, max_size, &network, &registry_url)
+        install::update_with_registry(&owned_name, &skills_dir, max_size, &to_skills_np(&network), &registry_url)
             .await
     });
 
@@ -369,7 +379,7 @@ fn trust_skill(app: &mut App, name: &str) -> CommandResult {
 /// List skills available in the configured curated registry.
 pub fn list_remote_skills(app: &mut App) -> CommandResult {
     let (network, _max_size, registry_url) = installer_settings(app);
-    let registry = run_async(async move { install::fetch_registry(&network, &registry_url).await });
+    let registry = run_async(async move { install::fetch_registry(&to_skills_np(&network), &registry_url).await });
     match registry {
         Ok(RegistryFetchResult::Loaded(doc)) => {
             if doc.skills.is_empty() {
@@ -410,7 +420,7 @@ fn sync_skills(app: &mut App) -> CommandResult {
     let cache_dir = install::default_cache_skills_dir();
 
     let result = run_async(async move {
-        install::sync_registry(&network, &registry_url, &cache_dir, max_size).await
+        install::sync_registry(&to_skills_np(&network), &registry_url, &cache_dir, max_size).await
     });
 
     match result {
@@ -474,7 +484,7 @@ fn sync_skills(app: &mut App) -> CommandResult {
 /// fails to parse, we fall back to defaults so the user still gets a
 /// network-gated install rather than a silent crash.
 fn installer_settings(_app: &App) -> (NetworkPolicy, u64, String) {
-    let cfg = crate::config::Config::load(None, None).unwrap_or_default();
+    let cfg = deepseek_tui::config::Config::load(None, None).unwrap_or_default();
     let network = cfg
         .network
         .clone()
@@ -593,7 +603,7 @@ fn format_registry_error(prefix: &str, err: &anyhow::Error) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::ffi::OsString;
     use tempfile::TempDir;
@@ -606,7 +616,7 @@ mod tests {
 
     impl IsolatedHome {
         fn new(tmpdir: &TempDir) -> Self {
-            let lock = crate::test_support::lock_test_env();
+            let lock = deepseek_tui::test_support::lock_test_env();
             let home = tmpdir.path().join("home");
             std::fs::create_dir_all(&home).unwrap();
             let home_prev = std::env::var_os("HOME");

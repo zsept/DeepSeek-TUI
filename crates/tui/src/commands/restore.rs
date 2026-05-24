@@ -8,8 +8,7 @@
 //! one-shot revert without a safety net.
 
 use super::CommandResult;
-use crate::snapshot::SnapshotRepo;
-use crate::ui::app::App;
+use deepseek_snapshot::SnapshotRepo;
 
 const LIST_LIMIT: usize = 10;
 
@@ -81,7 +80,7 @@ pub fn restore(app: &mut App, arg: Option<&str>) -> CommandResult {
     ))
 }
 
-fn format_listing(snapshots: &[crate::snapshot::Snapshot]) -> String {
+fn format_listing(snapshots: &[deepseek_snapshot::Snapshot]) -> String {
     let mut out = String::from("Recent snapshots (newest first; pass /restore <N> to revert):\n");
     for (i, s) in snapshots.iter().enumerate() {
         out.push_str(&format!(
@@ -101,8 +100,8 @@ fn short_sha(sha: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::test_support::lock_test_env;
+    use deepseek_tui::config::Config;
+    use deepseek_tui::test_support::lock_test_env;
     use crate::ui::app::TuiOptions;
     use std::sync::MutexGuard;
     use tempfile::TempDir;

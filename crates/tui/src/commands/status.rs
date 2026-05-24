@@ -4,10 +4,9 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use super::CommandResult;
-use crate::compaction::estimate_input_tokens_conservative;
-use crate::models::{LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, context_window_for_model};
-use crate::ui::app::App;
-use crate::utils::{display_path, estimate_message_chars};
+use deepseek_tui::core::compaction::estimate_input_tokens_conservative;
+use deepseek_models::{LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, context_window_for_model};
+use deepseek_tui::utils::{display_path, estimate_message_chars};
 
 /// Show a compact runtime status report for the current TUI session.
 pub fn status(app: &mut App) -> CommandResult {
@@ -171,8 +170,8 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
-    use crate::config::{ApiProvider, Config};
-    use crate::models::{ContentBlock, Message};
+    use deepseek_tui::config::{ApiProvider, Config};
+    use deepseek_models::{ContentBlock, Message};
     use crate::ui::app::TuiOptions;
     use crate::ui::history::HistoryCell;
 

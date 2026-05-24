@@ -11,13 +11,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::commands;
-use crate::config::{Config, StatusItem, normalize_model_name};
-use crate::localization::{normalize_configured_locale, resolve_locale};
-use crate::settings::Settings;
+use deepseek_tui::config::{Config, StatusItem, normalize_model_name};
+use deepseek_tui::localization::{normalize_configured_locale, resolve_locale};
+use deepseek_tui::config::settings::Settings;
+use deepseek_tui::mode_types::ApprovalMode;
 use crate::ui::app::{
     App, AppMode, ComposerDensity, ReasoningEffort, SidebarFocus, TranscriptSpacing,
 };
-use crate::ui::approval::ApprovalMode;
 
 #[cfg(feature = "web")]
 use schemaui::web::session::{ServeOptions, WebSessionBuilder, bind_session};
@@ -147,6 +147,16 @@ pub enum ApprovalModeValue {
     Auto,
     Suggest,
     Never,
+}
+
+impl From<crate::state::approval::ApprovalMode> for ApprovalModeValue {
+    fn from(mode: crate::state::approval::ApprovalMode) -> Self {
+        match mode {
+            crate::state::approval::ApprovalMode::Auto => ApprovalModeValue::Auto,
+            crate::state::approval::ApprovalMode::Suggest => ApprovalModeValue::Suggest,
+            crate::state::approval::ApprovalMode::Never => ApprovalModeValue::Never,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
@@ -778,7 +788,7 @@ impl UiThemeValue {
             .strip_prefix("file:")
             .map(|name| name.trim())
             .unwrap_or(value);
-        match crate::palette::normalize_theme_name(lookup) {
+        match deepseek_tui::palette::normalize_theme_name(lookup) {
             Some("system") => Ok(Self::System),
             Some("dark") => Ok(Self::Dark),
             Some("light") => Ok(Self::Light),
@@ -1061,8 +1071,8 @@ fn bool_str(value: bool) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::test_support::lock_test_env;
+    use deepseek_tui::config::Config;
+    use deepseek_tui::test_support::lock_test_env;
     use crate::ui::app::{App, TuiOptions};
     use std::fs;
     use std::path::PathBuf;
@@ -1236,7 +1246,7 @@ mcp_config_path = "disk-mcp.json"
         assert_eq!(app.model, "deepseek-v4-flash");
         assert_eq!(app.reasoning_effort, ReasoningEffort::Low);
         assert_eq!(app.mcp_config_path, PathBuf::from("session-mcp.json"));
-        assert_eq!(app.cost_currency, crate::pricing::CostCurrency::Cny);
+        assert_eq!(app.cost_currency, deepseek_tui::pricing::CostCurrency::Cny);
         assert_eq!(
             config.reasoning_effort.as_deref(),
             Some(ReasoningEffort::Low.as_setting())

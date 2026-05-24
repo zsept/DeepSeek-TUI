@@ -3,10 +3,8 @@
 use std::fmt::Write;
 use std::path::PathBuf;
 
-use crate::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
-use crate::localization::{MessageId, tr};
-use crate::ui::app::{App, AppAction, AppMode, ReasoningEffort};
-use crate::ui::views::{HelpView, ModalKind, AgentsView, agent_view_agents};
+use deepseek_tui::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
+use deepseek_tui::localization::{MessageId, tr};
 
 use super::CommandResult;
 
@@ -371,8 +369,8 @@ pub fn translate(app: &mut App) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::models::Message;
+    use deepseek_tui::config::Config;
+    use deepseek_models::Message;
     use crate::ui::app::{App, AppMode, TuiOptions, TurnCacheRecord};
     use crate::ui::history::HistoryCell;
     use std::path::PathBuf;
@@ -402,8 +400,8 @@ mod tests {
             initial_input: None,
         };
         let mut app = App::new(options, &Config::default());
-        app.ui_locale = crate::localization::Locale::En;
-        app.api_provider = crate::config::ApiProvider::Deepseek;
+        app.ui_locale = deepseek_tui::localization::Locale::En;
+        app.api_provider = deepseek_tui::config::ApiProvider::Deepseek;
         app
     }
 
@@ -492,9 +490,9 @@ mod tests {
         app.tool_log.push("test".to_string());
         app.current_session_id = Some("existing-session".to_string());
         app.session_artifacts
-            .push(crate::artifacts::ArtifactRecord {
+            .push(deepseek_tui::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: crate::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_tui::artifacts::ArtifactKind::ToolOutput,
                 session_id: "existing-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -811,7 +809,7 @@ mod tests {
 
     #[test]
     fn home_dashboard_localizes_in_zh_hans() {
-        use crate::localization::Locale;
+        use deepseek_tui::localization::Locale;
         let mut app = create_test_app();
         app.ui_locale = Locale::ZhHans;
         let result = home_dashboard(&mut app);

@@ -1,7 +1,6 @@
 //! `/rename` command — set a custom title for the current session.
 
-use crate::session_manager::{SessionManager, update_session};
-use crate::ui::app::App;
+use deepseek_tui::session::manager::{SessionManager, update_session};
 
 use super::CommandResult;
 
@@ -70,8 +69,8 @@ fn rename_with_manager(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::session_manager::{SessionManager, create_saved_session_with_mode};
+    use deepseek_tui::config::Config;
+    use deepseek_tui::session::manager::{SessionManager, create_saved_session_with_mode};
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

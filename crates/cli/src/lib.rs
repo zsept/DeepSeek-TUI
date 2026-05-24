@@ -2,7 +2,6 @@ mod metrics;
 mod update;
 
 use std::io::{self, Read, Write};
-use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -10,9 +9,6 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
 use deepseek_agent::ModelRegistry;
-use deepseek_app_server::{
-    AppServerOptions, run as run_app_server, run_stdio as run_app_server_stdio,
-};
 use deepseek_config::{
     CliRuntimeOverrides, ConfigStore, ProviderKind, ResolvedRuntimeOptions, RuntimeApiKeySource,
 };
@@ -168,8 +164,7 @@ Common forwarded flags:
     Thread(ThreadArgs),
     /// Evaluate sandbox/approval policy decisions.
     Sandbox(SandboxArgs),
-    /// Run the app-server transport.
-    AppServer(AppServerArgs),
+
     /// Generate shell completions.
     #[command(after_help = r#"Examples:
   Bash (current shell only):
@@ -390,18 +385,6 @@ impl From<ApprovalModeArg> for AskForApproval {
     }
 }
 
-#[derive(Debug, Args)]
-struct AppServerArgs {
-    #[arg(long, default_value = "127.0.0.1")]
-    host: String,
-    #[arg(long, default_value_t = 8787)]
-    port: u16,
-    #[arg(long)]
-    config: Option<PathBuf>,
-    #[arg(long, default_value_t = false)]
-    stdio: bool,
-}
-
 const MCP_SERVER_DEFINITIONS_KEY: &str = "mcp.server_definitions";
 
 pub fn run_cli() -> std::process::ExitCode {
@@ -516,7 +499,6 @@ fn run() -> Result<()> {
         Some(Commands::Model(args)) => run_model_command(args.command),
         Some(Commands::Thread(args)) => run_thread_command(args.command),
         Some(Commands::Sandbox(args)) => run_sandbox_command(args.command),
-        Some(Commands::AppServer(args)) => run_app_server_command(args),
         Some(Commands::Completion { shell }) => {
             let mut cmd = Cli::command();
             generate(shell, &mut cmd, "deepseek", &mut io::stdout());
@@ -1238,27 +1220,7 @@ fn run_sandbox_command(command: SandboxCommand) -> Result<()> {
     }
 }
 
-fn run_app_server_command(args: AppServerArgs) -> Result<()> {
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .context("failed to create tokio runtime")?;
-    if args.stdio {
-        return runtime.block_on(run_app_server_stdio(args.config));
-    }
-    let listen: SocketAddr = format!("{}:{}", args.host, args.port)
-        .parse()
-        .with_context(|| {
-            format!(
-                "invalid app-server listen address {}:{}",
-                args.host, args.port
-            )
-        })?;
-    runtime.block_on(run_app_server(AppServerOptions {
-        listen,
-        config_path: args.config,
-    }))
-}
+
 
 fn run_mcp_server_command(store: &mut ConfigStore) -> Result<()> {
     let persisted = load_mcp_server_definitions(store);
@@ -1860,7 +1822,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_sandbox_app_server_and_completion_matrix() {
+    fn parses_sandbox_and_completion_matrix() {
         let cli = parse_ok(&[
             "deepseek",
             "sandbox",
@@ -1877,30 +1839,6 @@ mod tests {
                     ask: ApprovalModeArg::OnFailure
                 }
             })) if command == "echo hello"
-        ));
-
-        let cli = parse_ok(&[
-            "deepseek",
-            "app-server",
-            "--host",
-            "0.0.0.0",
-            "--port",
-            "9999",
-        ]);
-        assert!(matches!(
-            cli.command,
-            Some(Commands::AppServer(AppServerArgs {
-                ref host,
-                port: 9999,
-                stdio: false,
-                ..
-            })) if host == "0.0.0.0"
-        ));
-
-        let cli = parse_ok(&["deepseek", "app-server", "--stdio"]);
-        assert!(matches!(
-            cli.command,
-            Some(Commands::AppServer(AppServerArgs { stdio: true, .. }))
         ));
 
         let cli = parse_ok(&["deepseek", "completion", "bash"]);
@@ -2619,7 +2557,6 @@ mod tests {
             "model",
             "thread",
             "sandbox",
-            "app-server",
             "completion",
             "metrics",
             "--provider",
@@ -2674,10 +2611,6 @@ mod tests {
                     "--output-format",
                     "stream-json",
                 ],
-            ),
-            (
-                "app-server",
-                vec!["--host", "--port", "--config", "--stdio"],
             ),
             (
                 "completion",

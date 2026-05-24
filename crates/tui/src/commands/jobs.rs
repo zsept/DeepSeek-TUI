@@ -1,6 +1,5 @@
 //! Shell job-center commands.
 
-use crate::ui::app::{App, AppAction, ShellJobAction};
 
 use super::CommandResult;
 
@@ -66,7 +65,7 @@ pub fn jobs(_app: &mut App, args: Option<&str>) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 

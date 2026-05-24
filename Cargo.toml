@@ -1,21 +1,25 @@
 [workspace]
 members = [
-    "crates/agent",
-    "crates/app-server",
     "crates/cli",
     "crates/config",
     "crates/core",
-    "crates/execpolicy",
-    "crates/hooks",
-    "crates/mcp",
+    "crates/engine",
+    "crates/engine/src/agent",
+    "crates/engine/src/execpolicy",
+    "crates/engine/src/mcp",
+    "crates/engine/src/sandbox",
+    "crates/engine/src/skills",
+    "crates/lsp",
+    "crates/models",
     "crates/protocol",
     "crates/secrets",
+    "crates/snapshot",
     "crates/state",
     "crates/tools",
     "crates/tui",
-    "crates/tui-core",
+    "crates/utils",
 ]
-default-members = ["crates/cli", "crates/app-server", "crates/tui"]
+default-members = ["crates/cli", "crates/tui"]
 resolver = "2"
 
 [workspace.package]

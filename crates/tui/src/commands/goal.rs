@@ -1,6 +1,5 @@
 //! /goal command — set a session objective with token budget and progress tracking.
 
-use crate::ui::app::App;
 
 use super::CommandResult;
 
@@ -84,7 +83,7 @@ fn parse_goal_budget(text: &str) -> (String, Option<u32>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use deepseek_tui::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::path::PathBuf;
 

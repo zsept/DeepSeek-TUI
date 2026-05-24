@@ -6,8 +6,7 @@
 //! actually configured in `~/.deepseek/config.toml`'s `[hooks]`
 //! table — the most-asked question once hooks start firing.
 
-use crate::hooks::HookEvent;
-use crate::ui::app::App;
+use deepseek_tui::hooks::HookEvent;
 
 use super::CommandResult;
 
@@ -89,7 +88,7 @@ fn list(app: &App) -> CommandResult {
         }
     ));
 
-    let mut by_event: std::collections::BTreeMap<&str, Vec<&crate::hooks::Hook>> =
+    let mut by_event: std::collections::BTreeMap<&str, Vec<&deepseek_tui::hooks::Hook>> =
         std::collections::BTreeMap::new();
     for hook in &config.hooks {
         by_event
@@ -109,7 +108,7 @@ fn list(app: &App) -> CommandResult {
             let bg = if hook.background { " [bg]" } else { "" };
             let timeout = format!("{}s", hook.timeout_secs);
             let condition = match &hook.condition {
-                None | Some(crate::hooks::HookCondition::Always) => String::new(),
+                None | Some(deepseek_tui::hooks::HookCondition::Always) => String::new(),
                 Some(c) => format!(" if {}", condition_summary(c)),
             };
             let cmd_preview = preview_command(&hook.command, 60);
@@ -142,16 +141,16 @@ fn event_label(event: HookEvent) -> &'static str {
     }
 }
 
-fn condition_summary(condition: &crate::hooks::HookCondition) -> String {
+fn condition_summary(condition: &deepseek_tui::hooks::HookCondition) -> String {
     match condition {
-        crate::hooks::HookCondition::Always => "always".to_string(),
-        crate::hooks::HookCondition::ToolName { name } => format!("tool_name=`{name}`"),
-        crate::hooks::HookCondition::ToolCategory { category } => {
+        deepseek_tui::hooks::HookCondition::Always => "always".to_string(),
+        deepseek_tui::hooks::HookCondition::ToolName { name } => format!("tool_name=`{name}`"),
+        deepseek_tui::hooks::HookCondition::ToolCategory { category } => {
             format!("tool_category=`{category}`")
         }
-        crate::hooks::HookCondition::Mode { mode } => format!("mode=`{mode}`"),
-        crate::hooks::HookCondition::ExitCode { code } => format!("exit_code={code}"),
-        crate::hooks::HookCondition::All { conditions } => format!(
+        deepseek_tui::hooks::HookCondition::Mode { mode } => format!("mode=`{mode}`"),
+        deepseek_tui::hooks::HookCondition::ExitCode { code } => format!("exit_code={code}"),
+        deepseek_tui::hooks::HookCondition::All { conditions } => format!(
             "all of [{}]",
             conditions
                 .iter()
@@ -159,7 +158,7 @@ fn condition_summary(condition: &crate::hooks::HookCondition) -> String {
                 .collect::<Vec<_>>()
                 .join(", ")
         ),
-        crate::hooks::HookCondition::Any { conditions } => format!(
+        deepseek_tui::hooks::HookCondition::Any { conditions } => format!(
             "any of [{}]",
             conditions
                 .iter()
@@ -187,7 +186,7 @@ fn preview_command(command: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hooks::{Hook, HookCondition};
+    use deepseek_tui::hooks::{Hook, HookCondition};
 
     #[test]
     fn preview_command_truncates_to_cap() {
@@ -307,7 +306,7 @@ mod tests {
         // `list(&App)` path is exercised once we hand the real
         // config in via `app.hooks.config()`; the formatter logic is
         // unit-tested standalone below.
-        let cfg = crate::hooks::HooksConfig {
+        let cfg = deepseek_tui::hooks::HooksConfig {
             enabled: false,
             hooks: vec![
                 Hook::new(HookEvent::SessionStart, "echo started").with_name("greet"),
@@ -317,7 +316,7 @@ mod tests {
                     })
                     .with_name("notify"),
             ],
-            ..crate::hooks::HooksConfig::default()
+            ..deepseek_tui::hooks::HooksConfig::default()
         };
 
         // Synthesize the expected sections by re-running the same

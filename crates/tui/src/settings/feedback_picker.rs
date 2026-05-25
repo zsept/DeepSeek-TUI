@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Padding, Paragraph, Widget},
 };
 
-use deepseek_tui::palette;
+use deepseek_engine::palette;
 use crate::ui::views::{CommandPaletteAction, ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone, Copy)]

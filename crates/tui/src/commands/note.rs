@@ -264,7 +264,7 @@ fn parse_note_index(rest: Option<&str>, note_count: usize, usage: &str) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::path::PathBuf;
     use tempfile::TempDir;

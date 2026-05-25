@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_try_dispatch_nonexistent_command() {
-        use deepseek_tui::config::Config;
+        use deepseek_engine::config::Config;
         use crate::ui::app::TuiOptions;
 
         let options = TuiOptions {
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn try_dispatch_uses_workspace_local_command() {
-        use deepseek_tui::config::Config;
+        use deepseek_engine::config::Config;
         use crate::ui::app::TuiOptions;
 
         let tmp = TempDir::new().unwrap();

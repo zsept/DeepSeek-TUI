@@ -25,7 +25,7 @@ use ratatui::{
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_tui::palette;
+use deepseek_engine::palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 /// Footer hint shown along the bottom border of the pager. Kept short so it

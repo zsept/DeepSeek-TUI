@@ -83,7 +83,7 @@ fn parse_goal_budget(text: &str) -> (String, Option<u32>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::path::PathBuf;
 

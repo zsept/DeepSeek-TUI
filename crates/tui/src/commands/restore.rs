@@ -100,8 +100,8 @@ fn short_sha(sha: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
-    use deepseek_tui::test_support::lock_test_env;
+    use deepseek_engine::config::Config;
+    use deepseek_engine::test_support::lock_test_env;
     use crate::ui::app::TuiOptions;
     use std::sync::MutexGuard;
     use tempfile::TempDir;

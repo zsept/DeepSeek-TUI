@@ -3,8 +3,8 @@
 use std::fmt::Write;
 use std::path::PathBuf;
 
-use deepseek_tui::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
-use deepseek_tui::localization::{MessageId, tr};
+use deepseek_engine::config::{COMMON_DEEPSEEK_MODELS, normalize_model_name_for_provider};
+use deepseek_engine::localization::{MessageId, tr};
 
 use super::CommandResult;
 
@@ -369,7 +369,7 @@ pub fn translate(app: &mut App) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use deepseek_models::Message;
     use crate::ui::app::{App, AppMode, TuiOptions, TurnCacheRecord};
     use crate::ui::history::HistoryCell;
@@ -400,8 +400,8 @@ mod tests {
             initial_input: None,
         };
         let mut app = App::new(options, &Config::default());
-        app.ui_locale = deepseek_tui::localization::Locale::En;
-        app.api_provider = deepseek_tui::config::ApiProvider::Deepseek;
+        app.ui_locale = deepseek_engine::localization::Locale::En;
+        app.api_provider = deepseek_engine::config::ApiProvider::Deepseek;
         app
     }
 
@@ -490,9 +490,9 @@ mod tests {
         app.tool_log.push("test".to_string());
         app.current_session_id = Some("existing-session".to_string());
         app.session_artifacts
-            .push(deepseek_tui::artifacts::ArtifactRecord {
+            .push(deepseek_engine::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: deepseek_tui::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_engine::artifacts::ArtifactKind::ToolOutput,
                 session_id: "existing-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn home_dashboard_localizes_in_zh_hans() {
-        use deepseek_tui::localization::Locale;
+        use deepseek_engine::localization::Locale;
         let mut app = create_test_app();
         app.ui_locale = Locale::ZhHans;
         let result = home_dashboard(&mut app);

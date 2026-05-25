@@ -4,15 +4,15 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use super::CommandResult;
-use deepseek_tui::core::client::DeepSeekClient;
-use deepseek_tui::config::{COMMON_DEEPSEEK_MODELS, clear_api_key, normalize_model_name_for_provider};
+use deepseek_engine::core::client::DeepSeekClient;
+use deepseek_engine::config::{COMMON_DEEPSEEK_MODELS, clear_api_key, normalize_model_name_for_provider};
 use crate::config_ui::{ConfigUiMode, parse_mode};
-use deepseek_tui::core::llm_client::LlmClient;
-use deepseek_tui::localization::resolve_locale;
+use deepseek_engine::core::llm_client::LlmClient;
+use deepseek_engine::localization::resolve_locale;
 use deepseek_models::{ContentBlock, Message, MessageRequest, MessageResponse, SystemPrompt};
-use deepseek_tui::config::settings::Settings;
+use deepseek_engine::config::settings::Settings;
 use crate::ui::app::{App, AppAction, AppMode, OnboardingState, ReasoningEffort, SidebarFocus, VimMode};
-use deepseek_tui::mode_types::ApprovalMode;
+use deepseek_engine::mode_types::ApprovalMode;
 use anyhow::Result;
 
 /// Open the interactive config editor.
@@ -81,14 +81,14 @@ pub fn config_command(app: &mut App, arg: Option<&str>) -> CommandResult {
 /// Show the current value of a single setting.
 fn show_single_setting(app: &App, key: &str) -> CommandResult {
     let key = key.to_lowercase();
-    fn locale_display(l: deepseek_tui::localization::Locale) -> &'static str {
+    fn locale_display(l: deepseek_engine::localization::Locale) -> &'static str {
         match l {
-            deepseek_tui::localization::Locale::En => "en",
-            deepseek_tui::localization::Locale::ZhHans => "zh-Hans",
-            deepseek_tui::localization::Locale::ZhHant => "zh-Hant",
-            deepseek_tui::localization::Locale::Ja => "ja",
-            deepseek_tui::localization::Locale::PtBr => "pt-BR",
-            deepseek_tui::localization::Locale::Es419 => "es-419",
+            deepseek_engine::localization::Locale::En => "en",
+            deepseek_engine::localization::Locale::ZhHans => "zh-Hans",
+            deepseek_engine::localization::Locale::ZhHant => "zh-Hant",
+            deepseek_engine::localization::Locale::Ja => "ja",
+            deepseek_engine::localization::Locale::PtBr => "pt-BR",
+            deepseek_engine::localization::Locale::Es419 => "es-419",
         }
     }
     fn density_display(d: crate::ui::app::ComposerDensity) -> &'static str {
@@ -122,10 +122,10 @@ fn show_single_setting(app: &App, key: &str) -> CommandResult {
         "approval_mode" | "approval" => Some(app.approval_mode.label().to_string()),
         "locale" | "language" => Some(locale_display(app.ui_locale).to_string()),
         "theme" | "ui_theme" => {
-            Some(deepseek_tui::palette::theme_label_for_mode(app.theme.mode).to_string())
+            Some(deepseek_engine::palette::theme_label_for_mode(app.theme.mode).to_string())
         }
         "background_color" | "background" | "bg" => {
-            deepseek_tui::palette::hex_rgb_string(app.theme.surface_bg)
+            deepseek_engine::palette::hex_rgb_string(app.theme.surface_bg)
                 .or_else(|| Some("(default)".to_string()))
         }
         "auto_compact" | "compact" => {
@@ -209,8 +209,8 @@ fn show_single_setting(app: &App, key: &str) -> CommandResult {
         ),
         "cost_currency" | "currency" => Some(
             match app.cost_currency {
-                deepseek_tui::pricing::CostCurrency::Usd => "usd",
-                deepseek_tui::pricing::CostCurrency::Cny => "cny",
+                deepseek_engine::pricing::CostCurrency::Usd => "usd",
+                deepseek_engine::pricing::CostCurrency::Cny => "cny",
             }
             .to_string(),
         ),
@@ -285,7 +285,7 @@ pub fn verbose(app: &mut App, arg: Option<&str>) -> CommandResult {
 /// untouched.
 ///
 /// Returns the path written so the caller can surface it in a status toast.
-pub fn persist_status_items(items: &[deepseek_tui::config::StatusItem]) -> anyhow::Result<PathBuf> {
+pub fn persist_status_items(items: &[deepseek_engine::config::StatusItem]) -> anyhow::Result<PathBuf> {
     use anyhow::Context;
     use std::fs;
 
@@ -516,8 +516,8 @@ pub fn set_config_value(app: &mut App, key: &str, value: &str, persist: bool) ->
             app.needs_redraw = true;
         }
         "cost_currency" | "currency" => {
-            app.cost_currency = deepseek_tui::pricing::CostCurrency::from_setting(&settings.cost_currency)
-                .unwrap_or(deepseek_tui::pricing::CostCurrency::Usd);
+            app.cost_currency = deepseek_engine::pricing::CostCurrency::from_setting(&settings.cost_currency)
+                .unwrap_or(deepseek_engine::pricing::CostCurrency::Usd);
             app.needs_redraw = true;
         }
         "composer_density" | "composer" => {
@@ -734,7 +734,7 @@ pub fn trust(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn trust_status(workspace: &Path, app: &App, force_paths: bool) -> CommandResult {
-    let trust = deepseek_tui::workspace_trust::WorkspaceTrust::load_for(workspace);
+    let trust = deepseek_engine::workspace_trust::WorkspaceTrust::load_for(workspace);
     let mut lines = Vec::new();
     lines.push(format!(
         "Workspace trust mode: {}",
@@ -775,7 +775,7 @@ fn trust_add(workspace: &Path, raw: &str) -> CommandResult {
             path.display()
         ));
     }
-    match deepseek_tui::workspace_trust::add(workspace, &path) {
+    match deepseek_engine::workspace_trust::add(workspace, &path) {
         Ok(stored) => CommandResult::message(format!(
             "Added to trust list for this workspace: {}",
             stored.display()
@@ -789,7 +789,7 @@ fn trust_remove(workspace: &Path, raw: &str) -> CommandResult {
         return CommandResult::error("Usage: /trust remove <path>");
     }
     let path = PathBuf::from(expand_tilde(raw));
-    match deepseek_tui::workspace_trust::remove(workspace, &path) {
+    match deepseek_engine::workspace_trust::remove(workspace, &path) {
         Ok(true) => CommandResult::message(format!("Removed from trust list: {}", path.display())),
         Ok(false) => CommandResult::message(format!("Not in trust list: {}", path.display())),
         Err(err) => CommandResult::error(format!("Failed to update trust list: {err}")),
@@ -1047,7 +1047,7 @@ pub fn normalize_auto_route_effort(effort: ReasoningEffort) -> ReasoningEffort {
 }
 
 pub async fn resolve_auto_route_with_flash(
-    config: &deepseek_tui::config::Config,
+    config: &deepseek_engine::config::Config,
     latest_request: &str,
     recent_context: &str,
     selected_model_mode: &str,
@@ -1084,7 +1084,7 @@ fn auto_route_from_heuristic(
 ) -> AutoRouteSelection {
     AutoRouteSelection {
         model: heuristic.model,
-        reasoning_effort: Some(normalize_auto_route_effort(deepseek_tui::auto_reasoning::select(
+        reasoning_effort: Some(normalize_auto_route_effort(deepseek_engine::auto_reasoning::select(
             false,
             latest_request,
         ))),
@@ -1093,7 +1093,7 @@ fn auto_route_from_heuristic(
 }
 
 async fn auto_route_flash_recommendation(
-    config: &deepseek_tui::config::Config,
+    config: &deepseek_engine::config::Config,
     latest_request: &str,
     recent_context: &str,
     selected_model_mode: &str,
@@ -1247,10 +1247,10 @@ pub fn logout(app: &mut App) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
-    use deepseek_tui::test_support::lock_test_env;
+    use deepseek_engine::config::Config;
+    use deepseek_engine::test_support::lock_test_env;
     use crate::ui::app::{App, TuiOptions};
-    use deepseek_tui::mode_types::ApprovalMode;
+    use deepseek_engine::mode_types::ApprovalMode;
     use std::env;
     use std::ffi::OsString;
     use std::fs;
@@ -1267,7 +1267,7 @@ mod tests {
 
     impl EnvGuard {
         fn new(home: &Path) -> Self {
-            let lock = deepseek_tui::test_support::lock_test_env();
+            let lock = deepseek_engine::test_support::lock_test_env();
             let home_str = OsString::from(home.as_os_str());
             let config_path = home.join(".deepseek").join("config.toml");
             let config_str = OsString::from(config_path.as_os_str());
@@ -1681,14 +1681,14 @@ mod tests {
 
     #[test]
     fn config_auto_cost_saving_defaults_to_false() {
-        let cfg = deepseek_tui::config::Config::default();
+        let cfg = deepseek_engine::config::Config::default();
         assert!(!cfg.auto_cost_saving());
     }
 
     #[test]
     fn config_auto_cost_saving_reads_table() {
-        let cfg = deepseek_tui::config::Config {
-            auto: Some(deepseek_tui::config::AutoConfig {
+        let cfg = deepseek_engine::config::Config {
+            auto: Some(deepseek_engine::config::AutoConfig {
                 cost_saving: Some(true),
             }),
             ..Default::default()
@@ -1740,7 +1740,7 @@ mod tests {
         let msg = result.message.unwrap();
 
         assert_eq!(msg, "cost_currency = cny (saved)");
-        assert_eq!(app.cost_currency, deepseek_tui::pricing::CostCurrency::Cny);
+        assert_eq!(app.cost_currency, deepseek_engine::pricing::CostCurrency::Cny);
 
         let settings_path = Settings::path().unwrap();
         let saved = fs::read_to_string(settings_path).unwrap();
@@ -1765,7 +1765,7 @@ mod tests {
         let result = theme(&mut app, Some("dark"));
 
         assert_eq!(result.message.unwrap(), "theme = dark (saved)");
-        assert_eq!(app.theme.mode, deepseek_tui::palette::PaletteMode::Dark);
+        assert_eq!(app.theme.mode, deepseek_engine::palette::PaletteMode::Dark);
         assert!(app.needs_redraw);
     }
 
@@ -1788,7 +1788,7 @@ mod tests {
         let msg = result.message.unwrap();
 
         assert_eq!(msg, "theme = dark (saved)");
-        assert_eq!(app.theme.mode, deepseek_tui::palette::PaletteMode::Dark);
+        assert_eq!(app.theme.mode, deepseek_engine::palette::PaletteMode::Dark);
 
         let settings_path = Settings::path().unwrap();
         let saved = fs::read_to_string(settings_path).unwrap();
@@ -1937,9 +1937,9 @@ mod tests {
         let _guard = EnvGuard::new(&temp_root);
 
         let items = vec![
-            deepseek_tui::config::StatusItem::Mode,
-            deepseek_tui::config::StatusItem::Model,
-            deepseek_tui::config::StatusItem::Cost,
+            deepseek_engine::config::StatusItem::Mode,
+            deepseek_engine::config::StatusItem::Model,
+            deepseek_engine::config::StatusItem::Cost,
         ];
 
         let path = persist_status_items(&items).expect("persist should succeed");
@@ -1976,7 +1976,7 @@ mod tests {
         )
         .unwrap();
 
-        let written = persist_status_items(&[deepseek_tui::config::StatusItem::Mode])
+        let written = persist_status_items(&[deepseek_engine::config::StatusItem::Mode])
             .expect("persist should succeed");
         let body = fs::read_to_string(&written).expect("written file should be readable");
         assert!(

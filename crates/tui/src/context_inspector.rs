@@ -3,13 +3,13 @@
 use std::collections::HashSet;
 use std::fmt::Write;
 
-use deepseek_tui::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
 use deepseek_models::{
     LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, SystemPrompt, context_window_for_model,
 };
-use deepseek_tui::session::manager::SessionContextReference;
+use deepseek_engine::session::manager::SessionContextReference;
 use crate::app::{App, ToolDetailRecord};
-use deepseek_tui::utils::estimate_message_chars;
+use deepseek_engine::utils::estimate_message_chars;
 
 /// Marker used by per-turn working-set metadata. Replicated here so the
 /// context inspector can distinguish stable prompt blocks from volatile
@@ -97,7 +97,7 @@ pub fn build_context_inspector_text(app: &App) -> String {
     let _ = writeln!(
         out,
         "Workspace: {}",
-        deepseek_tui::utils::display_path(&app.workspace)
+        deepseek_engine::utils::display_path(&app.workspace)
     );
     if let Some(session_id) = app.current_session_id.as_deref() {
         let _ = writeln!(out, "Session: {}", session_id);
@@ -405,9 +405,9 @@ fn short_tool_id(id: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use deepseek_models::{ContentBlock, Message};
-    use deepseek_tui::session::manager::SessionContextReference;
+    use deepseek_engine::session::manager::SessionContextReference;
     use crate::app::TuiOptions;
     use crate::files::file_mention::{
         ContextReference, ContextReferenceKind, ContextReferenceSource,

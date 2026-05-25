@@ -13,12 +13,12 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::commands;
-use deepseek_tui::localization::Locale;
-use deepseek_tui::palette;
+use deepseek_engine::localization::Locale;
+use deepseek_engine::palette;
 use deepseek_skills::SkillRegistry;
-use deepseek_tui::tools::spec::ApprovalRequirement;
-use deepseek_tui::tools::spec::ToolCapability;
-use deepseek_tui::tools::{ToolContext, ToolRegistryBuilder};
+use deepseek_engine::tools::spec::ApprovalRequirement;
+use deepseek_engine::tools::spec::ToolCapability;
+use deepseek_engine::tools::{ToolContext, ToolRegistryBuilder};
 use crate::ui::views::{CommandPaletteAction, ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

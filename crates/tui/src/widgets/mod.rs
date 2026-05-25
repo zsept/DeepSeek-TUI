@@ -22,8 +22,8 @@ pub use renderable::Renderable;
 
 use std::time::Duration;
 
-use deepseek_tui::localization::Locale;
-use deepseek_tui::palette;
+use deepseek_engine::localization::Locale;
+use deepseek_engine::palette;
 use crate::app::{App, AppMode, ComposerDensity, VimMode};
 use crate::state::approval::{
     ApprovalRequest, ApprovalView, ElevationOption, ElevationRequest, RiskLevel, ToolCategory,
@@ -31,7 +31,7 @@ use crate::state::approval::{
 use crate::render::history::HistoryCell;
 use crate::state::scrolling::TranscriptLineMeta;
 use crate::commands;
-use deepseek_tui::config::{ApiProvider, model_completion_names_for_provider};
+use deepseek_engine::config::{ApiProvider, model_completion_names_for_provider};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -545,7 +545,7 @@ impl Renderable for ComposerWidget<'_> {
                     Span::styled(
                         format!(
                             " {}  ",
-                            self.app.tr(deepseek_tui::localization::MessageId::HistoryHintMove)
+                            self.app.tr(deepseek_engine::localization::MessageId::HistoryHintMove)
                         ),
                         Style::default().fg(palette::TEXT_MUTED),
                     ),
@@ -553,13 +553,13 @@ impl Renderable for ComposerWidget<'_> {
                         format!(
                             "{}  ",
                             self.app
-                                .tr(deepseek_tui::localization::MessageId::HistoryHintAccept)
+                                .tr(deepseek_engine::localization::MessageId::HistoryHintAccept)
                         ),
                         Style::default().fg(palette::TEXT_MUTED),
                     ),
                     Span::styled(
                         self.app
-                            .tr(deepseek_tui::localization::MessageId::HistoryHintRestore),
+                            .tr(deepseek_engine::localization::MessageId::HistoryHintRestore),
                         Style::default().fg(palette::TEXT_MUTED),
                     ),
                 ]))
@@ -628,7 +628,7 @@ impl Renderable for ComposerWidget<'_> {
             let mut title_line = Line::from(Span::styled(
                 if self.app.is_history_search_active() {
                     self.app
-                        .tr(deepseek_tui::localization::MessageId::HistorySearchTitle)
+                        .tr(deepseek_engine::localization::MessageId::HistorySearchTitle)
                 } else if is_draft_mode {
                     "Draft"
                 } else {
@@ -677,10 +677,10 @@ impl Renderable for ComposerWidget<'_> {
         if input_text.is_empty() {
             let placeholder = if self.app.is_history_search_active() {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::HistorySearchPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::HistorySearchPlaceholder)
             } else {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::ComposerPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::ComposerPlaceholder)
             };
             input_lines.push(Line::from(Span::styled(
                 placeholder,
@@ -702,10 +702,10 @@ impl Renderable for ComposerWidget<'_> {
         let visual_rows = if input_text.is_empty() {
             let placeholder = if self.app.is_history_search_active() {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::HistorySearchPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::HistorySearchPlaceholder)
             } else {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::ComposerPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::ComposerPlaceholder)
             };
             placeholder_visual_lines_for(placeholder, content_width)
         } else {
@@ -722,7 +722,7 @@ impl Renderable for ComposerWidget<'_> {
             if history_search_matches.is_empty() {
                 lines.push(Line::from(Span::styled(
                     self.app
-                        .tr(deepseek_tui::localization::MessageId::HistoryNoMatches),
+                        .tr(deepseek_engine::localization::MessageId::HistoryNoMatches),
                     Style::default().fg(palette::TEXT_MUTED),
                 )));
             } else {
@@ -1007,10 +1007,10 @@ impl Renderable for ComposerWidget<'_> {
         let visual_rows = if input_text.is_empty() {
             let placeholder = if self.app.is_history_search_active() {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::HistorySearchPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::HistorySearchPlaceholder)
             } else {
                 self.app
-                    .tr(deepseek_tui::localization::MessageId::ComposerPlaceholder)
+                    .tr(deepseek_engine::localization::MessageId::ComposerPlaceholder)
             };
             placeholder_visual_lines_for(placeholder, content_width)
         } else {
@@ -1169,7 +1169,7 @@ impl Renderable for ApprovalWidget<'_> {
         let params_str = self.request.params_display();
         let params_width = card_area.width.saturating_sub(14) as usize;
         let params_truncated =
-            deepseek_tui::utils::truncate_with_ellipsis(&params_str, params_width.max(20), "...");
+            deepseek_engine::utils::truncate_with_ellipsis(&params_str, params_width.max(20), "...");
         lines.push(Line::from(vec![
             Span::raw("  "),
             Span::styled(
@@ -1638,7 +1638,7 @@ impl Renderable for ElevationWidget<'_> {
 
         // Show command if it's a shell command
         if let Some(ref command) = self.request.command {
-            let cmd_display = deepseek_tui::utils::truncate_with_ellipsis(command, 45, "...");
+            let cmd_display = deepseek_engine::utils::truncate_with_ellipsis(command, 45, "...");
             lines.push(Line::from(vec![
                 Span::raw("  Cmd:  "),
                 Span::styled(cmd_display, Style::default().fg(palette::TEXT_MUTED)),
@@ -1931,7 +1931,7 @@ fn build_empty_state_lines(app: &App, area: Rect) -> Vec<Line<'static>> {
         return Vec::new();
     }
 
-    let workspace = deepseek_tui::utils::display_path(&app.workspace);
+    let workspace = deepseek_engine::utils::display_path(&app.workspace);
     let body_width = usize::from(area.width.saturating_sub(8).clamp(24, 72));
     let left_padding = usize::from(area.width.saturating_sub(body_width as u16) / 2);
     let inset = " ".repeat(left_padding);
@@ -2046,7 +2046,7 @@ pub(crate) fn slash_completion_hints(
     input: &str,
     limit: usize,
     cached_skills: &[(String, String)],
-    locale: deepseek_tui::localization::Locale,
+    locale: deepseek_engine::localization::Locale,
     workspace: Option<&std::path::Path>,
     api_provider: ApiProvider,
 ) -> Vec<SlashMenuEntry> {
@@ -2289,9 +2289,9 @@ mod tests {
         cursor_row_col, layout_input, pad_lines_to_bottom, placeholder_visual_lines,
         should_render_empty_state, slash_completion_hints, wrap_input_lines, wrap_text,
     };
-    use deepseek_tui::config::{ApiProvider, Config};
-    use deepseek_tui::localization::Locale;
-    use deepseek_tui::palette;
+    use deepseek_engine::config::{ApiProvider, Config};
+    use deepseek_engine::localization::Locale;
+    use deepseek_engine::palette;
     use crate::app::{App, ComposerDensity, TuiOptions};
     use crate::render::history::{GenericToolCell, HistoryCell, ToolCell, ToolStatus};
     use crate::state::scrolling::TranscriptScroll;
@@ -3214,7 +3214,7 @@ mod tests {
     /// redraw).
     #[test]
     fn chat_widget_renders_cleanly_after_resize_during_refreshing_context() {
-        use deepseek_tui::capacity::coherence::CoherenceState;
+        use deepseek_engine::capacity::coherence::CoherenceState;
 
         let mut app = create_test_app();
         for i in 0..30 {

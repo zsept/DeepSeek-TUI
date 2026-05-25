@@ -4,7 +4,7 @@
 //! `/provider` with no args opens the picker modal (#52). `/provider <name>`
 //! keeps the v0.6.6 CLI form for muscle-memory + scripted use.
 
-use deepseek_tui::config::{ApiProvider, normalize_model_name};
+use deepseek_engine::config::{ApiProvider, normalize_model_name};
 
 use super::CommandResult;
 
@@ -64,7 +64,7 @@ fn expand_model_alias(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use crate::ui::app::TuiOptions;
     use std::path::PathBuf;
 
@@ -91,8 +91,8 @@ mod tests {
             initial_input: None,
         };
         let mut app = App::new(options, &Config::default());
-        app.ui_locale = deepseek_tui::localization::Locale::En;
-        app.api_provider = deepseek_tui::config::ApiProvider::Deepseek;
+        app.ui_locale = deepseek_engine::localization::Locale::En;
+        app.api_provider = deepseek_engine::config::ApiProvider::Deepseek;
         app
     }
 

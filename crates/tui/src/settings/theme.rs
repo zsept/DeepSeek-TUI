@@ -8,8 +8,8 @@
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{BorderType, Borders, Padding};
 
-use deepseek_tui::palette;
-use deepseek_tui::palette::PaletteMode;
+use deepseek_engine::palette;
+use deepseek_engine::palette::PaletteMode;
 use crate::render::history::ToolStatus;
 
 // ── Unified Theme struct ────────────────────────────────────────────────────
@@ -446,7 +446,7 @@ impl ThemeId {
     /// Parse a settings string (`"system"`, `"dark"`, `"catppuccin-mocha"`, …).
     #[must_use]
     pub fn from_name(value: &str) -> Option<Self> {
-        match deepseek_tui::palette::normalize_theme_name(value)? {
+        match deepseek_engine::palette::normalize_theme_name(value)? {
             "system" => Some(Self::System),
             "dark" => Some(Self::Whale),
             "light" => Some(Self::WhaleLight),
@@ -612,7 +612,7 @@ pub const LIGHT_THEME: Theme = Theme {
 macro_rules! try_override {
     ($theme:ident, $custom:expr, $field:ident, $with:ident) => {
         if let Some(ref c) = $custom.$field {
-            if let Some(color) = ::deepseek_tui::palette::parse_hex_rgb_color(c) {
+            if let Some(color) = ::deepseek_engine::palette::parse_hex_rgb_color(c) {
                 $theme = $theme.$with(color);
             }
         }
@@ -1051,9 +1051,9 @@ impl Theme {
     }
 
     /// Convert to the engine's minimal `Theme` stub (for palette compatibility).
-    pub fn to_engine_stub(&self) -> deepseek_tui::palette::Theme {
-        use deepseek_tui::palette::ThemeMode;
-        deepseek_tui::palette::Theme {
+    pub fn to_engine_stub(&self) -> deepseek_engine::palette::Theme {
+        use deepseek_engine::palette::ThemeMode;
+        deepseek_engine::palette::Theme {
             mode: match self.mode {
                 PaletteMode::Dark => ThemeMode::Dark,
                 PaletteMode::Light => ThemeMode::Light,
@@ -1085,7 +1085,7 @@ pub fn ui_theme_from_settings(theme: &str, background_color: Option<&str>) -> Th
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::palette;
+    use deepseek_engine::palette;
     use crate::render::history::ToolStatus;
 
     #[test]

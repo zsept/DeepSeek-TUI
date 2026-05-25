@@ -19,7 +19,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 use unicode_width::UnicodeWidthChar;
 
-use deepseek_tui::palette;
+use deepseek_engine::palette;
 use crate::ui::widgets::Renderable;
 
 /// Per-item line cap before we collapse the rest into a `…` overflow row.

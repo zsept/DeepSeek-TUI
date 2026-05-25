@@ -17,8 +17,8 @@
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use deepseek_tui::palette;
-use deepseek_tui::tools::agent::MailboxMessage;
+use deepseek_engine::palette;
+use deepseek_engine::tools::agent::MailboxMessage;
 use crate::ui::widgets::tool_card::{ToolFamily, family_glyph, family_label};
 
 /// Maximum number of recent actions kept on a `DelegateCard`. Older entries
@@ -665,7 +665,7 @@ mod tests {
     fn fanout_started_claims_seeded_pending_slot_without_growing_grid() {
         let mut card = FanoutCard::new("fanout").with_workers(["task:a", "task:b"]);
         let started =
-            MailboxMessage::started("agent_live", deepseek_tui::tools::agent::AgentRole::General);
+            MailboxMessage::started("agent_live", deepseek_engine::tools::agent::AgentRole::General);
 
         assert!(apply_to_fanout(&mut card, &started));
 
@@ -679,7 +679,7 @@ mod tests {
     #[test]
     fn fanout_apply_transitions_worker_through_lifecycle() {
         let mut card = FanoutCard::new("fanout").with_workers(["w_1"]);
-        let started = MailboxMessage::started("w_1", deepseek_tui::tools::agent::AgentRole::General);
+        let started = MailboxMessage::started("w_1", deepseek_engine::tools::agent::AgentRole::General);
         apply_to_fanout(&mut card, &started);
         assert_eq!(card.workers[0].status, AgentLifecycle::Running);
 

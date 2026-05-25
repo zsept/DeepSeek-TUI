@@ -33,31 +33,31 @@ use ratatui::{
 use tracing;
 
 use deepseek_utils::audit::log_sensitive_event;
-use deepseek_tui::runtime::automation::{AutomationManager, AutomationSchedulerConfig, spawn_scheduler};
-use deepseek_tui::core::client::{DeepSeekClient, build_cache_warmup_request};
+use deepseek_engine::runtime::automation::{AutomationManager, AutomationSchedulerConfig, spawn_scheduler};
+use deepseek_engine::core::client::{DeepSeekClient, build_cache_warmup_request};
 use crate::commands;
-use deepseek_tui::core::compaction::estimate_input_tokens_conservative;
-use deepseek_tui::config::{ApiProvider, Config, DEFAULT_NVIDIA_NIM_BASE_URL};
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::config::{ApiProvider, Config, DEFAULT_NVIDIA_NIM_BASE_URL};
 use crate::config_ui::{self, ConfigUiMode, WebConfigSession, WebConfigSessionEvent};
-use deepseek_tui::core::engine::{EngineConfig, EngineHandle, spawn_engine};
-use deepseek_tui::core::events::Event as EngineEvent;
-use deepseek_tui::core::ops::Op;
-use deepseek_tui::hooks::{HookEvent, HookExecutor};
-use deepseek_tui::core::llm_client::LlmClient;
+use deepseek_engine::core::engine::{EngineConfig, EngineHandle, spawn_engine};
+use deepseek_engine::core::events::Event as EngineEvent;
+use deepseek_engine::core::ops::Op;
+use deepseek_engine::hooks::{HookEvent, HookExecutor};
+use deepseek_engine::core::llm_client::LlmClient;
 use deepseek_models::{
     ContentBlock, Message, MessageRequest, SystemPrompt, Usage, context_window_for_model,
 };
-use deepseek_tui::palette;
-use deepseek_tui::prompts;
-use deepseek_tui::session::manager::{
+use deepseek_engine::palette;
+use deepseek_engine::prompts;
+use deepseek_engine::session::manager::{
     OfflineQueueState, QueuedSessionMessage, SavedSession, SessionManager,
     create_saved_session_with_id_and_mode, create_saved_session_with_mode, update_session,
 };
-use deepseek_tui::runtime::task_manager::{
+use deepseek_engine::runtime::task_manager::{
     NewTaskRequest, SharedTaskManager, TaskManager, TaskManagerConfig, TaskStatus,
 };
-use deepseek_tui::tools::spec::RuntimeToolServices;
-use deepseek_tui::tools::agent::AgentStatus;
+use deepseek_engine::tools::spec::RuntimeToolServices;
+use deepseek_engine::tools::agent::AgentStatus;
 use crate::routing::auto_router;
 use crate::render::color_compat::ColorCompatBackend;
 use crate::input::command_palette::{
@@ -214,7 +214,7 @@ const END_SYNC_UPDATE: &[u8] = b"\x1b[?2026l";
 /// # Examples
 ///
 /// ```ignore
-/// # use deepseek_tui::config::Config;
+/// # use deepseek_engine::config::Config;
 /// # use crate::tui::TuiOptions;
 /// # async fn example(config: &Config, options: TuiOptions) -> anyhow::Result<()> {
 /// crate::tui::run_tui(config, options).await
@@ -344,8 +344,8 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
     // from the main draw loop onward; the one-time startup viewport reset
     // stays opt-out for them, which is the safe default because the cost is
     // at most brief tearing on the first frame.
-    let sync_output_at_init = !deepseek_tui::config::settings::detected_ptyxis_terminal()
-        && !deepseek_tui::config::settings::detected_legacy_windows_console_host();
+    let sync_output_at_init = !deepseek_engine::config::settings::detected_ptyxis_terminal()
+        && !deepseek_engine::config::settings::detected_legacy_windows_console_host();
     reset_terminal_viewport(&mut terminal, sync_output_at_init)?;
     let event_broker = EventBroker::new();
 
@@ -361,7 +361,7 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
         && let Ok(manager) = SessionManager::default_location()
     {
         // Try to load by prefix or full ID
-        let load_result: std::io::Result<Option<deepseek_tui::session::manager::SavedSession>> =
+        let load_result: std::io::Result<Option<deepseek_engine::session::manager::SavedSession>> =
             if session_id == "latest" {
                 // Special case: resume the most recent session in this workspace.
                 match manager.get_latest_session_for_workspace(&options.workspace) {
@@ -379,7 +379,7 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
                 if !recovered {
                     app.status_message = Some(format!(
                         "Resumed session: {}",
-                        deepseek_tui::session::manager::truncate_id(&saved.metadata.id)
+                        deepseek_engine::session::manager::truncate_id(&saved.metadata.id)
                     ));
                 }
             }
@@ -456,7 +456,7 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
         .runtime_services
         .shell_manager
         .clone()
-        .unwrap_or_else(|| deepseek_tui::tools::shell::new_shared_shell_manager(app.workspace.clone()));
+        .unwrap_or_else(|| deepseek_engine::tools::shell::new_shared_shell_manager(app.workspace.clone()));
     app.runtime_services = RuntimeToolServices {
         shell_manager: Some(shell_manager),
         task_manager: Some(task_manager.clone()),
@@ -649,7 +649,7 @@ fn is_memory_quick_add(input: &str) -> bool {
 /// memory directory becomes visible without crashing the composer.
 fn handle_memory_quick_add(app: &mut App, input: &str, config: &Config) {
     let path = config.memory_path();
-    match deepseek_tui::session::memory::append_entry(&path, input) {
+    match deepseek_engine::session::memory::append_entry(&path, input) {
         Ok(()) => {
             app.status_message = Some(format!("memory: appended to {}", path.display()));
         }
@@ -691,12 +691,12 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         features: config.features(),
         compaction: app.compaction_config(),
         cycle: app.cycle_config(),
-        capacity: deepseek_tui::capacity::capacity::CapacityControllerConfig::from_app_config(config),
+        capacity: deepseek_engine::capacity::capacity::CapacityControllerConfig::from_app_config(config),
         todos: app.todos.clone(),
         plan_state: app.plan_state.clone(),
-        max_spawn_depth: deepseek_tui::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
+        max_spawn_depth: deepseek_engine::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
         network_policy: config.network.clone().map(|toml_cfg| {
-            deepseek_tui::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
+            deepseek_engine::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
         }),
         snapshots_enabled: config.snapshots_config().enabled,
         snapshots_max_workspace_bytes: config
@@ -706,7 +706,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         lsp_config: config
             .lsp
             .clone()
-            .map(deepseek_tui::config::LspConfigToml::into_runtime),
+            .map(deepseek_engine::config::LspConfigToml::into_runtime),
         runtime_services: app.runtime_services.clone(),
         agent_role_model_overrides: config.agent_role_model_overrides(),
         memory_enabled: config.memory_enabled(),
@@ -739,7 +739,7 @@ async fn refresh_active_task_panel(app: &mut App, task_manager: &SharedTaskManag
         && let Ok(mut mgr) = shell_mgr.lock()
     {
         for job in mgr.list_jobs() {
-            if !matches!(job.status, deepseek_tui::tools::shell::ShellStatus::Running) {
+            if !matches!(job.status, deepseek_engine::tools::shell::ShellStatus::Running) {
                 continue;
             }
             entries.push(TaskPanelEntry {
@@ -851,9 +851,9 @@ async fn run_event_loop(
                     let text = match translated {
                         Ok(text) => {
                             app.status_message = Some(
-                                deepseek_tui::localization::tr(
+                                deepseek_engine::localization::tr(
                                     app.ui_locale,
-                                    deepseek_tui::localization::MessageId::TranslationComplete,
+                                    deepseek_engine::localization::MessageId::TranslationComplete,
                                 )
                                 .to_string(),
                             );
@@ -863,12 +863,12 @@ async fn run_event_loop(
                             tracing::warn!("assistant translation failed: {err}");
                             app.status_message = Some(format!(
                                 "{}: {err}",
-                                deepseek_tui::localization::tr(
+                                deepseek_engine::localization::tr(
                                     app.ui_locale,
-                                    deepseek_tui::localization::MessageId::TranslationFailed,
+                                    deepseek_engine::localization::MessageId::TranslationFailed,
                                 )
                             ));
-                            deepseek_tui::localization::hidden_translation_failed(app.ui_locale)
+                            deepseek_engine::localization::hidden_translation_failed(app.ui_locale)
                                 .to_string()
                         }
                     };
@@ -898,7 +898,7 @@ async fn run_event_loop(
                     let text = match translated {
                         Ok(text) => {
                             app.status_message = Some(
-                                deepseek_tui::localization::thinking_translation_complete(app.ui_locale)
+                                deepseek_engine::localization::thinking_translation_complete(app.ui_locale)
                                     .to_string(),
                             );
                             text
@@ -907,9 +907,9 @@ async fn run_event_loop(
                             tracing::warn!("thinking translation failed: {err}");
                             app.status_message = Some(format!(
                                 "{}: {err}",
-                                deepseek_tui::localization::thinking_translation_failed(app.ui_locale)
+                                deepseek_engine::localization::thinking_translation_failed(app.ui_locale)
                             ));
-                            deepseek_tui::localization::hidden_translation_failed(app.ui_locale)
+                            deepseek_engine::localization::hidden_translation_failed(app.ui_locale)
                                 .to_string()
                         }
                     };
@@ -1020,9 +1020,9 @@ async fn run_event_loop(
                             && let Some(translation_client) = translation_client.as_ref()
                         {
                             app.status_message = Some(
-                                deepseek_tui::localization::tr(
+                                deepseek_engine::localization::tr(
                                     app.ui_locale,
-                                    deepseek_tui::localization::MessageId::TranslationInProgress,
+                                    deepseek_engine::localization::MessageId::TranslationInProgress,
                                 )
                                 .to_string(),
                             );
@@ -1113,7 +1113,7 @@ async fn run_event_loop(
                                 && let Some(translation_client) = translation_client.as_ref()
                             {
                                 app.status_message = Some(
-                                    deepseek_tui::localization::thinking_translation_in_progress(
+                                    deepseek_engine::localization::thinking_translation_in_progress(
                                         app.ui_locale,
                                     )
                                     .to_string(),
@@ -1129,7 +1129,7 @@ async fn run_event_loop(
                                     .clone()
                                     .unwrap_or_else(|| app.model.clone());
                                 let placeholder =
-                                    deepseek_tui::localization::thinking_translation_placeholder(
+                                    deepseek_engine::localization::thinking_translation_placeholder(
                                         app.ui_locale,
                                     )
                                     .to_string();
@@ -1150,7 +1150,7 @@ async fn run_event_loop(
                                 });
                             } else {
                                 let placeholder =
-                                    deepseek_tui::localization::thinking_translation_placeholder(
+                                    deepseek_engine::localization::thinking_translation_placeholder(
                                         app.ui_locale,
                                     );
                                 streaming_thinking::replace_pending_translation(
@@ -1195,7 +1195,7 @@ async fn run_event_loop(
                         }
                         let tool_content = match &result {
                             Ok(output) => sanitize_stream_chunk(
-                                &deepseek_tui::core::engine::compact_tool_result_for_context(
+                                &deepseek_engine::core::engine::compact_tool_result_for_context(
                                     &app.model, &name, output,
                                 ),
                             ),
@@ -1277,7 +1277,7 @@ async fn run_event_loop(
                         status,
                         error,
                     } => {
-                        if !matches!(status, deepseek_tui::core::events::TurnOutcomeStatus::Completed)
+                        if !matches!(status, deepseek_engine::core::events::TurnOutcomeStatus::Completed)
                             || draws_since_last_full_repaint >= PERIODIC_FULL_REPAINT_EVERY_N
                         {
                             force_terminal_repaint = true;
@@ -1288,8 +1288,8 @@ async fn run_event_loop(
                         // hanging forever.
                         if matches!(
                             status,
-                            deepseek_tui::core::events::TurnOutcomeStatus::Interrupted
-                                | deepseek_tui::core::events::TurnOutcomeStatus::Failed
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
+                                | deepseek_engine::core::events::TurnOutcomeStatus::Failed
                         ) {
                             app.finalize_active_cell_as_interrupted();
                             // Also mark the streaming Assistant cell (if any)
@@ -1321,18 +1321,18 @@ async fn run_event_loop(
                         // user opts out by scrolling up.
                         app.user_scrolled_during_stream = false;
                         app.runtime_turn_status = Some(match status {
-                            deepseek_tui::core::events::TurnOutcomeStatus::Completed => {
+                            deepseek_engine::core::events::TurnOutcomeStatus::Completed => {
                                 "completed".to_string()
                             }
-                            deepseek_tui::core::events::TurnOutcomeStatus::Interrupted => {
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted => {
                                 "interrupted".to_string()
                             }
-                            deepseek_tui::core::events::TurnOutcomeStatus::Failed => "failed".to_string(),
+                            deepseek_engine::core::events::TurnOutcomeStatus::Failed => "failed".to_string(),
                         });
                         if matches!(
                             status,
-                            deepseek_tui::core::events::TurnOutcomeStatus::Interrupted
-                                | deepseek_tui::core::events::TurnOutcomeStatus::Failed
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
+                                | deepseek_engine::core::events::TurnOutcomeStatus::Failed
                         ) {
                             let _ = engine_handle.send(Op::ListAgents).await;
                         }
@@ -1373,7 +1373,7 @@ async fn run_event_loop(
                         } else {
                             &app.model
                         };
-                        let turn_cost = deepseek_tui::pricing::calculate_turn_cost_estimate_from_usage(
+                        let turn_cost = deepseek_engine::pricing::calculate_turn_cost_estimate_from_usage(
                             pricing_model,
                             &usage,
                         );
@@ -1382,7 +1382,7 @@ async fn run_event_loop(
                         }
 
                         // Emit OSC 9 / BEL desktop notification for long turns.
-                        if status == deepseek_tui::core::events::TurnOutcomeStatus::Completed
+                        if status == deepseek_engine::core::events::TurnOutcomeStatus::Completed
                             && let Some((method, threshold, include_summary)) =
                                 notifications::settings(config)
                         {
@@ -1432,13 +1432,13 @@ async fn run_event_loop(
                         // Legacy pending-steer recovery. Current keyboard
                         // handling keeps Esc as cancel-only, but older saved
                         // state may still carry pending steers.
-                        if status == deepseek_tui::core::events::TurnOutcomeStatus::Interrupted
+                        if status == deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
                             && app.submit_pending_steers_after_interrupt
                         {
                             if let Some(merged) = merge_pending_steers(&mut *app) {
                                 queued_to_send = Some(merged);
                             }
-                        } else if status == deepseek_tui::core::events::TurnOutcomeStatus::Failed
+                        } else if status == deepseek_engine::core::events::TurnOutcomeStatus::Failed
                             && !app.pending_steers.is_empty()
                         {
                             // Hard-fail recovery: if the engine failed before
@@ -1954,7 +1954,7 @@ async fn run_event_loop(
         // Background callers populate `cost_status::report`; we sweep
         // the pool once per loop iteration so the footer chip matches
         // the DeepSeek website's billing.
-        let pending_bg_cost = deepseek_tui::cost_status::drain();
+        let pending_bg_cost = deepseek_engine::cost_status::drain();
         if pending_bg_cost.is_positive() {
             app.accrue_agent_cost_estimate(pending_bg_cost);
             app.needs_redraw = true;
@@ -3342,7 +3342,7 @@ async fn run_event_loop(
                     // are a no-op so a stray Ctrl+S can't pollute the
                     // file. Surface a toast so the user sees the
                     // confirmation (no-op feels broken otherwise).
-                    deepseek_tui::session::stash::push_stash(&app.input);
+                    deepseek_engine::session::stash::push_stash(&app.input);
                     app.clear_input_recoverable();
                     app.push_status_toast(
                         "Draft stashed — `/stash pop` to restore",
@@ -3466,7 +3466,7 @@ fn apply_alt_0_shortcut(app: &mut App, modifiers: KeyModifiers) {
 }
 
 async fn fetch_available_models(config: &Config) -> Result<Vec<String>> {
-    use deepseek_tui::core::client::DeepSeekClient;
+    use deepseek_engine::core::client::DeepSeekClient;
 
     let client = DeepSeekClient::new(config)?;
     let models = tokio::time::timeout(Duration::from_secs(20), client.list_models()).await??;
@@ -3617,7 +3617,7 @@ fn reconcile_turn_liveness(app: &mut App, now: Instant, has_running_agents: bool
 /// `Warning`, dim for `Info`.
 pub(crate) fn apply_engine_error_to_app(
     app: &mut App,
-    envelope: deepseek_tui::core::error_taxonomy::ErrorEnvelope,
+    envelope: deepseek_engine::core::error_taxonomy::ErrorEnvelope,
 ) {
     let recoverable = envelope.recoverable;
     let message = envelope.message.clone();
@@ -3634,10 +3634,10 @@ pub(crate) fn apply_engine_error_to_app(
     // skip when no hooks configured.
     if app
         .hooks
-        .has_hooks_for_event(deepseek_tui::hooks::HookEvent::OnError)
+        .has_hooks_for_event(deepseek_engine::hooks::HookEvent::OnError)
     {
         let context = app.base_hook_context().with_error(&message);
-        let _ = app.execute_hooks(deepseek_tui::hooks::HookEvent::OnError, &context);
+        let _ = app.execute_hooks(deepseek_engine::hooks::HookEvent::OnError, &context);
     }
 
     app.add_message(HistoryCell::Error {
@@ -3649,7 +3649,7 @@ pub(crate) fn apply_engine_error_to_app(
     app.turn_error_posted = true;
     if matches!(
         envelope.category,
-        deepseek_tui::core::error_taxonomy::ErrorCategory::Authentication
+        deepseek_engine::core::error_taxonomy::ErrorCategory::Authentication
     ) && app.api_key_env_only
     {
         app.offline_mode = true;
@@ -3850,10 +3850,10 @@ async fn dispatch_user_message(
     // Fast-path skip when no hooks configured.
     if app
         .hooks
-        .has_hooks_for_event(deepseek_tui::hooks::HookEvent::MessageSubmit)
+        .has_hooks_for_event(deepseek_engine::hooks::HookEvent::MessageSubmit)
     {
         let context = app.base_hook_context().with_message(&message.display);
-        let _ = app.execute_hooks(deepseek_tui::hooks::HookEvent::MessageSubmit, &context);
+        let _ = app.execute_hooks(deepseek_engine::hooks::HookEvent::MessageSubmit, &context);
     }
 
     // Set immediately to prevent double-dispatch before TurnStarted event arrives.
@@ -3941,7 +3941,7 @@ async fn dispatch_user_message(
             .as_ref()
             .and_then(|selection| selection.reasoning_effort.clone())
             .unwrap_or_else(|| {
-                let engine_effort = deepseek_tui::auto_reasoning::select(false, &message.display);
+                let engine_effort = deepseek_engine::auto_reasoning::select(false, &message.display);
                 let tui_effort = ReasoningEffort::from_setting(engine_effort.as_setting());
                 auto_router::normalize_auto_routed_effort(tui_effort)
             });
@@ -3997,7 +3997,7 @@ async fn dispatch_user_message(
 
 async fn apply_model_and_compaction_update(
     engine_handle: &EngineHandle,
-    compaction: deepseek_tui::core::compaction::CompactionConfig,
+    compaction: deepseek_engine::core::compaction::CompactionConfig,
 ) {
     let _ = engine_handle
         .send(Op::SetModel {
@@ -4122,7 +4122,7 @@ async fn apply_model_picker_choice(
     // Best-effort persist; surface a status warning if the settings file
     // can't be written rather than aborting the in-memory change.
     let mut persist_warning: Option<String> = None;
-    match deepseek_tui::config::settings::Settings::load() {
+    match deepseek_engine::config::settings::Settings::load() {
         Ok(mut settings) => {
             if model_changed {
                 let _ = settings.set("default_model", &model);
@@ -4275,7 +4275,7 @@ async fn switch_provider(
     app.status_message = Some(format!("Provider: {}", target.as_str()));
 
     // Persist the provider choice so it survives restarts.
-    if let Ok(mut settings) = deepseek_tui::config::settings::Settings::load() {
+    if let Ok(mut settings) = deepseek_engine::config::settings::Settings::load() {
         settings.default_provider = Some(target.as_str().to_string());
         let _ = settings.save();
     }
@@ -4394,7 +4394,7 @@ async fn apply_command_result(
                 let _ = engine_handle.send(Op::ListAgents).await;
             }
             AppAction::FetchModels => {
-                if deepseek_tui::config::provider_passes_model_through(config.api_provider()) {
+                if deepseek_engine::config::provider_passes_model_through(config.api_provider()) {
                     app.add_message(HistoryCell::System {
                         content: format!(
                             "/models is not supported by the {} provider.",
@@ -4814,7 +4814,7 @@ fn apply_workspace_runtime_state(app: &mut App, config: &Config, workspace: Path
     app.workspace_context_refreshed_at = None;
     app.file_tree = None;
 
-    let shell_manager = deepseek_tui::tools::shell::new_shared_shell_manager(workspace);
+    let shell_manager = deepseek_engine::tools::shell::new_shared_shell_manager(workspace);
     app.runtime_services.shell_manager = Some(shell_manager);
     app.runtime_services.hook_executor = Some(std::sync::Arc::new(app.hooks.clone()));
 }
@@ -4950,7 +4950,7 @@ async fn handle_mcp_ui_action(
 
     let snapshot_result = if discover {
         let network_policy = config.network.clone().map(|toml_cfg| {
-            deepseek_tui::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
+            deepseek_engine::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
         });
         crate::mcp::discover_manager_snapshot(&path, network_policy, app.mcp_restart_required).await
     } else {
@@ -5079,7 +5079,7 @@ async fn execute_command_input(
             providers.vllm.api_key = None;
             providers.ollama.api_key = None;
         }
-        app.api_key_env_only = deepseek_tui::config::active_provider_uses_env_only_api_key(config);
+        app.api_key_env_only = deepseek_engine::config::active_provider_uses_env_only_api_key(config);
     }
     apply_command_result(
         terminal,
@@ -5448,17 +5448,17 @@ fn render(f: &mut Frame, app: &mut App) {
         let model_label = app.model_display_label();
         let effort_label = app.reasoning_effort_display_label();
         let provider_label = match app.api_provider {
-            deepseek_tui::config::ApiProvider::Deepseek => None,
-            deepseek_tui::config::ApiProvider::DeepseekCN => None,
-            deepseek_tui::config::ApiProvider::NvidiaNim => Some("NIM"),
-            deepseek_tui::config::ApiProvider::Openai => Some("OpenAI"),
-            deepseek_tui::config::ApiProvider::Atlascloud => Some("Atlas"),
-            deepseek_tui::config::ApiProvider::Openrouter => Some("OR"),
-            deepseek_tui::config::ApiProvider::Novita => Some("Novita"),
-            deepseek_tui::config::ApiProvider::Fireworks => Some("Fireworks"),
-            deepseek_tui::config::ApiProvider::Sglang => Some("SGLang"),
-            deepseek_tui::config::ApiProvider::Vllm => Some("vLLM"),
-            deepseek_tui::config::ApiProvider::Ollama => Some("Ollama"),
+            deepseek_engine::config::ApiProvider::Deepseek => None,
+            deepseek_engine::config::ApiProvider::DeepseekCN => None,
+            deepseek_engine::config::ApiProvider::NvidiaNim => Some("NIM"),
+            deepseek_engine::config::ApiProvider::Openai => Some("OpenAI"),
+            deepseek_engine::config::ApiProvider::Atlascloud => Some("Atlas"),
+            deepseek_engine::config::ApiProvider::Openrouter => Some("OR"),
+            deepseek_engine::config::ApiProvider::Novita => Some("Novita"),
+            deepseek_engine::config::ApiProvider::Fireworks => Some("Fireworks"),
+            deepseek_engine::config::ApiProvider::Sglang => Some("SGLang"),
+            deepseek_engine::config::ApiProvider::Vllm => Some("vLLM"),
+            deepseek_engine::config::ApiProvider::Ollama => Some("Ollama"),
         };
         let status_indicator_started_at = if app.low_motion {
             None
@@ -6135,7 +6135,7 @@ async fn apply_provider_picker_api_key(
     provider: ApiProvider,
     api_key: String,
 ) {
-    use deepseek_tui::config::{ProviderConfig, ProvidersConfig, save_api_key_for};
+    use deepseek_engine::config::{ProviderConfig, ProvidersConfig, save_api_key_for};
 
     match save_api_key_for(provider, &api_key) {
         Ok(path) => {

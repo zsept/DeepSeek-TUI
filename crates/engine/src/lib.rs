@@ -1,5 +1,4 @@
 //! DeepSeek TUI engine library — core logic types re-exported for external crates.
-//! Dual-mode crate: lib for `deepseek-tui-legacy`, bin for standalone CLI.
 
 
 pub mod acp_server;

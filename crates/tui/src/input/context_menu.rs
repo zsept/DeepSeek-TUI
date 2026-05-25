@@ -12,7 +12,7 @@ use ratatui::{
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_tui::palette;
+use deepseek_engine::palette;
 use crate::ui::views::{ContextMenuAction, ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone)]

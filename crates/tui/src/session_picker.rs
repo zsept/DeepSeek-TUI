@@ -15,8 +15,8 @@ use ratatui::{
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_tui::palette;
-use deepseek_tui::session::manager::{
+use deepseek_engine::palette;
+use deepseek_engine::session::manager::{
     SavedSession, SessionManager, SessionMetadata, extract_title, extract_user_prompt,
     strip_thinking_tags,
 };
@@ -190,7 +190,7 @@ impl SessionPickerView {
         if let Some(session) = self.selected_session() {
             self.status = Some(format!(
                 "Opened history for {}",
-                deepseek_tui::session::manager::truncate_id(&session.id)
+                deepseek_engine::session::manager::truncate_id(&session.id)
             ));
         }
         true
@@ -303,7 +303,7 @@ impl SessionPickerView {
         self.refresh_preview();
         self.status = Some(format!(
             "Deleted session {}",
-            deepseek_tui::session::manager::truncate_id(&session.id)
+            deepseek_engine::session::manager::truncate_id(&session.id)
         ));
         Some(ViewEvent::SessionDeleted {
             session_id: session.id,
@@ -615,7 +615,7 @@ fn format_session_line(session: &SessionMetadata) -> String {
     let updated = format_relative_time(&session.updated_at);
     let raw_title = extract_title(&session.title);
     let title = if raw_title == "Session" {
-        truncate(deepseek_tui::session::manager::truncate_id(&session.id), 32)
+        truncate(deepseek_engine::session::manager::truncate_id(&session.id), 32)
     } else {
         truncate(raw_title, 32)
     };
@@ -626,7 +626,7 @@ fn format_session_line(session: &SessionMetadata) -> String {
         .to_ascii_lowercase();
     format!(
         "{} | {} | {} msgs | {} | {}",
-        deepseek_tui::session::manager::truncate_id(&session.id),
+        deepseek_engine::session::manager::truncate_id(&session.id),
         title,
         session.message_count,
         mode,
@@ -863,7 +863,7 @@ mod tests {
             model: "deepseek-v4-pro".to_string(),
             workspace: std::path::PathBuf::from("/tmp"),
             mode: Some("agent".to_string()),
-            cost: deepseek_tui::session::manager::SessionCostSnapshot::default(),
+            cost: deepseek_engine::session::manager::SessionCostSnapshot::default(),
         }
     }
 
@@ -884,7 +884,7 @@ mod tests {
     }
 
     fn saved_session_with_messages(messages: Vec<deepseek_models::Message>) -> SavedSession {
-        let mut session = deepseek_tui::session::manager::create_saved_session(
+        let mut session = deepseek_engine::session::manager::create_saved_session(
             &messages,
             "deepseek-v4-pro",
             std::path::Path::new("/tmp"),

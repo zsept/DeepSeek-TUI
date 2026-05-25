@@ -87,7 +87,7 @@ pub fn memory(app: &mut App, arg: Option<&str>) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::config::Config;
+    use deepseek_engine::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

@@ -26,8 +26,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph, Widget},
 };
 
-use deepseek_tui::config::{ApiProvider, Config, has_api_key_for};
-use deepseek_tui::palette;
+use deepseek_engine::config::{ApiProvider, Config, has_api_key_for};
+use deepseek_engine::palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

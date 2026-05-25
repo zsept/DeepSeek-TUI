@@ -42,10 +42,10 @@ pub(crate) fn build_relevance(app: &App) -> FilePickerRelevance {
 
     for record in app.session_context_references.iter().rev().take(64) {
         let reference = &record.reference;
-        if reference.source != deepseek_tui::context_ref::ContextReferenceSource::AtMention {
+        if reference.source != deepseek_engine::context_ref::ContextReferenceSource::AtMention {
             continue;
         }
-        if !matches!(reference.kind, deepseek_tui::context_ref::ContextReferenceKind::File) {
+        if !matches!(reference.kind, deepseek_engine::context_ref::ContextReferenceKind::File) {
             continue;
         }
         for raw in [reference.target.as_deref().unwrap_or(""), reference.label.as_str()] {

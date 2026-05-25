@@ -28,7 +28,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::app::{App, MentionCompletionCache};
-use deepseek_tui::working_set::Workspace;
+use deepseek_engine::working_set::Workspace;
 
 /// Maximum number of `@`-mentions whose contents are inlined into one user
 /// message. Beyond this we stop appending blocks but the raw `@token` text
@@ -78,20 +78,20 @@ pub struct ContextReference {
 
 impl ContextReference {
     /// Convert to the engine's minimal `ContextReference` for session persistence.
-    pub fn to_engine(&self) -> deepseek_tui::context_ref::ContextReference {
-        deepseek_tui::context_ref::ContextReference {
+    pub fn to_engine(&self) -> deepseek_engine::context_ref::ContextReference {
+        deepseek_engine::context_ref::ContextReference {
             kind: match self.kind {
                 ContextReferenceKind::File | ContextReferenceKind::Directory => {
-                    deepseek_tui::context_ref::ContextReferenceKind::File
+                    deepseek_engine::context_ref::ContextReferenceKind::File
                 }
-                _ => deepseek_tui::context_ref::ContextReferenceKind::AtSymbol,
+                _ => deepseek_engine::context_ref::ContextReferenceKind::AtSymbol,
             },
             source: match self.source {
                 ContextReferenceSource::AtMention => {
-                    deepseek_tui::context_ref::ContextReferenceSource::AtMention
+                    deepseek_engine::context_ref::ContextReferenceSource::AtMention
                 }
                 ContextReferenceSource::Attachment => {
-                    deepseek_tui::context_ref::ContextReferenceSource::AtMention
+                    deepseek_engine::context_ref::ContextReferenceSource::AtMention
                 }
             },
             badge: self.badge.clone(),
@@ -180,7 +180,7 @@ pub fn find_file_mention_completions(
     // Never-mentioned candidates fall back to the workspace ranker's order.
     let entries = super::file_frecency::rerank_by_frecency(entries);
     tracing::debug!(
-        target: "deepseek_tui::file_mention",
+        target: "deepseek_engine::file_mention",
         partial = %partial,
         workspace = %workspace.root.display(),
         cwd = ?std::env::current_dir().ok(),
@@ -613,7 +613,7 @@ fn local_context_from_file_mentions(
             }
         };
         tracing::debug!(
-            target: "deepseek_tui::file_mention",
+            target: "deepseek_engine::file_mention",
             raw_typed = %mention,
             workspace = %workspace.display(),
             cwd = ?std::env::current_dir().ok(),

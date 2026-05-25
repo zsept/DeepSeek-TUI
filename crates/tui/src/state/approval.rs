@@ -27,7 +27,7 @@
 //! happen *before* the view is constructed (see `tui/ui.rs`); this
 //! module always assumes the user is being asked.
 
-use deepseek_tui::localization::Locale;
+use deepseek_engine::localization::Locale;
 use deepseek_sandbox::SandboxPolicy;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 use crate::ui::widgets::{ApprovalWidget, ElevationWidget, Renderable};
@@ -67,11 +67,11 @@ impl ApprovalMode {
     }
 
     /// Convert to the engine's `ApprovalMode` type.
-    pub fn to_engine(self) -> deepseek_tui::mode_types::ApprovalMode {
+    pub fn to_engine(self) -> deepseek_engine::mode_types::ApprovalMode {
         match self {
-            ApprovalMode::Auto => deepseek_tui::mode_types::ApprovalMode::Auto,
-            ApprovalMode::Suggest => deepseek_tui::mode_types::ApprovalMode::Suggest,
-            ApprovalMode::Never => deepseek_tui::mode_types::ApprovalMode::Never,
+            ApprovalMode::Auto => deepseek_engine::mode_types::ApprovalMode::Auto,
+            ApprovalMode::Suggest => deepseek_engine::mode_types::ApprovalMode::Suggest,
+            ApprovalMode::Never => deepseek_engine::mode_types::ApprovalMode::Never,
         }
     }
 }
@@ -250,7 +250,7 @@ pub fn classify_risk(tool_name: &str, category: ToolCategory, params: &Value) ->
         // staying benign) lands here without a second pass.
         ToolCategory::Shell => {
             if let Some(cmd) = params.get("command").and_then(Value::as_str) {
-                let _ = deepseek_tui::command_safety::analyze_command(cmd);
+                let _ = deepseek_engine::command_safety::analyze_command(cmd);
             }
             RiskLevel::Destructive
         }

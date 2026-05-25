@@ -1,11 +1,10 @@
 [package]
-name = "deepseek-tui"
+name = "deepseek-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Terminal UI for DeepSeek"
-default-run = "deepseek-tui"
 
 [features]
 default = ["tui", "json", "toml"]
@@ -13,10 +12,6 @@ tui = ["dep:schemaui", "schemaui/tui", "json", "toml"]
 web = ["dep:schemaui", "schemaui/web", "json", "toml"]
 json = ["schemaui/json"]
 toml = ["schemaui/toml"]
-
-[[bin]]
-name = "deepseek-tui"
-path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"

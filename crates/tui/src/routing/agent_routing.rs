@@ -2,8 +2,8 @@
 
 use std::time::Instant;
 
-use deepseek_tui::runtime::task_manager::{TaskRecord, TaskStatus, TaskSummary};
-use deepseek_tui::tools::agent::{MailboxMessage, AgentResult, AgentStatus};
+use deepseek_engine::runtime::task_manager::{TaskRecord, TaskStatus, TaskSummary};
+use deepseek_engine::tools::agent::{MailboxMessage, AgentResult, AgentStatus};
 use crate::app::{App, AppMode, TaskPanelEntry};
 use crate::render::history::{HistoryCell, AgentCell, summarize_tool_output};
 use crate::render::pager::PagerView;
@@ -95,7 +95,7 @@ pub(crate) fn handle_agent_mailbox(app: &mut App, seq: u64, message: &MailboxMes
     if let MailboxMessage::TokenUsage { model, usage, .. } = message {
         if app.session.agent_cost_event_seqs.insert(seq)
             && let Some(cost) =
-                deepseek_tui::pricing::calculate_turn_cost_estimate_from_usage(model, usage)
+                deepseek_engine::pricing::calculate_turn_cost_estimate_from_usage(model, usage)
         {
             app.accrue_agent_cost_estimate(cost);
         }
@@ -246,7 +246,7 @@ fn format_task_detail(task: &TaskRecord) -> String {
     lines.push(format!("Model: {}", task.model));
     lines.push(format!(
         "Workspace: {}",
-        deepseek_tui::utils::display_path(&task.workspace)
+        deepseek_engine::utils::display_path(&task.workspace)
     ));
     if let Some(thread_id) = task.thread_id.as_ref() {
         lines.push(format!("Runtime Thread: {thread_id}"));
@@ -291,10 +291,10 @@ fn format_task_detail(task: &TaskRecord) -> String {
     } else {
         for tool in &task.tool_calls {
             let status = match tool.status {
-                deepseek_tui::runtime::task_manager::TaskToolStatus::Running => "running",
-                deepseek_tui::runtime::task_manager::TaskToolStatus::Success => "success",
-                deepseek_tui::runtime::task_manager::TaskToolStatus::Failed => "failed",
-                deepseek_tui::runtime::task_manager::TaskToolStatus::Canceled => "canceled",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Running => "running",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Success => "success",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Failed => "failed",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Canceled => "canceled",
             };
             let mut line = format!(
                 "- {} [{}] {}",
@@ -337,7 +337,7 @@ fn format_task_detail(task: &TaskRecord) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_tui::runtime::task_manager::{TaskStatus, TaskSummary};
+    use deepseek_engine::runtime::task_manager::{TaskStatus, TaskSummary};
     use chrono::Utc;
 
     fn task_summary(id: &str, status: TaskStatus, duration_ms: Option<u64>) -> TaskSummary {

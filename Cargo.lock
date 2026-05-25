@@ -1179,23 +1179,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deepseek-core"
-version = "0.8.38"
-dependencies = [
- "anyhow",
- "chrono",
- "deepseek-agent",
- "deepseek-config",
- "deepseek-execpolicy",
- "deepseek-mcp",
- "deepseek-protocol",
- "deepseek-state",
- "deepseek-tools",
- "serde_json",
- "uuid",
-]
-
-[[package]]
 name = "deepseek-engine"
 version = "0.8.38"
 dependencies = [
@@ -1210,14 +1193,18 @@ dependencies = [
  "clap_complete",
  "colored",
  "crossterm 0.28.1",
+ "deepseek-agent",
+ "deepseek-config",
  "deepseek-execpolicy",
  "deepseek-lsp",
  "deepseek-mcp",
  "deepseek-models",
+ "deepseek-protocol",
  "deepseek-sandbox",
  "deepseek-secrets",
  "deepseek-skills",
  "deepseek-snapshot",
+ "deepseek-state",
  "deepseek-tools",
  "deepseek-utils",
  "dirs",

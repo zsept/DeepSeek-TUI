@@ -9,24 +9,6 @@ use deepseek_execpolicy::{
     AskForApproval, ExecApprovalRequirement, ExecPolicyContext, ExecPolicyDecision,
     ExecPolicyEngine,
 };
-// Minimal no-op hooks stub (hooks subsystem removed during refactor)
-#[derive(Debug, Clone)]
-struct HookDispatcher;
-
-impl HookDispatcher {
-    async fn emit(&self, _event: HookEvent) {}
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-enum HookEvent {
-    ResponseStart { response_id: String },
-    ResponseEnd { response_id: String },
-    ResponseDelta { response_id: String, delta: String },
-    ToolLifecycle { response_id: String, tool_name: String, phase: String, payload: serde_json::Value },
-    ApprovalLifecycle { approval_id: String, phase: String, reason: Option<String> },
-    GenericEventFrame { frame: deepseek_protocol::EventFrame },
-}
 use deepseek_mcp::{
     McpManager, McpStartupCompleteEvent, McpStartupStatus as McpManagerStartupStatus,
 };
@@ -671,7 +653,6 @@ pub struct Runtime {
     pub tool_registry: Arc<ToolRegistry>,
     pub mcp_manager: Arc<McpManager>,
     pub exec_policy: ExecPolicyEngine,
-    pub hooks: HookDispatcher,
     pub jobs: JobManager,
 }
 
@@ -683,7 +664,6 @@ impl Runtime {
         tool_registry: Arc<ToolRegistry>,
         mcp_manager: Arc<McpManager>,
         exec_policy: ExecPolicyEngine,
-        hooks: HookDispatcher,
     ) -> Self {
         let mut jobs = JobManager::default();
         let _ = jobs.load_from_store(&state);
@@ -694,7 +674,6 @@ impl Runtime {
             tool_registry,
             mcp_manager,
             exec_policy,
-            hooks,
             jobs,
         }
     }
@@ -903,16 +882,6 @@ impl Runtime {
             ThreadRequest::Message { thread_id, input } => {
                 self.thread_manager.touch_message(&thread_id, &input)?;
                 let response_id = format!("{thread_id}:{}", input.len());
-                self.hooks
-                    .emit(HookEvent::ResponseStart {
-                        response_id: response_id.clone(),
-                    })
-                    .await;
-                self.hooks
-                    .emit(HookEvent::ResponseEnd {
-                        response_id: response_id.clone(),
-                    })
-                    .await;
 
                 Ok(ThreadResponse {
                     thread_id,
@@ -954,22 +923,6 @@ impl Runtime {
         let resolved_model = selection.resolved.id.clone();
         let response_id = format!("resp-{}", Uuid::new_v4());
 
-        self.hooks
-            .emit(HookEvent::ResponseStart {
-                response_id: response_id.clone(),
-            })
-            .await;
-        self.hooks
-            .emit(HookEvent::ResponseDelta {
-                response_id: response_id.clone(),
-                delta: "model-selected".to_string(),
-            })
-            .await;
-        self.hooks
-            .emit(HookEvent::ResponseEnd {
-                response_id: response_id.clone(),
-            })
-            .await;
 
         let payload = json!({
             "provider": resolved.provider.as_str(),
@@ -1038,34 +991,14 @@ impl Runtime {
             .raw_tool_call_id
             .clone()
             .unwrap_or_else(|| format!("tool-call-{}", Uuid::new_v4()));
-        self.hooks
-            .emit(HookEvent::ToolLifecycle {
-                response_id: response_id.clone(),
-                tool_name: call.name.clone(),
-                phase: "precheck".to_string(),
-                payload: precheck.clone(),
-            })
-            .await;
 
         if !decision.allow {
             let reason = decision.reason().to_string();
-            let approval_id = format!("approval-{}", Uuid::new_v4());
+            let _approval_id = format!("approval-{}", Uuid::new_v4());
             let error_frame = EventFrame::Error {
                 response_id: response_id.clone(),
                 message: reason.clone(),
             };
-            self.hooks
-                .emit(HookEvent::ApprovalLifecycle {
-                    approval_id,
-                    phase: "denied".to_string(),
-                    reason: Some(reason.clone()),
-                })
-                .await;
-            self.hooks
-                .emit(HookEvent::GenericEventFrame {
-                    frame: error_frame.clone(),
-                })
-                .await;
             return Ok(json!({
                 "ok": false,
                 "status": "denied",
@@ -1088,20 +1021,8 @@ impl Runtime {
                 command.clone(),
                 policy_cwd.clone(),
             );
-            self.hooks
-                .emit(HookEvent::ApprovalLifecycle {
-                    approval_id: approval_id.clone(),
-                    phase: "requested".to_string(),
-                    reason: Some(reason.clone()),
-                })
-                .await;
             let mut events = Vec::new();
             if let Some(frame) = maybe_approval_frame {
-                self.hooks
-                    .emit(HookEvent::GenericEventFrame {
-                        frame: frame.clone(),
-                    })
-                    .await;
                 events.push(event_frame_payload(&frame));
             }
             return Ok(json!({
@@ -1121,22 +1042,6 @@ impl Runtime {
             tool_name: call.name.clone(),
             arguments: tool_payload_value(&call.payload),
         };
-        self.hooks
-            .emit(HookEvent::GenericEventFrame {
-                frame: start_frame.clone(),
-            })
-            .await;
-        self.hooks
-            .emit(HookEvent::ToolLifecycle {
-                response_id: response_id.clone(),
-                tool_name: call.name.clone(),
-                phase: "dispatching".to_string(),
-                payload: json!({
-                    "call_id": call_id,
-                    "execution_kind": execution_kind
-                }),
-            })
-            .await;
 
         match self.tool_registry.dispatch(call.clone(), true).await {
             Ok(tool_output) => {
@@ -1145,19 +1050,6 @@ impl Runtime {
                     tool_name: call.name.clone(),
                     output: tool_output_value(&tool_output),
                 };
-                self.hooks
-                    .emit(HookEvent::GenericEventFrame {
-                        frame: result_frame.clone(),
-                    })
-                    .await;
-                self.hooks
-                    .emit(HookEvent::ToolLifecycle {
-                        response_id: response_id.clone(),
-                        tool_name: call.name,
-                        phase: "completed".to_string(),
-                        payload: json!({ "ok": true }),
-                    })
-                    .await;
                 Ok(json!({
                     "ok": true,
                     "status": "completed",
@@ -1177,19 +1069,6 @@ impl Runtime {
                     response_id: response_id.clone(),
                     message: message.clone(),
                 };
-                self.hooks
-                    .emit(HookEvent::GenericEventFrame {
-                        frame: error_frame.clone(),
-                    })
-                    .await;
-                self.hooks
-                    .emit(HookEvent::ToolLifecycle {
-                        response_id: response_id.clone(),
-                        tool_name: call.name,
-                        phase: "failed".to_string(),
-                        payload: json!({ "error": message.clone() }),
-                    })
-                    .await;
                 Ok(json!({
                     "ok": false,
                     "status": "failed",
@@ -1212,7 +1091,7 @@ impl Runtime {
             updates.push(update);
         });
         for update in updates {
-            let status = match update.status {
+            let _status = match update.status {
                 McpManagerStartupStatus::Starting => deepseek_protocol::McpStartupStatus::Starting,
                 McpManagerStartupStatus::Ready => deepseek_protocol::McpStartupStatus::Ready,
                 McpManagerStartupStatus::Failed { error } => {
@@ -1222,35 +1101,7 @@ impl Runtime {
                     deepseek_protocol::McpStartupStatus::Cancelled
                 }
             };
-            self.hooks
-                .emit(HookEvent::GenericEventFrame {
-                    frame: EventFrame::McpStartupUpdate {
-                        update: deepseek_protocol::McpStartupUpdateEvent {
-                            server_name: update.server_name,
-                            status,
-                        },
-                    },
-                })
-                .await;
         }
-        self.hooks
-            .emit(HookEvent::GenericEventFrame {
-                frame: EventFrame::McpStartupComplete {
-                    summary: deepseek_protocol::McpStartupCompleteEvent {
-                        ready: summary.ready.clone(),
-                        failed: summary
-                            .failed
-                            .iter()
-                            .map(|f| deepseek_protocol::McpStartupFailure {
-                                server_name: f.server_name.clone(),
-                                error: f.error.clone(),
-                            })
-                            .collect(),
-                        cancelled: summary.cancelled.clone(),
-                    },
-                },
-            })
-            .await;
         summary
     }
 

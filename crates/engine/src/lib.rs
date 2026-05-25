@@ -11,6 +11,7 @@ pub mod command_safety;
 pub mod config;
 pub mod context_ref;
 pub mod core;
+pub mod core_runtime;
 pub mod cost_status;
 pub mod dependencies;
 pub mod eval;

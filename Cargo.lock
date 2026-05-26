@@ -1162,7 +1162,6 @@ dependencies = [
 name = "deepseek-agent"
 version = "0.8.38"
 dependencies = [
- "deepseek-config",
  "serde",
 ]
 
@@ -1171,6 +1170,7 @@ name = "deepseek-config"
 version = "0.8.38"
 dependencies = [
  "anyhow",
+ "deepseek-agent",
  "deepseek-secrets",
  "dirs",
  "serde",

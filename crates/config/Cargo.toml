@@ -7,6 +7,7 @@ repository.workspace = true
 description = "Config schema and precedence model for DeepSeek workspace architecture"
 
 [dependencies]
+deepseek-agent = { path = "../agent", version = "0.8.38" }
 anyhow.workspace = true
 deepseek-secrets = { path = "../secrets", version = "0.8.38" }
 dirs.workspace = true

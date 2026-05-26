@@ -2,7 +2,62 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-pub use deepseek_config::ProviderKind;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+pub enum ProviderKind {
+    #[default]
+    #[serde(
+        alias = "deepseek-cn",
+        alias = "deepseek_china",
+        alias = "deepseekcn",
+        alias = "deepseek-china"
+    )]
+    Deepseek,
+    NvidiaNim,
+    Openai,
+    Atlascloud,
+    Openrouter,
+    Novita,
+    Fireworks,
+    Sglang,
+    Vllm,
+    Ollama,
+}
+
+impl ProviderKind {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Deepseek => "deepseek",
+            Self::NvidiaNim => "nvidia-nim",
+            Self::Openai => "openai",
+            Self::Atlascloud => "atlascloud",
+            Self::Openrouter => "openrouter",
+            Self::Novita => "novita",
+            Self::Fireworks => "fireworks",
+            Self::Sglang => "sglang",
+            Self::Vllm => "vllm",
+            Self::Ollama => "ollama",
+        }
+    }
+
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "deepseek" | "deep-seek" | "deepseek-cn" | "deepseek_china" | "deepseekcn"
+            | "deepseek-china" => Some(Self::Deepseek),
+            "nvidia" | "nvidia-nim" | "nvidia_nim" | "nim" => Some(Self::NvidiaNim),
+            "openai" | "open-ai" => Some(Self::Openai),
+            "atlascloud" | "atlas-cloud" | "atlas_cloud" | "atlas" => Some(Self::Atlascloud),
+            "openrouter" | "open_router" => Some(Self::Openrouter),
+            "novita" => Some(Self::Novita),
+            "fireworks" | "fireworks-ai" => Some(Self::Fireworks),
+            "sglang" | "sg-lang" => Some(Self::Sglang),
+            "vllm" | "v-llm" => Some(Self::Vllm),
+            "ollama" | "ollama-local" => Some(Self::Ollama),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {

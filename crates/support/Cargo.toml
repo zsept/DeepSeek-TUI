@@ -12,6 +12,9 @@ chrono.workspace = true
 serde_json.workspace = true
 deepseek-models = { path = "../models", version = "0.8.38" }
 ignore = "0.4"
+deepseek-utils = { path = "../utils", version = "0.8.38" }
+uuid = { workspace = true }
+wait-timeout = "0.2"
 dirs.workspace = true
 tempfile = "3.16"
 serde = { workspace = true }

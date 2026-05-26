@@ -1409,6 +1409,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "deepseek-models",
+ "deepseek-utils",
  "dirs",
  "futures-util",
  "ignore",
@@ -1418,6 +1419,8 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+ "uuid",
+ "wait-timeout",
  "walkdir",
 ]
 

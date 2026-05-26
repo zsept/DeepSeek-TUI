@@ -3,6 +3,10 @@ pub mod utils;
 pub mod dependencies;
 pub mod artifacts;
 pub mod workspace_trust;
+pub mod hooks;
+pub mod logging;
+pub use hooks::*;
+pub use logging::*;
 pub use artifacts::*;
 pub use workspace_trust::*;
 

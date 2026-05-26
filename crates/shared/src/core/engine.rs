@@ -1395,7 +1395,7 @@ impl Engine {
         // build. Cheap (a small JSON file) and always reflects the latest
         // `/trust add` / `/trust remove` mutations without an explicit cache
         // refresh hook.
-        let trusted = crate::workspace_trust::WorkspaceTrust::load_for(&self.session.workspace);
+        let trusted = deepseek_support::workspace_trust::WorkspaceTrust::load_for(&self.session.workspace);
         let mut ctx = ToolContext::with_auto_approve(
             self.session.workspace.clone(),
             self.session.trust_mode,

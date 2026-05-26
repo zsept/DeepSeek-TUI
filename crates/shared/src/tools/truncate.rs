@@ -341,22 +341,22 @@ fn apply_spillover_inner(
 
     let mut artifact_path = None;
     if let Some(context) = artifact_context {
-        let artifact_id = crate::artifacts::artifact_id_for_tool_call(tool_id);
-        match crate::artifacts::write_session_artifact(
+        let artifact_id = deepseek_support::artifacts::artifact_id_for_tool_call(tool_id);
+        match deepseek_support::artifacts::write_session_artifact(
             context.session_id,
             &artifact_id,
             &original_content,
         ) {
             Ok((absolute_path, relative_path)) => {
-                let record = crate::artifacts::record_tool_output_artifact(
+                let record = deepseek_support::artifacts::record_tool_output_artifact(
                     context.session_id,
                     tool_id,
                     context.tool_name,
                     relative_path.clone(),
                     &original_content,
                 );
-                let transcript_ref = crate::artifacts::TranscriptArtifactRef::from(&record);
-                result.content = crate::artifacts::render_transcript_artifact_ref(&transcript_ref);
+                let transcript_ref = deepseek_support::artifacts::TranscriptArtifactRef::from(&record);
+                result.content = deepseek_support::artifacts::render_transcript_artifact_ref(&transcript_ref);
                 artifact_path = Some((absolute_path, relative_path, record));
             }
             Err(err) => {
@@ -404,7 +404,7 @@ fn apply_spillover_inner(
             );
             obj.insert(
                 "artifact_relative_path".into(),
-                serde_json::Value::String(crate::artifacts::format_artifact_relative_path(
+                serde_json::Value::String(deepseek_support::artifacts::format_artifact_relative_path(
                     relative_path,
                 )),
             );
@@ -450,7 +450,7 @@ fn apply_spillover_inner(
                 );
                 obj.insert(
                     "artifact_relative_path".into(),
-                    serde_json::Value::String(crate::artifacts::format_artifact_relative_path(
+                    serde_json::Value::String(deepseek_support::artifacts::format_artifact_relative_path(
                         relative_path,
                     )),
                 );
@@ -504,7 +504,7 @@ fn with_test_home<F, R>(home: &Path, f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    let _artifact_guard = crate::artifacts::TEST_ARTIFACT_SESSIONS_GUARD
+    let _artifact_guard = deepseek_support::artifacts::TEST_ARTIFACT_SESSIONS_GUARD
         .lock()
         .unwrap_or_else(|err| err.into_inner());
 
@@ -516,7 +516,7 @@ where
     impl Drop for StorageRootOverride {
         fn drop(&mut self) {
             set_test_spillover_root(self.prior_spillover.take());
-            crate::artifacts::set_test_artifact_sessions_root(self.prior_artifacts.take());
+            deepseek_support::artifacts::set_test_artifact_sessions_root(self.prior_artifacts.take());
         }
     }
 
@@ -525,7 +525,7 @@ where
     // artifacts.rs tests.
     let prior_spillover =
         set_test_spillover_root(Some(home.join(".deepseek").join(SPILLOVER_DIR_NAME)));
-    let prior_artifacts = crate::artifacts::set_test_artifact_sessions_root(Some(
+    let prior_artifacts = deepseek_support::artifacts::set_test_artifact_sessions_root(Some(
         home.join(".deepseek").join("sessions"),
     ));
     let _restore = StorageRootOverride {
@@ -560,7 +560,7 @@ mod tests {
                 Some(tmp.path().join(".deepseek").join("tool_outputs").as_path())
             );
             assert_eq!(
-                crate::artifacts::session_artifact_absolute_path(
+                deepseek_support::artifacts::session_artifact_absolute_path(
                     "session-123",
                     &PathBuf::from("artifacts").join("art_call-big.txt")
                 )

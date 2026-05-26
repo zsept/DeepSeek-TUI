@@ -1961,7 +1961,7 @@ fn should_hold_turn_for_agents(queued_completions: usize, running_children: usiz
 /// Resolve an `"auto"` reasoning-effort tier to a concrete value.
 ///
 /// When the configured effort is `"auto"`, inspects the last user message
-/// and calls [`crate::auto_reasoning::select`] to pick the actual tier.
+/// and calls [`deepseek_base::auto_reasoning::select`] to pick the actual tier.
 /// Non-`"auto"` values pass through unchanged.
 fn resolve_auto_effort(reasoning_effort: Option<&str>, messages: &[Message]) -> Option<String> {
     match reasoning_effort {
@@ -1994,7 +1994,7 @@ fn resolve_auto_effort(reasoning_effort: Option<&str>, messages: &[Message]) -> 
             // main engine (not a sub-agent's inner loop). Sub-agents have
             // their own turn pass and can pass is_child_agent=true when they
             // call this function directly.
-            let tier = crate::auto_reasoning::select(false, &last_msg);
+            let tier = deepseek_base::auto_reasoning::select(false, &last_msg);
             let resolved = tier.as_setting().to_string();
             tracing::debug!(
                 reasoning_effort = %resolved,

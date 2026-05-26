@@ -3976,7 +3976,7 @@ fn fallback_agent_assignment_route(
     };
 
     let reasoning_effort = if runtime.reasoning_effort_auto {
-        let effort = match crate::auto_reasoning::select(false, prompt) {
+        let effort = match deepseek_base::auto_reasoning::select(false, prompt) {
             crate::mode_types::ReasoningEffort::Low | crate::mode_types::ReasoningEffort::Medium => {
                 crate::mode_types::ReasoningEffort::High
             }

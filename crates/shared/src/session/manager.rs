@@ -6,7 +6,7 @@
 //! - Resuming sessions by ID
 //! - Managing session lifecycle
 
-use crate::artifacts::ArtifactRecord;
+use deepseek_support::artifacts::ArtifactRecord;
 use deepseek_models::{ContentBlock, Message, SystemPrompt};
 use crate::context_ref::ContextReference;
 use crate::utils::write_atomic;
@@ -1701,9 +1701,9 @@ mod tests {
             0,
             None,
         );
-        session.artifacts.push(crate::artifacts::ArtifactRecord {
+        session.artifacts.push(deepseek_support::artifacts::ArtifactRecord {
             id: "art_call_big".to_string(),
-            kind: crate::artifacts::ArtifactKind::ToolOutput,
+            kind: deepseek_support::artifacts::ArtifactKind::ToolOutput,
             session_id: session.metadata.id.clone(),
             tool_call_id: "call-big".to_string(),
             tool_name: "exec_shell".to_string(),

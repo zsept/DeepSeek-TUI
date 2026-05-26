@@ -1169,12 +1169,20 @@ dependencies = [
 name = "deepseek-base"
 version = "0.8.38"
 dependencies = [
+ "anyhow",
  "chrono",
  "dirs",
+ "portable-pty",
  "reqwest",
  "serde",
+ "serde_json",
+ "shlex",
  "thiserror 2.0.17",
+ "tokio",
  "tracing",
+ "unicode-width 0.2.0",
+ "uuid",
+ "wait-timeout",
 ]
 
 [[package]]

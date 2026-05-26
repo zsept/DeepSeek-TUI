@@ -7,13 +7,13 @@ pub mod auto_route;
 pub mod config;
 pub mod core;
 pub mod project_context;
-pub mod cost_status;
 pub mod palette;
+pub mod vision;
+pub mod cost_status;
 pub mod prompts;
 pub mod runtime;
 pub mod session;
 pub mod tools;
-pub mod vision;
 pub mod capacity;
 pub mod working_set;
 

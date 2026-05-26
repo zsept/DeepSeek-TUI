@@ -4,7 +4,6 @@ pub use deepseek_base::{mode_types, network_policy, retry_status, context_ref, c
 
 
 pub mod auto_route;
-pub mod capacity;
 pub mod config;
 pub mod core;
 pub mod project_context;
@@ -15,6 +14,7 @@ pub mod runtime;
 pub mod session;
 pub mod tools;
 pub mod vision;
+pub mod capacity;
 pub mod working_set;
 
 pub use context_ref::{ContextReference, ContextReferenceKind, ContextReferenceSource};

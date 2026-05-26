@@ -21,7 +21,7 @@ use deepseek_sandbox::backend::SandboxBackend;
 use crate::tools::handle::{SharedHandleStore, new_shared_handle_store};
 use crate::tools::shell::{SharedShellManager, new_shared_shell_manager};
 #[allow(unused_imports)]
-pub use deepseek_tools::{
+pub use crate::tools::{
     ApprovalRequirement, ToolCapability, ToolError, ToolResult, optional_bool, optional_str,
     optional_u64, required_str, required_u64,
 };

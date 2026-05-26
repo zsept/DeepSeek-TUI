@@ -1,6 +1,8 @@
 //! Configuration loading and defaults for DeepSeek TUI.
 
 pub mod features;
+pub mod data_types;
+pub use data_types::*;
 pub mod settings;
 pub mod skill_state;
 
@@ -1121,7 +1123,7 @@ impl SkillsConfig {
     }
 }
 
-/// `[network]` table — mirrors `deepseek_config::NetworkPolicyToml` so the live
+/// `[network]` table — mirrors `crate::config::NetworkPolicyToml` so the live
 /// TUI runtime can construct a [`crate::network_policy::NetworkPolicy`]
 /// without reaching into the workspace config crate. See `config.example.toml`
 /// for documentation.

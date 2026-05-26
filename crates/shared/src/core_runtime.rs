@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use deepseek_agent::ModelRegistry;
-use deepseek_config::{CliRuntimeOverrides, ConfigToml, ProviderKind};
+use crate::config::{CliRuntimeOverrides, ConfigToml, ProviderKind};
 use deepseek_execpolicy::{
     AskForApproval, ExecApprovalRequirement, ExecPolicyContext, ExecPolicyDecision,
     ExecPolicyEngine,
@@ -22,7 +22,7 @@ use deepseek_state::{
     JobStateRecord, JobStateStatus, SessionSource, StateStore, ThreadListFilters, ThreadMetadata,
     ThreadStatus as PersistedThreadStatus,
 };
-use deepseek_tools::{ToolCall, ToolRegistry};
+use crate::tools::{ToolCall, ToolRegistry};
 use serde_json::{Value, json};
 use uuid::Uuid;
 

@@ -2,7 +2,7 @@
 
 use std::fmt::Write;
 
-use deepseek_engine::network_policy::{self, NetworkPolicy};
+use deepseek_shared::network_policy::{self, NetworkPolicy};
 
 fn to_skills_np(np: &network_policy::NetworkPolicy) -> deepseek_skills::network_policy::NetworkPolicy {
     deepseek_skills::network_policy::NetworkPolicy {
@@ -484,7 +484,7 @@ fn sync_skills(app: &mut App) -> CommandResult {
 /// fails to parse, we fall back to defaults so the user still gets a
 /// network-gated install rather than a silent crash.
 fn installer_settings(_app: &App) -> (NetworkPolicy, u64, String) {
-    let cfg = deepseek_engine::config::Config::load(None, None).unwrap_or_default();
+    let cfg = deepseek_shared::config::Config::load(None, None).unwrap_or_default();
     let network = cfg
         .network
         .clone()
@@ -603,7 +603,7 @@ fn format_registry_error(prefix: &str, err: &anyhow::Error) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::ffi::OsString;
     use tempfile::TempDir;
@@ -616,7 +616,7 @@ mod tests {
 
     impl IsolatedHome {
         fn new(tmpdir: &TempDir) -> Self {
-            let lock = deepseek_engine::test_support::lock_test_env();
+            let lock = deepseek_shared::test_support::lock_test_env();
             let home = tmpdir.path().join("home");
             std::fs::create_dir_all(&home).unwrap();
             let home_prev = std::env::var_os("HOME");

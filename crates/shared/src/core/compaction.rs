@@ -1143,7 +1143,7 @@ async fn create_summary(
     // adding UI surface. The event is emitted with
     // `target = "compaction"`, so the filter is
     // `RUST_LOG=compaction=debug` (the module-path form
-    // `deepseek_engine::compaction=debug` does NOT match — `EnvFilter`
+    // `deepseek_shared::compaction=debug` does NOT match — `EnvFilter`
     // matches the explicit target string when one is set).
     log_summary_cache_telemetry(used_cache_aligned, &response.usage);
 

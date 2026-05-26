@@ -16,10 +16,10 @@ use ratatui::{
     widgets::{Block, Paragraph, Wrap},
 };
 
-use deepseek_engine::palette;
-use deepseek_engine::tools::plan::StepStatus;
-use deepseek_engine::tools::agent::AgentStatus;
-use deepseek_engine::tools::todo::TodoStatus;
+use deepseek_shared::palette;
+use deepseek_shared::tools::plan::StepStatus;
+use deepseek_shared::tools::agent::AgentStatus;
+use deepseek_shared::tools::todo::TodoStatus;
 use crate::settings::theme::Theme;
 
 use crate::app::{App, SidebarFocus, TaskPanelEntry};
@@ -1944,9 +1944,9 @@ mod tests {
         SidebarWorkStrategyStep, SidebarWorkSummary, auto_sidebar_panels, agent_panel_lines,
         task_panel_lines, work_panel_empty_hint, work_panel_lines,
     };
-    use deepseek_engine::config::Config;
-    use deepseek_engine::tools::plan::StepStatus;
-    use deepseek_engine::tools::todo::TodoStatus;
+    use deepseek_shared::config::Config;
+    use deepseek_shared::tools::plan::StepStatus;
+    use deepseek_shared::tools::todo::TodoStatus;
     use crate::render::active_cell::ActiveCell;
     use crate::app::{App, TaskPanelEntry, TuiOptions};
     use crate::render::history::{

@@ -212,7 +212,7 @@ fn extract_cargo_name(content: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

@@ -1,6 +1,6 @@
 //! Background shell job-center helpers for slash commands and pagers.
 
-use deepseek_engine::tools::shell::{ShellJobDetail, ShellJobSnapshot, ShellResult, ShellStatus};
+use deepseek_shared::tools::shell::{ShellJobDetail, ShellJobSnapshot, ShellResult, ShellStatus};
 use crate::app::App;
 use crate::render::history::HistoryCell;
 use crate::render::pager::PagerView;
@@ -52,7 +52,7 @@ pub(crate) fn format_shell_job_list(jobs: &[ShellJobSnapshot]) -> String {
             job.exit_code,
             task
         ));
-        lines.push(format!("  cwd: {}", deepseek_engine::utils::display_path(&job.cwd)));
+        lines.push(format!("  cwd: {}", deepseek_shared::utils::display_path(&job.cwd)));
         lines.push(format!("  cmd: {}", job.command));
         let tail = if !job.stderr_tail.trim().is_empty() {
             job.stderr_tail.trim()
@@ -116,7 +116,7 @@ fn format_shell_job_detail(detail: &ShellJobDetail) -> String {
         format!("Job: {}", job.id),
         format!("Status: {}", status_label(&job.status, job.stale)),
         format!("Command: {}", job.command),
-        format!("Cwd: {}", deepseek_engine::utils::display_path(&job.cwd)),
+        format!("Cwd: {}", deepseek_shared::utils::display_path(&job.cwd)),
         format!("Elapsed: {}", format_elapsed(job.elapsed_ms)),
         format!("Exit Code: {:?}", job.exit_code),
         format!("Stdin Available: {}", job.stdin_available),

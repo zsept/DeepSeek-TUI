@@ -62,7 +62,7 @@ fn media_kind(path: &Path) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::TuiOptions;
     use tempfile::TempDir;
 

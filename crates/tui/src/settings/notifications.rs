@@ -287,15 +287,15 @@ use crate::app::App;
 /// Returns `None` to mean "do not notify" (either because the user set
 /// `notification_condition = "never"` or because the resolved method is
 /// `Off`).
-pub fn settings(config: &deepseek_engine::config::Config) -> Option<(Method, Duration, bool)> {
+pub fn settings(config: &deepseek_shared::config::Config) -> Option<(Method, Duration, bool)> {
     let notif = config.notifications_config();
     let method = match notif.method {
-        deepseek_engine::config::NotificationMethod::Auto => Method::Auto,
-        deepseek_engine::config::NotificationMethod::Osc9 => Method::Osc9,
-        deepseek_engine::config::NotificationMethod::Bel => Method::Bel,
-        deepseek_engine::config::NotificationMethod::Kitty => Method::Kitty,
-        deepseek_engine::config::NotificationMethod::Ghostty => Method::Ghostty,
-        deepseek_engine::config::NotificationMethod::Off => Method::Off,
+        deepseek_shared::config::NotificationMethod::Auto => Method::Auto,
+        deepseek_shared::config::NotificationMethod::Osc9 => Method::Osc9,
+        deepseek_shared::config::NotificationMethod::Bel => Method::Bel,
+        deepseek_shared::config::NotificationMethod::Kitty => Method::Kitty,
+        deepseek_shared::config::NotificationMethod::Ghostty => Method::Ghostty,
+        deepseek_shared::config::NotificationMethod::Off => Method::Off,
     };
 
     if let Some(condition) = config
@@ -304,10 +304,10 @@ pub fn settings(config: &deepseek_engine::config::Config) -> Option<(Method, Dur
         .and_then(|tui| tui.notification_condition)
     {
         match condition {
-            deepseek_engine::config::NotificationCondition::Always => {
+            deepseek_shared::config::NotificationCondition::Always => {
                 return Some((method, Duration::ZERO, notif.include_summary));
             }
-            deepseek_engine::config::NotificationCondition::Never => return None,
+            deepseek_shared::config::NotificationCondition::Never => return None,
         }
     }
 
@@ -328,7 +328,7 @@ pub fn completed_turn_message(
     current_streaming_text: &str,
     include_summary: bool,
     turn_elapsed: Duration,
-    turn_cost: Option<deepseek_engine::pricing::CostEstimate>,
+    turn_cost: Option<deepseek_shared::pricing::CostEstimate>,
 ) -> String {
     let mut msg = text_summary(current_streaming_text)
         .or_else(|| latest_assistant_text(&app.api_messages))
@@ -338,7 +338,7 @@ pub fn completed_turn_message(
         let human = humanize_duration(turn_elapsed);
         let summary = match turn_cost {
             Some(c) => {
-                let cost = deepseek_engine::pricing::format_cost_estimate(c, app.cost_currency);
+                let cost = deepseek_shared::pricing::format_cost_estimate(c, app.cost_currency);
                 format!("deepseek: turn complete ({human}, {cost})")
             }
             None => format!("deepseek: turn complete ({human})"),

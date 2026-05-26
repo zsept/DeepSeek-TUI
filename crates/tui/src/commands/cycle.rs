@@ -94,8 +94,8 @@ pub fn show_cycle(app: &App, arg: Option<&str>) -> CommandResult {
 /// same JSON payload the agent would see; the assistant pretty-prints
 /// short results and dumps long ones inline.
 pub fn recall_archive(app: &App, arg: Option<&str>) -> CommandResult {
-    use deepseek_engine::tools::recall_archive::RecallArchiveTool;
-    use deepseek_engine::tools::spec::{ToolContext, ToolSpec};
+    use deepseek_shared::tools::recall_archive::RecallArchiveTool;
+    use deepseek_shared::tools::spec::{ToolContext, ToolSpec};
 
     let Some(raw) = arg.map(str::trim) else {
         return CommandResult::error("Usage: /recall <query>".to_string());
@@ -141,7 +141,7 @@ fn first_line(text: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::core::cycle_manager::CycleBriefing;
+    use deepseek_shared::core::cycle_manager::CycleBriefing;
     use crate::ui::app::{App, TuiOptions};
     use chrono::Utc;
     use std::path::PathBuf;
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn list_cycles_reports_no_boundaries_yet() {
-        let app = App::new(test_options(), &deepseek_engine::config::Config::default());
+        let app = App::new(test_options(), &deepseek_shared::config::Config::default());
         let res = list_cycles(&app);
         assert!(res.message.is_some());
         assert!(
@@ -185,7 +185,7 @@ mod tests {
 
     #[test]
     fn show_cycle_rejects_nonexistent_cycle() {
-        let app = App::new(test_options(), &deepseek_engine::config::Config::default());
+        let app = App::new(test_options(), &deepseek_shared::config::Config::default());
         let res = show_cycle(&app, Some("3"));
         let msg = res.message.expect("error message");
         assert!(msg.contains("Cycle 3 not found"), "got: {msg}");
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn list_and_show_cycles_render_briefings() {
-        let mut app = App::new(test_options(), &deepseek_engine::config::Config::default());
+        let mut app = App::new(test_options(), &deepseek_shared::config::Config::default());
         app.cycle_briefings.push(CycleBriefing {
             cycle: 1,
             timestamp: Utc::now(),
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn show_cycle_validates_argument() {
-        let app = App::new(test_options(), &deepseek_engine::config::Config::default());
+        let app = App::new(test_options(), &deepseek_shared::config::Config::default());
         let res = show_cycle(&app, None);
         let msg = res.message.expect("error message");
         assert!(msg.contains("Usage: /cycle"));

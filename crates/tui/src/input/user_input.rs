@@ -5,8 +5,8 @@ use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Clear, Padding, Paragraph, Widget, Wrap};
 
-use deepseek_engine::palette;
-use deepseek_engine::tools::user_input::{
+use deepseek_shared::palette;
+use deepseek_shared::tools::user_input::{
     UserInputAnswer, UserInputQuestion, UserInputRequest, UserInputResponse,
 };
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
@@ -385,7 +385,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::tools::user_input::{UserInputOption, UserInputQuestion, UserInputRequest};
+    use deepseek_shared::tools::user_input::{UserInputOption, UserInputQuestion, UserInputRequest};
 
     fn render_view(view: &UserInputView, width: u16, height: u16) -> String {
         let area = Rect::new(0, 0, width, height);

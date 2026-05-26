@@ -22,7 +22,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Padding, Paragraph, Widget},
 };
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 /// Maximum number of candidates collected from the initial walk. Keeps memory

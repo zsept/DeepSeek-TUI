@@ -3,8 +3,8 @@
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use deepseek_engine::localization::MessageId;
-use deepseek_engine::palette;
+use deepseek_shared::localization::MessageId;
+use deepseek_shared::palette;
 use crate::app::App;
 
 pub fn lines(app: &App) -> Vec<Line<'static>> {
@@ -24,7 +24,7 @@ pub fn lines(app: &App) -> Vec<Line<'static>> {
         format!(
             "{}{}",
             app.tr(MessageId::OnboardTrustLocationPrefix),
-            deepseek_engine::utils::display_path(&app.workspace)
+            deepseek_shared::utils::display_path(&app.workspace)
         ),
         Style::default().fg(palette::TEXT_MUTED),
     )));

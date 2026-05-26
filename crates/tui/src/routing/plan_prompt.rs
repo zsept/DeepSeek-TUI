@@ -5,7 +5,7 @@ use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Clear, Padding, Paragraph, Widget, Wrap};
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 const PLAN_OPTIONS: [(&str, &str); 4] = [

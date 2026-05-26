@@ -4,9 +4,9 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use super::CommandResult;
-use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
+use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
 use deepseek_models::{LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, context_window_for_model};
-use deepseek_engine::utils::{display_path, estimate_message_chars};
+use deepseek_shared::utils::{display_path, estimate_message_chars};
 
 /// Show a compact runtime status report for the current TUI session.
 pub fn status(app: &mut App) -> CommandResult {
@@ -170,7 +170,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
-    use deepseek_engine::config::{ApiProvider, Config};
+    use deepseek_shared::config::{ApiProvider, Config};
     use deepseek_models::{ContentBlock, Message};
     use crate::ui::app::TuiOptions;
     use crate::ui::history::HistoryCell;

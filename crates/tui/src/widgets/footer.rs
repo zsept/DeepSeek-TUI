@@ -15,8 +15,8 @@ use ratatui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use deepseek_engine::localization::{Locale, MessageId, tr};
-use deepseek_engine::palette;
+use deepseek_shared::localization::{Locale, MessageId, tr};
+use deepseek_shared::palette;
 use crate::app::{App, AppMode};
 
 use super::Renderable;
@@ -68,7 +68,7 @@ pub struct FooterProps {
     /// left of the footer when active. Captured here (rather than read
     /// from `retry_status` at render time) so tests can pin a
     /// deterministic state without racing the parallel runner.
-    pub retry: deepseek_engine::retry_status::RetryState,
+    pub retry: deepseek_shared::retry_status::RetryState,
     /// Session-cost chip spans (empty when below the display threshold).
     /// Rendered in the left cluster (after the model name) — cost is steady
     /// info, not a transient signal, so it lives with mode and model.
@@ -282,7 +282,7 @@ impl FooterProps {
             cost,
             toast,
             working_strip_frame: None,
-            retry: deepseek_engine::retry_status::snapshot(),
+            retry: deepseek_shared::retry_status::snapshot(),
         }
     }
 }
@@ -531,20 +531,20 @@ fn spans_text(spans: &[Span<'_>]) -> String {
 /// so callers fall back to the regular status line / toast.
 fn retry_banner_spans(max_width: usize, props: &FooterProps) -> Option<Vec<Span<'static>>> {
     let (label, color) = match &props.retry {
-        deepseek_engine::retry_status::RetryState::Active(banner) => {
+        deepseek_shared::retry_status::RetryState::Active(banner) => {
             let secs = props.retry.seconds_remaining().unwrap_or(0);
             // Round to 1s — we redraw each frame anyway so the
             // countdown ticks visually without us having to schedule
             // anything extra.
             (
                 format!("⟳ retry {} in {secs}s — {}", banner.attempt, banner.reason),
-                deepseek_engine::palette::STATUS_WARNING,
+                deepseek_shared::palette::STATUS_WARNING,
             )
         }
-        deepseek_engine::retry_status::RetryState::Failed { reason, .. } => {
-            (format!("× failed: {reason}"), deepseek_engine::palette::STATUS_ERROR)
+        deepseek_shared::retry_status::RetryState::Failed { reason, .. } => {
+            (format!("× failed: {reason}"), deepseek_shared::palette::STATUS_ERROR)
         }
-        deepseek_engine::retry_status::RetryState::Idle => return None,
+        deepseek_shared::retry_status::RetryState::Idle => return None,
     };
     let truncated = truncate_to_width(&label, max_width);
     Some(vec![Span::styled(truncated, Style::default().fg(color))])
@@ -634,9 +634,9 @@ fn truncate_to_width(text: &str, max_width: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::{FooterProps, FooterWidget, Renderable};
-    use deepseek_engine::config::Config;
-    use deepseek_engine::localization::Locale;
-    use deepseek_engine::palette;
+    use deepseek_shared::config::Config;
+    use deepseek_shared::localization::Locale;
+    use deepseek_shared::palette;
     use crate::app::{App, AppMode, TuiOptions};
     use ratatui::{
         style::{Color, Style},
@@ -672,7 +672,7 @@ mod tests {
         // above. Pin model state explicitly so these tests are host-neutral.
         app.model = "deepseek-v4-flash".to_string();
         app.auto_model = false;
-        app.api_provider = deepseek_engine::config::ApiProvider::Deepseek;
+        app.api_provider = deepseek_shared::config::ApiProvider::Deepseek;
         // Same for theme: tests below assert against the default dark palette,
         // but App::new honors saved settings.toml values on the host machine.
         app.theme = crate::settings::theme::DARK_THEME;
@@ -694,7 +694,7 @@ mod tests {
         // `from_app` reads the process-wide retry-status surface; pin
         // `Idle` so footer tests don't pick up state set by retry-banner
         // tests running in parallel.
-        props.retry = deepseek_engine::retry_status::RetryState::Idle;
+        props.retry = deepseek_shared::retry_status::RetryState::Idle;
         props
     }
 
@@ -955,7 +955,7 @@ mod tests {
         // the props directly without touching the global surface.
         let app = make_app();
         let mut props = idle_props_for(&app);
-        props.retry = deepseek_engine::retry_status::RetryState::Active(deepseek_engine::retry_status::RetryBanner {
+        props.retry = deepseek_shared::retry_status::RetryState::Active(deepseek_shared::retry_status::RetryBanner {
             attempt: 2,
             deadline: std::time::Instant::now() + std::time::Duration::from_secs(7),
             reason: "rate limited".to_string(),
@@ -979,7 +979,7 @@ mod tests {
     fn render_shows_failure_row_when_failed() {
         let app = make_app();
         let mut props = idle_props_for(&app);
-        props.retry = deepseek_engine::retry_status::RetryState::Failed {
+        props.retry = deepseek_shared::retry_status::RetryState::Failed {
             reason: "upstream 500".to_string(),
             since: std::time::Instant::now(),
         };

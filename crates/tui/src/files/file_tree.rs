@@ -16,7 +16,7 @@ use ratatui::{
     widgets::{Block, Paragraph, Wrap},
 };
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::settings::theme::Theme;
 use crate::render::ui_text::truncate_line_to_width;
 
@@ -61,7 +61,7 @@ impl FileTreeState {
         let loading_cell = Arc::new(Mutex::new(None));
         let cell = loading_cell.clone();
         let ws = workspace.to_path_buf();
-        deepseek_engine::utils::spawn_blocking_supervised("file-tree-build", move || {
+        deepseek_shared::utils::spawn_blocking_supervised("file-tree-build", move || {
             let entries = build_file_tree_inner(&ws, &HashSet::new(), None);
             if let Ok(mut guard) = cell.lock() {
                 *guard = Some(entries);

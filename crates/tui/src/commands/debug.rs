@@ -5,9 +5,9 @@
 use std::time::Instant;
 
 use super::CommandResult;
-use deepseek_engine::core::client::{PromptInspection, inspect_prompt_for_request};
-use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
-use deepseek_engine::localization::{Locale, MessageId, tr};
+use deepseek_shared::core::client::{PromptInspection, inspect_prompt_for_request};
+use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
+use deepseek_shared::localization::{Locale, MessageId, tr};
 use deepseek_models::{ContentBlock, MessageRequest, SystemPrompt, context_window_for_model};
 
 fn token_count(value: Option<u32>, locale: Locale) -> String {
@@ -158,9 +158,9 @@ pub fn cache(app: &mut App, arg: Option<&str>) -> CommandResult {
 }
 
 fn format_cache_inspect(app: &mut App) -> String {
-    let reasoning_effort = if app.reasoning_effort == deepseek_engine::mode_types::ReasoningEffort::Auto {
+    let reasoning_effort = if app.reasoning_effort == deepseek_shared::mode_types::ReasoningEffort::Auto {
         app.last_effective_reasoning_effort
-            .and_then(deepseek_engine::mode_types::ReasoningEffort::api_value)
+            .and_then(deepseek_shared::mode_types::ReasoningEffort::api_value)
             .map(str::to_string)
     } else {
         app.reasoning_effort.api_value().map(str::to_string)
@@ -419,7 +419,7 @@ fn humanize_age(d: std::time::Duration) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use deepseek_models::{ContentBlock, Message, SystemBlock};
     use crate::ui::app::{App, TuiOptions};
     use crate::ui::history::{GenericToolCell, ToolCell, ToolStatus};
@@ -448,9 +448,9 @@ mod tests {
             initial_input: None,
         };
         let mut app = App::new(options, &Config::default());
-        app.ui_locale = deepseek_engine::localization::Locale::En;
-        app.cost_currency = deepseek_engine::pricing::CostCurrency::Usd;
-        app.api_provider = deepseek_engine::config::ApiProvider::Deepseek;
+        app.ui_locale = deepseek_shared::localization::Locale::En;
+        app.cost_currency = deepseek_shared::pricing::CostCurrency::Usd;
+        app.api_provider = deepseek_shared::config::ApiProvider::Deepseek;
         app
     }
 
@@ -948,7 +948,7 @@ mod tests {
     #[test]
     fn test_patch_undo_requests_session_resync_after_restore() {
         use deepseek_snapshot::SnapshotRepo;
-        use deepseek_engine::test_support::lock_test_env;
+        use deepseek_shared::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1016,7 +1016,7 @@ mod tests {
     #[test]
     fn test_patch_undo_walks_back_to_older_snapshot_on_repeat() {
         use deepseek_snapshot::SnapshotRepo;
-        use deepseek_engine::test_support::lock_test_env;
+        use deepseek_shared::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1075,7 +1075,7 @@ mod tests {
     #[test]
     fn test_patch_undo_prunes_tool_turn_context() {
         use deepseek_snapshot::SnapshotRepo;
-        use deepseek_engine::test_support::lock_test_env;
+        use deepseek_shared::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 
@@ -1206,7 +1206,7 @@ mod tests {
     #[test]
     fn test_patch_undo_prunes_pre_turn_context() {
         use deepseek_snapshot::SnapshotRepo;
-        use deepseek_engine::test_support::lock_test_env;
+        use deepseek_shared::test_support::lock_test_env;
         use std::sync::MutexGuard;
         use tempfile::tempdir;
 

@@ -11,7 +11,7 @@ use ratatui::{
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::app::AppMode;
 
 use super::Renderable;
@@ -600,7 +600,7 @@ impl Renderable for HeaderWidget<'_> {
 #[cfg(test)]
 mod tests {
     use super::{HeaderData, HeaderWidget, Renderable};
-    use deepseek_engine::palette;
+    use deepseek_shared::palette;
     use crate::app::AppMode;
     use ratatui::{buffer::Buffer, layout::Rect};
 

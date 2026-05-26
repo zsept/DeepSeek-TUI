@@ -64,7 +64,7 @@ pub(crate) fn append(app: &mut App, entry_idx: usize, text: &str) {
 /// Build the spinner-decorated placeholder shown in the thinking entry
 /// while a translation is in flight (`Thinking… (1.2s |)`).
 pub(crate) fn translation_placeholder_frame(app: &App) -> String {
-    let base = deepseek_engine::localization::thinking_translation_placeholder(app.ui_locale);
+    let base = deepseek_shared::localization::thinking_translation_placeholder(app.ui_locale);
     let elapsed = app
         .thinking_started_at
         .or(app.turn_started_at)
@@ -82,7 +82,7 @@ pub(crate) fn translation_placeholder_frame(app: &App) -> String {
 /// If the given entry is empty or still showing the translation
 /// placeholder prefix, replace it with the latest animated frame.
 pub(crate) fn set_placeholder(app: &mut App, entry_idx: usize) {
-    let base = deepseek_engine::localization::thinking_translation_placeholder(app.ui_locale);
+    let base = deepseek_shared::localization::thinking_translation_placeholder(app.ui_locale);
     let next = translation_placeholder_frame(app);
     let mutated = if let Some(active) = app.active_cell.as_mut()
         && let Some(HistoryCell::Thinking { content, .. }) = active.entry_mut(entry_idx)
@@ -113,7 +113,7 @@ pub(crate) fn animate_pending_translation(app: &mut App, translation_pending: bo
     if !translation_pending && !thinking_streaming {
         return false;
     }
-    let base = deepseek_engine::localization::thinking_translation_placeholder(app.ui_locale);
+    let base = deepseek_shared::localization::thinking_translation_placeholder(app.ui_locale);
     let next = translation_placeholder_frame(app);
 
     if let Some(active) = app.active_cell.as_mut() {

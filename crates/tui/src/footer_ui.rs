@@ -3,9 +3,9 @@ use std::time::Instant;
 #[cfg(test)]
 use unicode_width::UnicodeWidthStr;
 
-use deepseek_engine::capacity::coherence::CoherenceState;
-use deepseek_engine::palette;
-use deepseek_engine::tools::agent::AgentStatus;
+use deepseek_shared::capacity::coherence::CoherenceState;
+use deepseek_shared::palette;
+use deepseek_shared::tools::agent::AgentStatus;
 use crate::app::App;
 use crate::render::format_helpers;
 use crate::render::history::{HistoryCell, ToolCell, ToolStatus, summarize_tool_output};
@@ -33,9 +33,9 @@ pub(crate) fn render_footer(f: &mut Frame, area: Rect, app: &mut App) {
     // within ~2s. Mirrors codex-rs's `FooterMode::QuitShortcutReminder`.
     let quit_prompt = if app.quit_is_armed() {
         Some(FooterToast {
-            text: deepseek_engine::localization::tr(
+            text: deepseek_shared::localization::tr(
                 app.ui_locale,
-                deepseek_engine::localization::MessageId::FooterPressCtrlCAgain,
+                deepseek_shared::localization::MessageId::FooterPressCtrlCAgain,
             )
             .to_string(),
             color: palette::STATUS_WARNING,
@@ -339,10 +339,10 @@ pub(crate) fn one_line_summary(text: &str, max_width: usize) -> String {
 /// data-driven without changing `FooterProps`'s public shape.
 pub(crate) fn render_footer_from(
     app: &App,
-    items: &[deepseek_engine::config::StatusItem],
+    items: &[deepseek_shared::config::StatusItem],
     toast: Option<FooterToast>,
 ) -> FooterProps {
-    use deepseek_engine::config::StatusItem as S;
+    use deepseek_shared::config::StatusItem as S;
     let has = |item: S| items.contains(&item);
 
     let (state_label, state_color) = if has(S::Status) {

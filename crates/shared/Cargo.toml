@@ -1,10 +1,10 @@
 [package]
-name = "deepseek-engine"
+name = "deepseek-shared"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Terminal UI for DeepSeek"
+description = "Shared core modules for DeepSeek TUI"
 
 [features]
 default = ["tui", "json", "toml"]

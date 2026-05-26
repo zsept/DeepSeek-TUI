@@ -28,8 +28,8 @@ use std::sync::OnceLock;
 
 use tokio::sync::mpsc;
 
-use deepseek_engine::session::manager::{SavedSession, SessionManager};
-use deepseek_engine::utils::spawn_supervised;
+use deepseek_shared::session::manager::{SavedSession, SessionManager};
+use deepseek_shared::utils::spawn_supervised;
 
 // ---------------------------------------------------------------------------
 // Request type

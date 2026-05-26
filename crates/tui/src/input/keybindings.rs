@@ -33,8 +33,8 @@ pub enum KeybindingSection {
 }
 
 impl KeybindingSection {
-    pub fn label(self, locale: deepseek_engine::localization::Locale) -> &'static str {
-        use deepseek_engine::localization::{MessageId, tr};
+    pub fn label(self, locale: deepseek_shared::localization::Locale) -> &'static str {
+        use deepseek_shared::localization::{MessageId, tr};
         let id = match self {
             Self::Navigation => MessageId::HelpSectionNavigation,
             Self::Editing => MessageId::HelpSectionEditing,
@@ -65,7 +65,7 @@ impl KeybindingSection {
 #[derive(Debug, Clone, Copy)]
 pub struct KeybindingEntry {
     pub chord: &'static str,
-    pub description_id: deepseek_engine::localization::MessageId,
+    pub description_id: deepseek_shared::localization::MessageId,
     pub section: KeybindingSection,
 }
 
@@ -80,223 +80,223 @@ pub const KEYBINDINGS: &[KeybindingEntry] = &[
     // --- Navigation ---
     KeybindingEntry {
         chord: "↑ / ↓",
-        description_id: deepseek_engine::localization::MessageId::KbScrollTranscript,
+        description_id: deepseek_shared::localization::MessageId::KbScrollTranscript,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "Ctrl+↑ / Ctrl+↓",
-        description_id: deepseek_engine::localization::MessageId::KbNavigateHistory,
+        description_id: deepseek_shared::localization::MessageId::KbNavigateHistory,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "Alt+↑ / Alt+↓",
-        description_id: deepseek_engine::localization::MessageId::KbScrollTranscriptAlt,
+        description_id: deepseek_shared::localization::MessageId::KbScrollTranscriptAlt,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "Shift+↑ / Shift+↓",
-        description_id: deepseek_engine::localization::MessageId::KbBrowseHistory,
+        description_id: deepseek_shared::localization::MessageId::KbBrowseHistory,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "PgUp / PgDn",
-        description_id: deepseek_engine::localization::MessageId::KbScrollPage,
+        description_id: deepseek_shared::localization::MessageId::KbScrollPage,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "Ctrl+Home / Ctrl+End",
-        description_id: deepseek_engine::localization::MessageId::KbJumpTopBottom,
+        description_id: deepseek_shared::localization::MessageId::KbJumpTopBottom,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "g / G",
-        description_id: deepseek_engine::localization::MessageId::KbJumpTopBottomEmpty,
+        description_id: deepseek_shared::localization::MessageId::KbJumpTopBottomEmpty,
         section: KeybindingSection::Navigation,
     },
     KeybindingEntry {
         chord: "[ / ]",
-        description_id: deepseek_engine::localization::MessageId::KbJumpToolBlocks,
+        description_id: deepseek_shared::localization::MessageId::KbJumpToolBlocks,
         section: KeybindingSection::Navigation,
     },
     // --- Editing ---
     KeybindingEntry {
         chord: "← / →",
-        description_id: deepseek_engine::localization::MessageId::KbMoveCursor,
+        description_id: deepseek_shared::localization::MessageId::KbMoveCursor,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Home / End",
-        description_id: deepseek_engine::localization::MessageId::KbJumpLineStartEnd,
+        description_id: deepseek_shared::localization::MessageId::KbJumpLineStartEnd,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Ctrl+A / Ctrl+E",
-        description_id: deepseek_engine::localization::MessageId::KbJumpLineStartEnd,
+        description_id: deepseek_shared::localization::MessageId::KbJumpLineStartEnd,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Backspace / Delete",
-        description_id: deepseek_engine::localization::MessageId::KbDeleteChar,
+        description_id: deepseek_shared::localization::MessageId::KbDeleteChar,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Ctrl+U",
-        description_id: deepseek_engine::localization::MessageId::KbClearDraft,
+        description_id: deepseek_shared::localization::MessageId::KbClearDraft,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Ctrl+S",
-        description_id: deepseek_engine::localization::MessageId::KbStashDraft,
+        description_id: deepseek_shared::localization::MessageId::KbStashDraft,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Alt+R",
-        description_id: deepseek_engine::localization::MessageId::KbSearchHistory,
+        description_id: deepseek_shared::localization::MessageId::KbSearchHistory,
         section: KeybindingSection::Editing,
     },
     KeybindingEntry {
         chord: "Ctrl+J / Alt+Enter / Shift+Enter",
-        description_id: deepseek_engine::localization::MessageId::KbInsertNewline,
+        description_id: deepseek_shared::localization::MessageId::KbInsertNewline,
         section: KeybindingSection::Editing,
     },
     // --- Submission / actions ---
     KeybindingEntry {
         chord: "Enter",
-        description_id: deepseek_engine::localization::MessageId::KbSendDraft,
+        description_id: deepseek_shared::localization::MessageId::KbSendDraft,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Esc",
-        description_id: deepseek_engine::localization::MessageId::KbCloseMenu,
+        description_id: deepseek_shared::localization::MessageId::KbCloseMenu,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+C",
-        description_id: deepseek_engine::localization::MessageId::KbCancelOrExit,
+        description_id: deepseek_shared::localization::MessageId::KbCancelOrExit,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+B",
-        description_id: deepseek_engine::localization::MessageId::KbShellControls,
+        description_id: deepseek_shared::localization::MessageId::KbShellControls,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+D",
-        description_id: deepseek_engine::localization::MessageId::KbExitEmpty,
+        description_id: deepseek_shared::localization::MessageId::KbExitEmpty,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+K",
-        description_id: deepseek_engine::localization::MessageId::KbCommandPalette,
+        description_id: deepseek_shared::localization::MessageId::KbCommandPalette,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+P",
-        description_id: deepseek_engine::localization::MessageId::KbFuzzyFilePicker,
+        description_id: deepseek_shared::localization::MessageId::KbFuzzyFilePicker,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Alt+C",
-        description_id: deepseek_engine::localization::MessageId::KbCompactInspector,
+        description_id: deepseek_shared::localization::MessageId::KbCompactInspector,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "l",
-        description_id: deepseek_engine::localization::MessageId::KbLastMessagePager,
+        description_id: deepseek_shared::localization::MessageId::KbLastMessagePager,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "v",
-        description_id: deepseek_engine::localization::MessageId::KbSelectedDetails,
+        description_id: deepseek_shared::localization::MessageId::KbSelectedDetails,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Alt+V",
-        description_id: deepseek_engine::localization::MessageId::KbToolDetailsPager,
+        description_id: deepseek_shared::localization::MessageId::KbToolDetailsPager,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+O",
-        description_id: deepseek_engine::localization::MessageId::KbThinkingPager,
+        description_id: deepseek_shared::localization::MessageId::KbThinkingPager,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Ctrl+T",
-        description_id: deepseek_engine::localization::MessageId::KbLiveTranscript,
+        description_id: deepseek_shared::localization::MessageId::KbLiveTranscript,
         section: KeybindingSection::Submission,
     },
     KeybindingEntry {
         chord: "Esc Esc",
-        description_id: deepseek_engine::localization::MessageId::KbBacktrackMessage,
+        description_id: deepseek_shared::localization::MessageId::KbBacktrackMessage,
         section: KeybindingSection::Submission,
     },
     // --- Modes ---
     KeybindingEntry {
         chord: "Tab / Shift+Tab",
-        description_id: deepseek_engine::localization::MessageId::KbCompleteCycleModes,
+        description_id: deepseek_shared::localization::MessageId::KbCompleteCycleModes,
         section: KeybindingSection::Modes,
     },
     KeybindingEntry {
         chord: "Alt+1 / Alt+2 / Alt+3",
-        description_id: deepseek_engine::localization::MessageId::KbJumpPlanAgentYolo,
+        description_id: deepseek_shared::localization::MessageId::KbJumpPlanAgentYolo,
         section: KeybindingSection::Modes,
     },
     KeybindingEntry {
         chord: "Alt+P / Alt+A / Alt+Y",
-        description_id: deepseek_engine::localization::MessageId::KbAltJumpPlanAgentYolo,
+        description_id: deepseek_shared::localization::MessageId::KbAltJumpPlanAgentYolo,
         section: KeybindingSection::Modes,
     },
     KeybindingEntry {
         chord: "Alt+! / Alt+@ / Alt+# / Alt+$ / Alt+0 / Ctrl+Alt+0",
-        description_id: deepseek_engine::localization::MessageId::KbFocusSidebar,
+        description_id: deepseek_shared::localization::MessageId::KbFocusSidebar,
         section: KeybindingSection::Modes,
     },
     KeybindingEntry {
         chord: "Ctrl+X",
-        description_id: deepseek_engine::localization::MessageId::KbTogglePlanAgent,
+        description_id: deepseek_shared::localization::MessageId::KbTogglePlanAgent,
         section: KeybindingSection::Modes,
     },
     // --- Sessions ---
     KeybindingEntry {
         chord: "Ctrl+R",
-        description_id: deepseek_engine::localization::MessageId::KbSessionPicker,
+        description_id: deepseek_shared::localization::MessageId::KbSessionPicker,
         section: KeybindingSection::Sessions,
     },
     // --- Clipboard ---
     KeybindingEntry {
         chord: "Ctrl+V",
-        description_id: deepseek_engine::localization::MessageId::KbPasteAttach,
+        description_id: deepseek_shared::localization::MessageId::KbPasteAttach,
         section: KeybindingSection::Clipboard,
     },
     KeybindingEntry {
         chord: "Ctrl+Shift+C",
-        description_id: deepseek_engine::localization::MessageId::KbCopySelection,
+        description_id: deepseek_shared::localization::MessageId::KbCopySelection,
         section: KeybindingSection::Clipboard,
     },
     KeybindingEntry {
         chord: "Right click",
-        description_id: deepseek_engine::localization::MessageId::KbContextMenu,
+        description_id: deepseek_shared::localization::MessageId::KbContextMenu,
         section: KeybindingSection::Clipboard,
     },
     KeybindingEntry {
         chord: "@path",
-        description_id: deepseek_engine::localization::MessageId::KbAttachPath,
+        description_id: deepseek_shared::localization::MessageId::KbAttachPath,
         section: KeybindingSection::Clipboard,
     },
     // --- Help ---
     KeybindingEntry {
         chord: "?",
-        description_id: deepseek_engine::localization::MessageId::KbHelpOverlay,
+        description_id: deepseek_shared::localization::MessageId::KbHelpOverlay,
         section: KeybindingSection::Help,
     },
     KeybindingEntry {
         chord: "F1",
-        description_id: deepseek_engine::localization::MessageId::KbToggleHelp,
+        description_id: deepseek_shared::localization::MessageId::KbToggleHelp,
         section: KeybindingSection::Help,
     },
     KeybindingEntry {
         chord: "Ctrl+/",
-        description_id: deepseek_engine::localization::MessageId::KbToggleHelp,
+        description_id: deepseek_shared::localization::MessageId::KbToggleHelp,
         section: KeybindingSection::Help,
     },
 ];
@@ -349,10 +349,10 @@ mod tests {
 
         assert_eq!(
             ctrl_o.description_id,
-            deepseek_engine::localization::MessageId::KbThinkingPager
+            deepseek_shared::localization::MessageId::KbThinkingPager
         );
         assert_eq!(
-            deepseek_engine::localization::tr(deepseek_engine::localization::Locale::En, ctrl_o.description_id,),
+            deepseek_shared::localization::tr(deepseek_shared::localization::Locale::En, ctrl_o.description_id,),
             "Open Activity Detail"
         );
     }

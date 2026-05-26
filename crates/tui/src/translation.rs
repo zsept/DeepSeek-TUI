@@ -18,7 +18,7 @@
 
 use anyhow::Result;
 
-use deepseek_engine::core::client::DeepSeekClient;
+use deepseek_shared::core::client::DeepSeekClient;
 
 /// Heuristic threshold: if more than this fraction of alphabetic characters
 /// are Latin (A-Z / a-z), the text is considered English.

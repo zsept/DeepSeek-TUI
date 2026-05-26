@@ -70,15 +70,15 @@ pub struct CommandInfo {
 impl CommandInfo {
     pub fn requires_argument(&self) -> bool { self.usage.contains('<') }
     pub fn palette_command(&self) -> String { format!("/{} ", self.name) }
-    pub fn palette_description_for(&self, _locale: deepseek_engine::localization::Locale) -> String { self.usage.to_string() }
-    pub fn description_for(&self, _locale: deepseek_engine::localization::Locale) -> &'static str { self.usage }
+    pub fn palette_description_for(&self, _locale: deepseek_shared::localization::Locale) -> String { self.usage.to_string() }
+    pub fn description_for(&self, _locale: deepseek_shared::localization::Locale) -> &'static str { self.usage }
 }
 
 /// Command registry stub — empty for now.
 pub static COMMANDS: &[CommandInfo] = &[];
 
 /// Re-export auto-route types so TUI code can use `commands::AutoRouteSelection` etc.
-pub use deepseek_engine::auto_route::{
+pub use deepseek_shared::auto_route::{
     AutoRouteRecommendation, AutoRouteSelection,
     normalize_auto_route_effort, resolve_auto_route_with_flash,
 };
@@ -93,7 +93,7 @@ pub fn set_config_value(_app: &mut crate::app::App, _key: &str, _value: &str, _p
 
 /// Persist status items.
 pub fn persist_status_items(
-    _items: &[deepseek_engine::config::StatusItem],
+    _items: &[deepseek_shared::config::StatusItem],
 ) -> anyhow::Result<std::path::PathBuf> {
     Ok(std::path::PathBuf::new())
 }
@@ -109,7 +109,7 @@ pub fn persist_root_string_key(
 pub fn auto_model_heuristic(_input: &str, _current: &str) -> String { String::new() }
 
 /// Switch TUI mode.
-pub fn switch_mode(_app: &mut crate::app::App, _mode: deepseek_engine::mode_types::AppMode) -> CommandResult {
+pub fn switch_mode(_app: &mut crate::app::App, _mode: deepseek_shared::mode_types::AppMode) -> CommandResult {
     CommandResult { message: None, action: None, is_error: false }
 }
 

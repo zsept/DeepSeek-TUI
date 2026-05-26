@@ -10,7 +10,7 @@
 //! `SendMessage` action that asks the model to translate the changelog into
 //! the user's language.
 
-use deepseek_engine::localization::{Locale, MessageId, tr};
+use deepseek_shared::localization::{Locale, MessageId, tr};
 
 use super::CommandResult;
 
@@ -308,8 +308,8 @@ fn next_contentful_version_after(lines: &[&str], mut pos: usize) -> Option<Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
-    use deepseek_engine::localization::Locale;
+    use deepseek_shared::config::Config;
+    use deepseek_shared::localization::Locale;
     use crate::ui::app::{App, TuiOptions};
     fn make_app(tmpdir: &tempfile::TempDir, locale: Locale, has_api_key: bool) -> App {
         let mut config = Config::default();

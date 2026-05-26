@@ -2,7 +2,7 @@
 members = [
     "crates/cli",
     "crates/config",
-    "crates/engine",
+    "crates/shared",
     "crates/agent",
     "crates/execpolicy",
     "crates/mcp",

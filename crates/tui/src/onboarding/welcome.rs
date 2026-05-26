@@ -3,7 +3,7 @@
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 
 pub fn lines() -> Vec<Line<'static>> {
     vec![

@@ -3,9 +3,9 @@
 use std::path::PathBuf;
 use std::time::Instant;
 
-use deepseek_engine::hooks::HookEvent;
-use deepseek_engine::tools::ReviewOutput;
-use deepseek_engine::tools::spec::{ToolError, ToolResult};
+use deepseek_shared::hooks::HookEvent;
+use deepseek_shared::tools::ReviewOutput;
+use deepseek_shared::tools::spec::{ToolError, ToolResult};
 use crate::render::active_cell::ActiveCell;
 use crate::app::{App, ToolDetailRecord};
 use crate::render::history::{
@@ -387,7 +387,7 @@ fn accrue_child_token_cost_if_any(app: &mut App, result: &Result<ToolResult, Too
         reasoning_replay_tokens: None,
         server_tool_use: None,
     };
-    if let Some(cost) = deepseek_engine::pricing::calculate_turn_cost_estimate_from_usage(model, &usage) {
+    if let Some(cost) = deepseek_shared::pricing::calculate_turn_cost_estimate_from_usage(model, &usage) {
         app.accrue_agent_cost_estimate(cost);
     }
 }
@@ -442,7 +442,7 @@ fn record_spillover_artifact_if_any(
         return;
     }
     app.session_artifacts
-        .push(deepseek_engine::artifacts::record_tool_output_artifact_with_size(
+        .push(deepseek_shared::artifacts::record_tool_output_artifact_with_size(
             session_id,
             id,
             name,

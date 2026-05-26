@@ -63,7 +63,7 @@ pub fn review(app: &mut App, args: Option<&str>) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use tempfile::TempDir;
 

@@ -9,7 +9,7 @@
 //! helpers are pure transforms used to build that summary.
 
 use crate::commands;
-use deepseek_engine::config::Config;
+use deepseek_shared::config::Config;
 use deepseek_models::{ContentBlock, Message};
 use crate::app::{App, QueuedMessage, ReasoningEffort};
 
@@ -38,7 +38,7 @@ pub(crate) async fn resolve_auto_model_selection(
             provider: String::new(),
             reasoning_effort: Some(app.reasoning_effort.as_setting().to_string()),
             objective: None,
-            source: deepseek_engine::auto_route::AutoRouteSource::Heuristic,
+            source: deepseek_shared::auto_route::AutoRouteSource::Heuristic,
         })
 }
 

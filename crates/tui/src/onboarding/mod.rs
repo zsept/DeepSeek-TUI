@@ -15,7 +15,7 @@ use ratatui::{
     widgets::{Block, Borders, Padding, Paragraph, Wrap},
 };
 
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::app::{App, OnboardingState};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
@@ -95,7 +95,7 @@ fn onboarding_step(app: &App) -> (usize, usize) {
 }
 
 pub fn tips_lines(app: &App) -> Vec<ratatui::text::Line<'static>> {
-    use deepseek_engine::localization::MessageId;
+    use deepseek_shared::localization::MessageId;
     use ratatui::style::Modifier;
     use ratatui::text::{Line, Span};
 
@@ -146,7 +146,7 @@ pub fn mark_onboarded() -> std::io::Result<PathBuf> {
 }
 
 pub fn needs_trust(workspace: &Path) -> bool {
-    if deepseek_engine::config::is_workspace_trusted(workspace) {
+    if deepseek_shared::config::is_workspace_trusted(workspace) {
         return false;
     }
 
@@ -158,7 +158,7 @@ pub fn needs_trust(workspace: &Path) -> bool {
 }
 
 pub fn mark_trusted(workspace: &Path) -> anyhow::Result<PathBuf> {
-    deepseek_engine::config::save_workspace_trust(workspace)
+    deepseek_shared::config::save_workspace_trust(workspace)
 }
 
 // ── API key validation and state-machine transitions ─────────────────

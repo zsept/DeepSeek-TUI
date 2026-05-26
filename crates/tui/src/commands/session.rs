@@ -3,7 +3,7 @@
 use std::fmt::Write;
 use std::path::PathBuf;
 
-use deepseek_engine::session::manager::create_saved_session_with_mode;
+use deepseek_shared::session::manager::create_saved_session_with_mode;
 
 use super::CommandResult;
 
@@ -45,7 +45,7 @@ pub fn save(app: &mut App, path: Option<&str>) -> CommandResult {
                     CommandResult::message(format!(
                         "Session saved to {} (ID: {})",
                         save_path.display(),
-                        deepseek_engine::session::manager::truncate_id(&session.metadata.id)
+                        deepseek_shared::session::manager::truncate_id(&session.metadata.id)
                     ))
                 }
                 Err(e) => CommandResult::error(format!("Failed to save session: {e}")),
@@ -74,7 +74,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
         }
     };
 
-    let session: deepseek_engine::session::manager::SavedSession = match serde_json::from_str(&content) {
+    let session: deepseek_shared::session::manager::SavedSession = match serde_json::from_str(&content) {
         Ok(s) => s,
         Err(e) => {
             return CommandResult::error(format!("Failed to parse session file: {e}"));
@@ -120,7 +120,7 @@ pub fn load(app: &mut App, path: Option<&str>) -> CommandResult {
         format!(
             "Session loaded from {} (ID: {}, {} messages)",
             load_path.display(),
-            deepseek_engine::session::manager::truncate_id(&session.metadata.id),
+            deepseek_shared::session::manager::truncate_id(&session.metadata.id),
             session.metadata.message_count
         ),
         crate::ui::app::AppAction::SyncSession {
@@ -168,8 +168,8 @@ pub fn export(app: &mut App, path: Option<&str>) -> CommandResult {
             HistoryCell::Assistant { content, .. } => ("**Assistant:**", content.clone()),
             HistoryCell::System { content } => ("*System:*", content.clone()),
             HistoryCell::Error { message, severity } => match severity {
-                deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
-                deepseek_engine::core::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
+                deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
+                deepseek_shared::core::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
                 _ => ("**Error:**", message.clone()),
             },
             HistoryCell::Thinking { content, .. } => ("*Thinking:*", content.clone()),
@@ -220,7 +220,7 @@ pub fn sessions(app: &mut App, arg: Option<&str>) -> CommandResult {
 
 /// Prune persisted sessions older than `<days>` from
 /// `~/.deepseek/sessions/`. Wraps
-/// [`deepseek_engine::session::manager::SessionManager::prune_sessions_older_than`]
+/// [`deepseek_shared::session::manager::SessionManager::prune_sessions_older_than`]
 /// so users can run a safe cleanup without leaving the TUI. Skips
 /// the checkpoint subdirectory (the helper guarantees that already).
 fn prune(_app: &mut App, days_arg: Option<&str>) -> CommandResult {
@@ -241,7 +241,7 @@ fn prune(_app: &mut App, days_arg: Option<&str>) -> CommandResult {
         }
     };
 
-    let manager = match deepseek_engine::session::manager::SessionManager::default_location() {
+    let manager = match deepseek_shared::session::manager::SessionManager::default_location() {
         Ok(m) => m,
         Err(err) => {
             return CommandResult::error(format!("could not open sessions directory: {err}"));
@@ -285,7 +285,7 @@ fn line_to_string(line: ratatui::text::Line<'static>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::{App, TuiOptions, TurnCacheRecord};
     use std::time::Instant;
     use tempfile::TempDir;
@@ -336,9 +336,9 @@ mod tests {
         let mut app = create_test_app_with_tmpdir(&tmpdir);
         let save_path = tmpdir.path().join("artifact_session.json");
         app.session_artifacts
-            .push(deepseek_engine::artifacts::ArtifactRecord {
+            .push(deepseek_shared::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: deepseek_engine::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_shared::artifacts::ArtifactKind::ToolOutput,
                 session_id: "artifact-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -351,7 +351,7 @@ mod tests {
         let result = save(&mut app, Some(save_path.to_str().unwrap()));
 
         assert!(!result.is_error);
-        let saved: deepseek_engine::session::manager::SavedSession =
+        let saved: deepseek_shared::session::manager::SavedSession =
             serde_json::from_str(&std::fs::read_to_string(save_path).unwrap()).unwrap();
         assert_eq!(saved.artifacts, app.session_artifacts);
     }
@@ -451,9 +451,9 @@ mod tests {
         let mut saved_app = create_test_app_with_tmpdir(&tmpdir);
         saved_app
             .session_artifacts
-            .push(deepseek_engine::artifacts::ArtifactRecord {
+            .push(deepseek_shared::artifacts::ArtifactRecord {
                 id: "art_call_big".to_string(),
-                kind: deepseek_engine::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_shared::artifacts::ArtifactKind::ToolOutput,
                 session_id: "artifact-session".to_string(),
                 tool_call_id: "call-big".to_string(),
                 tool_name: "exec_shell".to_string(),
@@ -467,9 +467,9 @@ mod tests {
 
         let mut app = create_test_app_with_tmpdir(&tmpdir);
         app.session_artifacts
-            .push(deepseek_engine::artifacts::ArtifactRecord {
+            .push(deepseek_shared::artifacts::ArtifactRecord {
                 id: "art_stale".to_string(),
-                kind: deepseek_engine::artifacts::ArtifactKind::ToolOutput,
+                kind: deepseek_shared::artifacts::ArtifactKind::ToolOutput,
                 session_id: "stale-session".to_string(),
                 tool_call_id: "stale".to_string(),
                 tool_name: "exec_shell".to_string(),

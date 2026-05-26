@@ -26,7 +26,7 @@ pub fn remove_server_config(
 }
 pub async fn discover_manager_snapshot(
     _path: &Path,
-    _network_policy: Option<deepseek_engine::network_policy::NetworkPolicyDecider>,
+    _network_policy: Option<deepseek_shared::network_policy::NetworkPolicyDecider>,
     _restart_required: bool,
 ) -> anyhow::Result<deepseek_mcp::McpManagerSnapshot> {
     Ok(deepseek_mcp::McpManagerSnapshot::default())

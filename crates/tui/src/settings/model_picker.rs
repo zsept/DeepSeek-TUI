@@ -27,10 +27,10 @@ use ratatui::{
 };
 use std::collections::HashSet;
 
-use deepseek_engine::config::{
+use deepseek_shared::config::{
     ApiProvider, model_completion_names_for_provider, provider_passes_model_through,
 };
-use deepseek_engine::palette;
+use deepseek_shared::palette;
 use crate::app::{App, ReasoningEffort};
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
@@ -378,7 +378,7 @@ impl ModalView for ModelPickerView {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::app::{App, TuiOptions};
     use std::path::PathBuf;
 
@@ -417,7 +417,7 @@ mod tests {
         app.model = "deepseek-v4-pro".to_string();
         app.auto_model = false;
         app.reasoning_effort = ReasoningEffort::Max;
-        app.api_provider = deepseek_engine::config::ApiProvider::Deepseek;
+        app.api_provider = deepseek_shared::config::ApiProvider::Deepseek;
         (app, lock)
     }
 
@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn picker_exposes_auto_and_distinct_thinking_tiers() {
-        let model_rows = picker_models_for_provider(deepseek_engine::config::ApiProvider::Deepseek);
+        let model_rows = picker_models_for_provider(deepseek_shared::config::ApiProvider::Deepseek);
         let model_labels: Vec<_> = model_rows.iter().map(|(id, _)| id.as_str()).collect();
         assert_eq!(
             model_labels,
@@ -505,7 +505,7 @@ mod tests {
     #[test]
     fn picker_uses_live_provider_model_ids_when_supplied() {
         let (mut app, _lock) = create_test_app();
-        app.api_provider = deepseek_engine::config::ApiProvider::Openrouter;
+        app.api_provider = deepseek_shared::config::ApiProvider::Openrouter;
         app.model = "meta-llama/llama-3.1-405b-instruct".to_string();
         app.auto_model = false;
 

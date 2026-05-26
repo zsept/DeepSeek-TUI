@@ -18,8 +18,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Padding, Paragraph, Widget},
 };
 
-use deepseek_engine::config::StatusItem;
-use deepseek_engine::palette;
+use deepseek_shared::config::StatusItem;
+use deepseek_shared::palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 /// Picker state. We hold both the user's working selection AND the original

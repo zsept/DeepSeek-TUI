@@ -1,7 +1,7 @@
 use super::*;
-use deepseek_engine::config::{ApiProvider, Config};
+use deepseek_shared::config::{ApiProvider, Config};
 use crate::config_ui::{self, WebConfigSession, WebConfigSessionEvent};
-use deepseek_engine::core::engine::mock_engine_handle;
+use deepseek_shared::core::engine::mock_engine_handle;
 use crate::render::active_cell::ActiveCell;
 use crate::app::ToolDetailRecord;
 use crate::files::file_mention::{
@@ -17,7 +17,7 @@ use crate::render::history::{
     ExecCell, ExecSource, GenericToolCell, HistoryCell, ToolCell, ToolStatus,
 };
 use crate::ui::views::{ModalView, ViewAction};
-use deepseek_engine::working_set::Workspace;
+use deepseek_shared::working_set::Workspace;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::text::Span;
 use std::collections::HashSet;
@@ -1199,8 +1199,8 @@ fn create_test_app() -> App {
     };
     let mut app = App::new(options, &Config::default());
     // Pin locale and currency for deterministic tests regardless of host locale.
-    app.cost_currency = deepseek_engine::pricing::CostCurrency::Usd;
-    app.ui_locale = deepseek_engine::localization::Locale::En;
+    app.cost_currency = deepseek_shared::pricing::CostCurrency::Usd;
+    app.ui_locale = deepseek_shared::localization::Locale::En;
     app
 }
 
@@ -1270,7 +1270,7 @@ fn text_message(role: &str, text: &str) -> Message {
 fn saved_session_with_messages(messages: Vec<Message>) -> SavedSession {
     SavedSession {
         schema_version: 1,
-        metadata: deepseek_engine::session::manager::SessionMetadata {
+        metadata: deepseek_shared::session::manager::SessionMetadata {
             id: "resume-recovery-session".to_string(),
             title: "resume recovery".to_string(),
             created_at: chrono::Utc::now(),
@@ -1280,7 +1280,7 @@ fn saved_session_with_messages(messages: Vec<Message>) -> SavedSession {
             model: "deepseek-v4-pro".to_string(),
             workspace: PathBuf::from("/tmp/resume-recovery"),
             mode: Some("yolo".to_string()),
-            cost: deepseek_engine::session::manager::SessionCostSnapshot::default(),
+            cost: deepseek_shared::session::manager::SessionCostSnapshot::default(),
         },
         messages,
         system_prompt: None,
@@ -1609,7 +1609,7 @@ fn terminal_probe_timeout_defaults_to_500ms() {
 #[test]
 fn terminal_probe_timeout_uses_tui_config_and_clamps() {
     let mut config = Config {
-        tui: Some(deepseek_engine::config::TuiConfig {
+        tui: Some(deepseek_shared::config::TuiConfig {
             alternate_screen: None,
             mouse_capture: None,
             terminal_probe_timeout_ms: Some(750),
@@ -1696,19 +1696,19 @@ async fn model_change_update_syncs_engine_model_before_compaction() {
     let mut app = create_test_app();
     app.model = "deepseek-v4-flash".to_string();
     let compaction = app.compaction_config();
-    let mut engine = deepseek_engine::core::engine::mock_engine_handle();
+    let mut engine = deepseek_shared::core::engine::mock_engine_handle();
 
     apply_model_and_compaction_update(&engine.handle, compaction).await;
 
     match engine.rx_op.recv().await.expect("set model op") {
-        deepseek_engine::core::ops::Op::SetModel { model } => {
+        deepseek_shared::core::ops::Op::SetModel { model } => {
             assert_eq!(model, "deepseek-v4-flash");
         }
         other => panic!("expected SetModel, got {other:?}"),
     }
 
     match engine.rx_op.recv().await.expect("set compaction op") {
-        deepseek_engine::core::ops::Op::SetCompaction { config } => {
+        deepseek_shared::core::ops::Op::SetCompaction { config } => {
             assert_eq!(config.model, "deepseek-v4-flash");
         }
         other => panic!("expected SetCompaction, got {other:?}"),
@@ -1718,7 +1718,7 @@ async fn model_change_update_syncs_engine_model_before_compaction() {
 #[test]
 fn saved_default_provider_syncs_back_to_runtime_config() {
     let _home = SettingsHomeGuard::new();
-    let settings = deepseek_engine::config::settings::Settings {
+    let settings = deepseek_shared::config::settings::Settings {
         default_provider: Some("ollama".to_string()),
         ..Default::default()
     };
@@ -2051,15 +2051,15 @@ fn hidden_sidebar_focus_suppresses_sidebar_split_even_when_wide() {
 
 fn make_agent(
     id: &str,
-    status: deepseek_engine::tools::agent::AgentStatus,
-) -> deepseek_engine::tools::agent::AgentResult {
-    deepseek_engine::tools::agent::AgentResult {
+    status: deepseek_shared::tools::agent::AgentStatus,
+) -> deepseek_shared::tools::agent::AgentResult {
+    deepseek_shared::tools::agent::AgentResult {
         name: id.to_string(),
         agent_id: id.to_string(),
         context_mode: "fresh".to_string(),
         fork_context: false,
-        agent_type: deepseek_engine::tools::agent::AgentRole::General,
-        assignment: deepseek_engine::tools::agent::AgentAssignment {
+        agent_type: deepseek_shared::tools::agent::AgentRole::General,
+        assignment: deepseek_shared::tools::agent::AgentAssignment {
             objective: format!("objective-{id}"),
             role: Some("worker".to_string()),
         },
@@ -2076,11 +2076,11 @@ fn make_agent(
 #[test]
 fn sort_agents_orders_running_before_terminal_statuses() {
     let mut agents = vec![
-        make_agent("agent_c", deepseek_engine::tools::agent::AgentStatus::Completed),
-        make_agent("agent_a", deepseek_engine::tools::agent::AgentStatus::Running),
+        make_agent("agent_c", deepseek_shared::tools::agent::AgentStatus::Completed),
+        make_agent("agent_a", deepseek_shared::tools::agent::AgentStatus::Running),
         make_agent(
             "agent_b",
-            deepseek_engine::tools::agent::AgentStatus::Failed("boom".to_string()),
+            deepseek_shared::tools::agent::AgentStatus::Failed("boom".to_string()),
         ),
     ];
 
@@ -2095,8 +2095,8 @@ fn sort_agents_orders_running_before_terminal_statuses() {
 fn running_agent_count_unions_cache_and_progress() {
     let mut app = create_test_app();
     app.agent_cache = vec![
-        make_agent("agent_a", deepseek_engine::tools::agent::AgentStatus::Running),
-        make_agent("agent_b", deepseek_engine::tools::agent::AgentStatus::Completed),
+        make_agent("agent_a", deepseek_shared::tools::agent::AgentStatus::Running),
+        make_agent("agent_b", deepseek_shared::tools::agent::AgentStatus::Completed),
     ];
     app.agent_progress
         .insert("agent_c".to_string(), "planning".to_string());
@@ -2108,8 +2108,8 @@ fn running_agent_count_unions_cache_and_progress() {
 fn reconcile_agent_activity_state_trims_stale_progress_and_sets_anchor() {
     let mut app = create_test_app();
     app.agent_cache = vec![
-        make_agent("agent_a", deepseek_engine::tools::agent::AgentStatus::Running),
-        make_agent("agent_b", deepseek_engine::tools::agent::AgentStatus::Completed),
+        make_agent("agent_a", deepseek_shared::tools::agent::AgentStatus::Running),
+        make_agent("agent_b", deepseek_shared::tools::agent::AgentStatus::Completed),
     ];
     app.agent_progress
         .insert("agent_stale".to_string(), "old".to_string());
@@ -2131,7 +2131,7 @@ fn subagent_token_usage_updates_live_cost_counter_without_card_change() {
     handle_agent_mailbox(
         &mut app,
         1,
-        &deepseek_engine::tools::agent::MailboxMessage::TokenUsage {
+        &deepseek_shared::tools::agent::MailboxMessage::TokenUsage {
             agent_id: "agent-a".to_string(),
             model: "deepseek-v4-flash".to_string(),
             usage: deepseek_models::Usage {
@@ -2152,7 +2152,7 @@ fn subagent_token_usage_updates_live_cost_counter_without_card_change() {
 #[test]
 fn subagent_token_usage_is_deduped_by_mailbox_sequence() {
     let mut app = create_test_app();
-    let usage = deepseek_engine::tools::agent::MailboxMessage::TokenUsage {
+    let usage = deepseek_shared::tools::agent::MailboxMessage::TokenUsage {
         agent_id: "agent-a".to_string(),
         model: "deepseek-v4-flash".to_string(),
         usage: deepseek_models::Usage {
@@ -2260,7 +2260,7 @@ fn footer_status_line_spans_truncate_long_model_names() {
 fn footer_coherence_chip_hides_healthy_and_uses_clear_labels() {
     let mut app = create_test_app();
 
-    app.coherence_state = deepseek_engine::capacity::coherence::CoherenceState::Healthy;
+    app.coherence_state = deepseek_shared::capacity::coherence::CoherenceState::Healthy;
     assert!(
         footer_coherence_spans(&app).is_empty(),
         "healthy state should produce no footer chip"
@@ -2269,7 +2269,7 @@ fn footer_coherence_chip_hides_healthy_and_uses_clear_labels() {
     // GettingCrowded is intentionally suppressed — see the rationale in
     // `footer_coherence_spans`. The footer only surfaces active engine
     // interventions; soft pressure hints stay quiet.
-    app.coherence_state = deepseek_engine::capacity::coherence::CoherenceState::GettingCrowded;
+    app.coherence_state = deepseek_shared::capacity::coherence::CoherenceState::GettingCrowded;
     assert!(
         footer_coherence_spans(&app).is_empty(),
         "GettingCrowded should not surface a footer chip; only active interventions do"
@@ -2277,15 +2277,15 @@ fn footer_coherence_chip_hides_healthy_and_uses_clear_labels() {
 
     let cases = [
         (
-            deepseek_engine::capacity::coherence::CoherenceState::RefreshingContext,
+            deepseek_shared::capacity::coherence::CoherenceState::RefreshingContext,
             "refreshing context",
         ),
         (
-            deepseek_engine::capacity::coherence::CoherenceState::VerifyingRecentWork,
+            deepseek_shared::capacity::coherence::CoherenceState::VerifyingRecentWork,
             "verifying",
         ),
         (
-            deepseek_engine::capacity::coherence::CoherenceState::ResettingPlan,
+            deepseek_shared::capacity::coherence::CoherenceState::ResettingPlan,
             "resetting plan",
         ),
     ];
@@ -2379,7 +2379,7 @@ fn footer_auxiliary_spans_show_tiny_positive_cost_when_roomy() {
 #[test]
 fn footer_auxiliary_spans_use_configured_cost_currency() {
     let mut app = create_test_app();
-    app.cost_currency = deepseek_engine::pricing::CostCurrency::Cny;
+    app.cost_currency = deepseek_shared::pricing::CostCurrency::Cny;
     app.session.session_cost_cny = 2.5;
 
     let roomy = spans_text(&footer_auxiliary_spans(&app, 32));
@@ -2942,7 +2942,7 @@ async fn dismissed_plan_prompt_leaves_non_numeric_input_for_normal_send_path() {
     app.plan_prompt_pending = true;
     app.offline_mode = true;
 
-    let engine = deepseek_engine::core::engine::mock_engine_handle();
+    let engine = deepseek_shared::core::engine::mock_engine_handle();
     let config = Config::default();
 
     let handled = handle_plan_choice(&mut app, &config, &engine.handle, "yolo")
@@ -2978,7 +2978,7 @@ async fn numeric_plan_choice_still_queues_follow_up_when_busy() {
     app.plan_prompt_pending = true;
     app.is_loading = true;
 
-    let engine = deepseek_engine::core::engine::mock_engine_handle();
+    let engine = deepseek_shared::core::engine::mock_engine_handle();
     let config = Config::default();
 
     let handled = handle_plan_choice(&mut app, &config, &engine.handle, "2")
@@ -3737,14 +3737,14 @@ fn apply_mention_menu_selection_with_no_entries_is_noop() {
 /// Build a minimal successful ToolResult with the given content.
 fn ok_result(
     content: &str,
-) -> Result<deepseek_engine::tools::spec::ToolResult, deepseek_engine::tools::spec::ToolError> {
-    Ok(deepseek_engine::tools::spec::ToolResult::success(content))
+) -> Result<deepseek_shared::tools::spec::ToolResult, deepseek_shared::tools::spec::ToolError> {
+    Ok(deepseek_shared::tools::spec::ToolResult::success(content))
 }
 
 #[test]
 fn tool_child_usage_metadata_updates_live_cost_counter() {
     let mut app = create_test_app();
-    let result = Ok(deepseek_engine::tools::spec::ToolResult::success("ok").with_metadata(
+    let result = Ok(deepseek_shared::tools::spec::ToolResult::success("ok").with_metadata(
         serde_json::json!({
             "child_model": "deepseek-v4-flash",
             "child_input_tokens": 10_000,
@@ -3766,7 +3766,7 @@ fn spilled_tool_completion_records_session_artifact_metadata() {
     let raw = "checking crate ... error[E0425]: cannot find value\n".repeat(20);
     std::fs::write(&spillover_path, &raw).expect("write spillover");
     let result = Ok(
-        deepseek_engine::tools::spec::ToolResult::success("checking crate ...").with_metadata(
+        deepseek_shared::tools::spec::ToolResult::success("checking crate ...").with_metadata(
             serde_json::json!({
                 "spillover_path": spillover_path.display().to_string(),
                 "artifact_session_id": "session-123",
@@ -3783,7 +3783,7 @@ fn spilled_tool_completion_records_session_artifact_metadata() {
 
     assert_eq!(app.session_artifacts.len(), 1);
     let artifact = &app.session_artifacts[0];
-    assert_eq!(artifact.kind, deepseek_engine::artifacts::ArtifactKind::ToolOutput);
+    assert_eq!(artifact.kind, deepseek_shared::artifacts::ArtifactKind::ToolOutput);
     assert_eq!(artifact.session_id, "session-123");
     assert_eq!(artifact.tool_call_id, "call-big");
     assert_eq!(artifact.tool_name, "exec_shell");
@@ -3795,7 +3795,7 @@ fn spilled_tool_completion_records_session_artifact_metadata() {
     assert!(artifact.preview.starts_with("checking crate"));
 
     let manager =
-        deepseek_engine::session::manager::SessionManager::new(tmp.path().join("sessions")).expect("manager");
+        deepseek_shared::session::manager::SessionManager::new(tmp.path().join("sessions")).expect("manager");
     let snapshot = build_session_snapshot(&app, &manager);
     assert_eq!(snapshot.artifacts, app.session_artifacts);
 }
@@ -3804,7 +3804,7 @@ fn spilled_tool_completion_records_session_artifact_metadata() {
 fn first_snapshot_preserves_current_session_id_for_artifact_ownership() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let manager =
-        deepseek_engine::session::manager::SessionManager::new(tmp.path().join("sessions")).expect("manager");
+        deepseek_shared::session::manager::SessionManager::new(tmp.path().join("sessions")).expect("manager");
     let mut app = create_test_app();
     app.current_session_id = Some("session-123".to_string());
     app.api_messages.push(text_message("user", "hello"));
@@ -3821,9 +3821,9 @@ fn apply_loaded_session_restores_artifact_registry() {
         text_message("user", "hello"),
         text_message("assistant", "hi"),
     ]);
-    session.artifacts.push(deepseek_engine::artifacts::ArtifactRecord {
+    session.artifacts.push(deepseek_shared::artifacts::ArtifactRecord {
         id: "art_call_big".to_string(),
-        kind: deepseek_engine::artifacts::ArtifactKind::ToolOutput,
+        kind: deepseek_shared::artifacts::ArtifactKind::ToolOutput,
         session_id: "session-123".to_string(),
         tool_call_id: "call-big".to_string(),
         tool_name: "exec_shell".to_string(),
@@ -4566,7 +4566,7 @@ fn activity_detail_fallback_uses_recent_meaningful_activity_without_full_tool_du
 
 #[test]
 fn engine_error_finalizes_active_thinking_block() {
-    use deepseek_engine::core::error_taxonomy::StreamError;
+    use deepseek_shared::core::error_taxonomy::StreamError;
 
     let mut app = create_test_app();
     let entry_idx = crate::ui::streaming_thinking::ensure_active_entry(&mut app);
@@ -4802,7 +4802,7 @@ fn truncate_line_to_width_respects_display_width_for_tiny_budgets() {
 /// the session in offline mode with the next typed message queued.
 #[test]
 fn recoverable_engine_error_does_not_enter_offline_mode() {
-    use deepseek_engine::core::error_taxonomy::{ErrorEnvelope, StreamError};
+    use deepseek_shared::core::error_taxonomy::{ErrorEnvelope, StreamError};
     let mut app = create_test_app();
     assert!(!app.offline_mode);
 
@@ -4837,7 +4837,7 @@ fn recoverable_engine_error_does_not_enter_offline_mode() {
 /// against a broken upstream.
 #[test]
 fn non_recoverable_engine_error_enters_offline_mode() {
-    use deepseek_engine::core::error_taxonomy::ErrorEnvelope;
+    use deepseek_shared::core::error_taxonomy::ErrorEnvelope;
     let mut app = create_test_app();
     assert!(!app.offline_mode);
 
@@ -4860,7 +4860,7 @@ fn non_recoverable_engine_error_enters_offline_mode() {
 
 #[test]
 fn env_only_auth_failure_reopens_api_key_onboarding() {
-    use deepseek_engine::core::error_taxonomy::ErrorEnvelope;
+    use deepseek_shared::core::error_taxonomy::ErrorEnvelope;
     let mut app = create_test_app();
     app.api_key_env_only = true;
     app.onboarding = crate::app::OnboardingState::None;
@@ -5077,7 +5077,7 @@ fn render_footer_from_with_default_items_renders_mode_and_model() {
     // identifier — whatever the configured default model is.
     let mut app = create_test_app();
     app.session.session_cost = 0.00005;
-    let items = deepseek_engine::config::StatusItem::default_footer();
+    let items = deepseek_shared::config::StatusItem::default_footer();
     let props = render_footer_from(&app, &items, None);
     assert_eq!(props.mode_label, "limited");
     assert!(!props.model.is_empty(), "footer should show a model name");
@@ -5088,14 +5088,14 @@ fn render_footer_from_with_default_items_renders_mode_and_model() {
 
 #[test]
 fn default_footer_keeps_prefix_stability_opt_in() {
-    let items = deepseek_engine::config::StatusItem::default_footer();
+    let items = deepseek_shared::config::StatusItem::default_footer();
 
     assert!(
-        !items.contains(&deepseek_engine::config::StatusItem::PrefixStability),
+        !items.contains(&deepseek_shared::config::StatusItem::PrefixStability),
         "prefix stability is a diagnostic chip and should not crowd the default footer"
     );
     assert!(
-        items.contains(&deepseek_engine::config::StatusItem::Cache),
+        items.contains(&deepseek_shared::config::StatusItem::Cache),
         "default footer should still include provider-reported cache hit rate"
     );
 }
@@ -5106,7 +5106,7 @@ fn render_footer_from_prefix_stability_item_renders_cache_slot_chip() {
     app.prefix_stability_pct = Some(100);
     app.prefix_change_count = 0;
 
-    let props = render_footer_from(&app, &[deepseek_engine::config::StatusItem::PrefixStability], None);
+    let props = render_footer_from(&app, &[deepseek_shared::config::StatusItem::PrefixStability], None);
 
     assert_eq!(spans_text(&props.cache), "cache prefix 100%");
 }
@@ -5123,8 +5123,8 @@ fn render_footer_from_preserves_prefix_then_cache_order() {
     let props = render_footer_from(
         &app,
         &[
-            deepseek_engine::config::StatusItem::PrefixStability,
-            deepseek_engine::config::StatusItem::Cache,
+            deepseek_shared::config::StatusItem::PrefixStability,
+            deepseek_shared::config::StatusItem::Cache,
         ],
         None,
     );
@@ -5152,9 +5152,9 @@ fn render_footer_from_drops_only_unselected_clusters() {
     // Toggling Cost off but keeping the rest should hide cost only.
     let mut app = create_test_app();
     app.session.session_cost = 0.42;
-    let items: Vec<deepseek_engine::config::StatusItem> = deepseek_engine::config::StatusItem::default_footer()
+    let items: Vec<deepseek_shared::config::StatusItem> = deepseek_shared::config::StatusItem::default_footer()
         .into_iter()
-        .filter(|item| *item != deepseek_engine::config::StatusItem::Cost)
+        .filter(|item| *item != deepseek_shared::config::StatusItem::Cost)
         .collect();
     let props = render_footer_from(&app, &items, None);
     assert_eq!(props.mode_label, "limited");
@@ -5182,7 +5182,7 @@ fn render_footer_from_git_branch_item_renders_workspace_branch() {
     let mut app = create_test_app();
     app.workspace = repo.path().to_path_buf();
 
-    let props = render_footer_from(&app, &[deepseek_engine::config::StatusItem::GitBranch], None);
+    let props = render_footer_from(&app, &[deepseek_shared::config::StatusItem::GitBranch], None);
     assert_eq!(spans_text(&props.cache), "feature/statusline");
 }
 
@@ -5220,7 +5220,7 @@ fn displayed_session_cost_is_monotonic_under_negative_reconciliation() {
 #[test]
 fn duplicate_mailbox_token_usage_does_not_regress_displayed_cost() {
     let mut app = create_test_app();
-    let usage = deepseek_engine::tools::agent::MailboxMessage::TokenUsage {
+    let usage = deepseek_shared::tools::agent::MailboxMessage::TokenUsage {
         agent_id: "agent-x".to_string(),
         model: "deepseek-v4-flash".to_string(),
         usage: deepseek_models::Usage {
@@ -5426,7 +5426,7 @@ fn composer_arrows_scroll_defaults_follow_platform_with_mouse_capture() {
 #[test]
 fn composer_arrows_scroll_config_overrides_default() {
     let config = Config {
-        tui: Some(deepseek_engine::config::TuiConfig {
+        tui: Some(deepseek_shared::config::TuiConfig {
             composer_arrows_scroll: Some(false),
             ..Default::default()
         }),
@@ -5447,12 +5447,12 @@ fn composer_arrows_scroll_config_overrides_default() {
 #[test]
 fn notification_settings_tui_always_keeps_configured_method_no_threshold() {
     let config = Config {
-        tui: Some(deepseek_engine::config::TuiConfig {
-            notification_condition: Some(deepseek_engine::config::NotificationCondition::Always),
+        tui: Some(deepseek_shared::config::TuiConfig {
+            notification_condition: Some(deepseek_shared::config::NotificationCondition::Always),
             ..Default::default()
         }),
-        notifications: Some(deepseek_engine::config::NotificationsConfig {
-            method: deepseek_engine::config::NotificationMethod::Bel,
+        notifications: Some(deepseek_shared::config::NotificationsConfig {
+            method: deepseek_shared::config::NotificationMethod::Bel,
             threshold_secs: 120,
             include_summary: true,
         }),
@@ -5469,8 +5469,8 @@ fn notification_settings_tui_always_keeps_configured_method_no_threshold() {
 #[test]
 fn notification_settings_tui_never_disables_notifications() {
     let config = Config {
-        tui: Some(deepseek_engine::config::TuiConfig {
-            notification_condition: Some(deepseek_engine::config::NotificationCondition::Never),
+        tui: Some(deepseek_shared::config::TuiConfig {
+            notification_condition: Some(deepseek_shared::config::NotificationCondition::Never),
             ..Default::default()
         }),
         ..Config::default()
@@ -5482,8 +5482,8 @@ fn notification_settings_tui_never_disables_notifications() {
 #[test]
 fn notification_settings_no_tui_override_uses_notifications_block() {
     let config = Config {
-        notifications: Some(deepseek_engine::config::NotificationsConfig {
-            method: deepseek_engine::config::NotificationMethod::Osc9,
+        notifications: Some(deepseek_shared::config::NotificationsConfig {
+            method: deepseek_shared::config::NotificationMethod::Osc9,
             threshold_secs: 45,
             include_summary: false,
         }),

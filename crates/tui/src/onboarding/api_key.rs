@@ -3,8 +3,8 @@
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use deepseek_engine::localization::MessageId;
-use deepseek_engine::palette;
+use deepseek_shared::localization::MessageId;
+use deepseek_shared::palette;
 use crate::app::App;
 
 pub fn lines(app: &App) -> Vec<Line<'static>> {
@@ -97,8 +97,8 @@ fn mask_key(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
-    use deepseek_engine::localization::Locale;
+    use deepseek_shared::config::Config;
+    use deepseek_shared::localization::Locale;
     use crate::app::TuiOptions;
     use std::path::PathBuf;
 

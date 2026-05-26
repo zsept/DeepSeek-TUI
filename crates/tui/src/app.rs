@@ -8,27 +8,27 @@ use ratatui::layout::Rect;
 use serde_json::Value;
 use thiserror::Error;
 
-use deepseek_engine::artifacts::ArtifactRecord;
-use deepseek_engine::core::client::PromptInspection;
-use deepseek_engine::core::compaction::CompactionConfig;
-use deepseek_engine::config::{
+use deepseek_shared::artifacts::ArtifactRecord;
+use deepseek_shared::core::client::PromptInspection;
+use deepseek_shared::core::compaction::CompactionConfig;
+use deepseek_shared::config::{
     ApiProvider, Config, DEFAULT_TEXT_MODEL, SavedCredential, has_api_key, save_api_key,
 };
 use crate::config_ui::ConfigUiMode;
-use deepseek_engine::capacity::coherence::CoherenceState;
-use deepseek_engine::core::cycle_manager::{CycleBriefing, CycleConfig};
-use deepseek_engine::hooks::{HookContext, HookEvent, HookExecutor, HookResult};
-use deepseek_engine::localization::{Locale, MessageId, resolve_locale, tr};
+use deepseek_shared::capacity::coherence::CoherenceState;
+use deepseek_shared::core::cycle_manager::{CycleBriefing, CycleConfig};
+use deepseek_shared::hooks::{HookContext, HookEvent, HookExecutor, HookResult};
+use deepseek_shared::localization::{Locale, MessageId, resolve_locale, tr};
 use deepseek_models::{Message, SystemPrompt, compaction_threshold_for_model_and_effort};
 use crate::settings::theme::Theme;
-use deepseek_engine::pricing::{CostCurrency, CostEstimate};
-use deepseek_engine::session::manager::SessionContextReference;
-use deepseek_engine::config::settings::Settings;
-use deepseek_engine::tools::plan::{SharedPlanState, new_shared_plan_state};
-use deepseek_engine::tools::shell::new_shared_shell_manager;
-use deepseek_engine::tools::spec::RuntimeToolServices;
-use deepseek_engine::tools::agent::AgentResult;
-use deepseek_engine::tools::todo::{SharedTodoList, new_shared_todo_list};
+use deepseek_shared::pricing::{CostCurrency, CostEstimate};
+use deepseek_shared::session::manager::SessionContextReference;
+use deepseek_shared::config::settings::Settings;
+use deepseek_shared::tools::plan::{SharedPlanState, new_shared_plan_state};
+use deepseek_shared::tools::shell::new_shared_shell_manager;
+use deepseek_shared::tools::spec::RuntimeToolServices;
+use deepseek_shared::tools::agent::AgentResult;
+use deepseek_shared::tools::todo::{SharedTodoList, new_shared_todo_list};
 use crate::render::active_cell::ActiveCell;
 use crate::state::approval::ApprovalMode;
 use crate::input::clipboard::{ClipboardContent, ClipboardHandler};
@@ -235,14 +235,14 @@ impl ReasoningEffort {
     }
 
     /// Convert to the engine's `ReasoningEffort` type.
-    pub fn to_engine(self) -> deepseek_engine::mode_types::ReasoningEffort {
+    pub fn to_engine(self) -> deepseek_shared::mode_types::ReasoningEffort {
         match self {
-            Self::Off => deepseek_engine::mode_types::ReasoningEffort::Off,
-            Self::Low => deepseek_engine::mode_types::ReasoningEffort::Low,
-            Self::Medium => deepseek_engine::mode_types::ReasoningEffort::Medium,
-            Self::High => deepseek_engine::mode_types::ReasoningEffort::High,
-            Self::Auto => deepseek_engine::mode_types::ReasoningEffort::Auto,
-            Self::Max => deepseek_engine::mode_types::ReasoningEffort::Max,
+            Self::Off => deepseek_shared::mode_types::ReasoningEffort::Off,
+            Self::Low => deepseek_shared::mode_types::ReasoningEffort::Low,
+            Self::Medium => deepseek_shared::mode_types::ReasoningEffort::Medium,
+            Self::High => deepseek_shared::mode_types::ReasoningEffort::High,
+            Self::Auto => deepseek_shared::mode_types::ReasoningEffort::Auto,
+            Self::Max => deepseek_shared::mode_types::ReasoningEffort::Max,
         }
     }
 }
@@ -519,11 +519,11 @@ impl AppMode {
     }
 
     /// Convert to the engine's `AppMode` type.
-    pub fn to_engine(self) -> deepseek_engine::mode_types::AppMode {
+    pub fn to_engine(self) -> deepseek_shared::mode_types::AppMode {
         match self {
-            AppMode::Limited => deepseek_engine::mode_types::AppMode::Limited,
-            AppMode::Yolo => deepseek_engine::mode_types::AppMode::Yolo,
-            AppMode::Plan => deepseek_engine::mode_types::AppMode::Plan,
+            AppMode::Limited => deepseek_shared::mode_types::AppMode::Limited,
+            AppMode::Yolo => deepseek_shared::mode_types::AppMode::Yolo,
+            AppMode::Plan => deepseek_shared::mode_types::AppMode::Plan,
         }
     }
 }
@@ -836,7 +836,7 @@ pub struct App {
     /// built-in workspace/global candidate list at session time.
     pub extra_skills_dirs: Vec<PathBuf>,
     /// User-defined custom sub-agent types from config.
-    pub agent_role_configs: std::collections::HashMap<String, deepseek_engine::config::AgentRoleConfig>,
+    pub agent_role_configs: std::collections::HashMap<String, deepseek_shared::config::AgentRoleConfig>,
     /// Currently active agent role set via /role command.
     pub active_agent_type: Option<String>,
     /// System prompt override from active agent role.
@@ -973,7 +973,7 @@ pub struct App {
     /// `tui.status_items` in `~/.deepseek/config.toml` at startup; mutated
     /// live by `/statusline`. The renderer iterates this slice; no item is
     /// hardcoded in the footer code path.
-    pub status_items: Vec<deepseek_engine::config::StatusItem>,
+    pub status_items: Vec<deepseek_shared::config::StatusItem>,
     /// Project documentation (AGENTS.md or CLAUDE.md)
     #[allow(dead_code)]
     pub project_doc: Option<String>,
@@ -1336,7 +1336,7 @@ impl App {
         // third-party provider can be pushed back into DeepSeek onboarding.
         let needs_api_key = !has_api_key(&effective_auth_config);
         let api_key_env_only =
-            deepseek_engine::config::active_provider_uses_env_only_api_key(&effective_auth_config);
+            deepseek_shared::config::active_provider_uses_env_only_api_key(&effective_auth_config);
         let was_onboarded = crate::onboarding::is_onboarded();
         let auto_compact = settings.auto_compact;
         let calm_mode = settings.calm_mode;
@@ -1455,7 +1455,7 @@ impl App {
         let agent_role_configs = config.agent_role_configs();
         let cached_skills = Self::discover_cached_skills(&workspace, &extra_skills_dirs);
 
-        let input_history = deepseek_engine::session::history::load_history();
+        let input_history = deepseek_shared::session::history::load_history();
         let (initial_input_text, initial_input_cursor) = match initial_input {
             // #451: pre-populate the composer when invoked via
             // `deepseek pr <N>` (or any future caller that wants to
@@ -1587,7 +1587,7 @@ impl App {
                 .tui
                 .as_ref()
                 .and_then(|tui| tui.status_items.clone())
-                .unwrap_or_else(deepseek_engine::config::StatusItem::default_footer),
+                .unwrap_or_else(deepseek_shared::config::StatusItem::default_footer),
             project_doc: None,
             plan_state,
             plan_prompt_pending: false,
@@ -1718,7 +1718,7 @@ impl App {
         let mut settings = Settings::load().unwrap_or_else(|_| Settings::default());
         settings.set("locale", tag)?;
         settings.save()?;
-        self.ui_locale = deepseek_engine::localization::resolve_locale(&settings.locale);
+        self.ui_locale = deepseek_shared::localization::resolve_locale(&settings.locale);
         self.needs_redraw = true;
         Ok(())
     }
@@ -1888,7 +1888,7 @@ impl App {
 
     /// Copy current session/agent cost accumulators into session metadata
     /// for persistence.
-    pub fn sync_cost_to_metadata(&self, metadata: &mut deepseek_engine::session::manager::SessionMetadata) {
+    pub fn sync_cost_to_metadata(&self, metadata: &mut deepseek_shared::session::manager::SessionMetadata) {
         metadata.cost.session_cost_usd = self.session.session_cost;
         metadata.cost.session_cost_cny = self.session.session_cost_cny;
         metadata.cost.agent_cost_usd = self.session.agent_cost;
@@ -1947,11 +1947,11 @@ impl App {
     }
 
     pub fn format_cost_amount(&self, amount: f64) -> String {
-        deepseek_engine::pricing::format_cost_amount(amount, self.cost_currency)
+        deepseek_shared::pricing::format_cost_amount(amount, self.cost_currency)
     }
 
     pub fn format_cost_amount_precise(&self, amount: f64) -> String {
-        deepseek_engine::pricing::format_cost_amount_precise(amount, self.cost_currency)
+        deepseek_shared::pricing::format_cost_amount_precise(amount, self.cost_currency)
     }
 
     /// Fold the oldest [`Self::HISTORY_FOLD_BATCH`] cells into a single
@@ -3712,7 +3712,7 @@ impl App {
             // Mirror to the persisted cross-session history (#366) so
             // arrow-up recall works across restarts. Best-effort write —
             // see `composer_history::append_history` for failure modes.
-            deepseek_engine::session::history::append_history(&input);
+            deepseek_shared::session::history::append_history(&input);
         }
         self.history_index = None;
         self.history_navigation_draft = None;
@@ -4007,7 +4007,7 @@ impl App {
         };
         // Also clear the plan state — /clear means a full reset.
         if let Some(mut plan) = Self::retry_lock(&self.plan_state, 100) {
-            *plan = deepseek_engine::tools::plan::PlanState::default();
+            *plan = deepseek_shared::tools::plan::PlanState::default();
         }
         todos_cleared
     }
@@ -4214,10 +4214,10 @@ pub enum McpUiAction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::{ApiProvider, Config, ProviderConfig, ProvidersConfig};
+    use deepseek_shared::config::{ApiProvider, Config, ProviderConfig, ProvidersConfig};
     use crate::test_support::lock_test_env;
-    use deepseek_engine::tools::plan::{PlanItemArg, StepStatus, UpdatePlanArgs};
-    use deepseek_engine::tools::todo::TodoStatus;
+    use deepseek_shared::tools::plan::{PlanItemArg, StepStatus, UpdatePlanArgs};
+    use deepseek_shared::tools::todo::TodoStatus;
     use crate::input::clipboard::PastedImage;
     use std::ffi::OsString;
 

@@ -7,7 +7,7 @@ use anyhow::{Context, bail};
 use toml::Value;
 
 use super::CommandResult;
-use deepseek_engine::network_policy::host_from_url;
+use deepseek_shared::network_policy::host_from_url;
 
 pub fn network(_app: &mut App, arg: Option<&str>) -> CommandResult {
     match network_inner(arg) {
@@ -267,7 +267,7 @@ fn display_list(values: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_engine::config::Config;
+    use deepseek_shared::config::Config;
     use crate::ui::app::{App, TuiOptions};
     use std::env;
     use std::ffi::OsString;
@@ -283,7 +283,7 @@ mod tests {
 
     impl EnvGuard {
         fn new(home: &Path) -> Self {
-            let lock = deepseek_engine::test_support::lock_test_env();
+            let lock = deepseek_shared::test_support::lock_test_env();
             let config_path = home.join(".deepseek").join("config.toml");
             let home_prev = env::var_os("HOME");
             let userprofile_prev = env::var_os("USERPROFILE");

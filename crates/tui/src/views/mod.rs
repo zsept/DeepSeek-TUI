@@ -3,11 +3,11 @@ use ratatui::{buffer::Buffer, layout::Rect};
 use std::cell::{Cell, RefCell};
 use std::fmt;
 
-use deepseek_engine::localization::{Locale, MessageId, tr};
-use deepseek_engine::palette;
-use deepseek_engine::config::settings::Settings;
-use deepseek_engine::tools::UserInputResponse;
-use deepseek_engine::tools::agent::{AgentAssignment, AgentResult, AgentStatus, AgentRole};
+use deepseek_shared::localization::{Locale, MessageId, tr};
+use deepseek_shared::palette;
+use deepseek_shared::config::settings::Settings;
+use deepseek_shared::tools::UserInputResponse;
+use deepseek_shared::tools::agent::{AgentAssignment, AgentResult, AgentStatus, AgentRole};
 use crate::app::App;
 use crate::state::approval::{ElevationOption, ReviewDecision};
 use crate::render::history::{HistoryCell, AgentCell, summarize_tool_output};
@@ -146,13 +146,13 @@ pub enum ViewEvent {
     /// that already has credentials — the handler should perform the same
     /// switch as `AppAction::SwitchProvider`.
     ProviderPickerApplied {
-        provider: deepseek_engine::config::ApiProvider,
+        provider: deepseek_shared::config::ApiProvider,
     },
     /// Emitted by the `/provider` picker after the user types an API key
     /// inline for a provider that lacked one. The handler should persist
     /// the key via `save_api_key_for` and then perform the provider switch.
     ProviderPickerApiKeySubmitted {
-        provider: deepseek_engine::config::ApiProvider,
+        provider: deepseek_shared::config::ApiProvider,
         api_key: String,
     },
     /// Emitted by the `/mode` picker when the user chooses a mode.
@@ -164,7 +164,7 @@ pub enum ViewEvent {
     /// updates `app.status_items` immediately and persists on `final_save`
     /// so the footer animates without a write per keystroke.
     StatusItemsUpdated {
-        items: Vec<deepseek_engine::config::StatusItem>,
+        items: Vec<deepseek_shared::config::StatusItem>,
         final_save: bool,
     },
     /// Emitted by the live-transcript overlay while in backtrack preview
@@ -256,7 +256,7 @@ impl ViewStack {
     pub fn push<V: ModalView + 'static>(&mut self, view: V) {
         let kind = view.kind();
         self.views.push(Box::new(view));
-        tracing::debug!(target: "deepseek_engine::view_stack", action = "push", kind = ?kind, depth = self.views.len(), "view pushed");
+        tracing::debug!(target: "deepseek_shared::view_stack", action = "push", kind = ?kind, depth = self.views.len(), "view pushed");
     }
 
     /// Push an already-boxed view back onto the stack. Used by call sites
@@ -265,13 +265,13 @@ impl ViewStack {
     pub fn push_boxed(&mut self, view: Box<dyn ModalView>) {
         let kind = view.kind();
         self.views.push(view);
-        tracing::debug!(target: "deepseek_engine::view_stack", action = "push_boxed", kind = ?kind, depth = self.views.len(), "view pushed");
+        tracing::debug!(target: "deepseek_shared::view_stack", action = "push_boxed", kind = ?kind, depth = self.views.len(), "view pushed");
     }
 
     pub fn pop(&mut self) -> Option<Box<dyn ModalView>> {
         let popped = self.views.pop();
         if let Some(view) = popped.as_ref() {
-            tracing::debug!(target: "deepseek_engine::view_stack", action = "pop", kind = ?view.kind(), depth = self.views.len(), "view popped");
+            tracing::debug!(target: "deepseek_shared::view_stack", action = "pop", kind = ?view.kind(), depth = self.views.len(), "view popped");
         }
         popped
     }
@@ -329,7 +329,7 @@ impl ViewStack {
             ViewAction::None => {}
             ViewAction::Close => {
                 if let Some(view) = self.views.pop() {
-                    tracing::debug!(target: "deepseek_engine::view_stack", action = "close", kind = ?view.kind(), depth = self.views.len(), "view closed via action");
+                    tracing::debug!(target: "deepseek_shared::view_stack", action = "close", kind = ?view.kind(), depth = self.views.len(), "view closed via action");
                 }
             }
             ViewAction::Emit(event) => {
@@ -338,7 +338,7 @@ impl ViewStack {
             ViewAction::EmitAndClose(event) => {
                 events.push(event);
                 if let Some(view) = self.views.pop() {
-                    tracing::debug!(target: "deepseek_engine::view_stack", action = "emit_and_close", kind = ?view.kind(), depth = self.views.len(), "view closed via action");
+                    tracing::debug!(target: "deepseek_shared::view_stack", action = "emit_and_close", kind = ?view.kind(), depth = self.views.len(), "view closed via action");
                 }
             }
         }
@@ -1974,10 +1974,10 @@ mod tests {
         ConfigListItem, ConfigSection, ConfigView, ModalKind, ModalView, ShellControlView,
         ViewAction, ViewEvent, ViewStack, agent_view_agents, truncate_view_text,
     };
-    use deepseek_engine::config::Config;
-    use deepseek_engine::localization::Locale;
-    use deepseek_engine::config::settings::Settings;
-    use deepseek_engine::tools::agent::{
+    use deepseek_shared::config::Config;
+    use deepseek_shared::localization::Locale;
+    use deepseek_shared::config::settings::Settings;
+    use deepseek_shared::tools::agent::{
         AgentAssignment, AgentResult, AgentStatus, AgentRole,
     };
     use crate::app::{App, TuiOptions};

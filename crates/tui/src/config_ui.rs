@@ -788,7 +788,7 @@ impl UiThemeValue {
             .strip_prefix("file:")
             .map(|name| name.trim())
             .unwrap_or(value);
-        match deepseek_shared::palette::normalize_theme_name(lookup) {
+        match deepseek_palette::normalize_theme_name(lookup) {
             Some("system") => Ok(Self::System),
             Some("dark") => Ok(Self::Dark),
             Some("light") => Ok(Self::Light),

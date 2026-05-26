@@ -9,14 +9,14 @@ use serde_json::Value;
 use thiserror::Error;
 
 use deepseek_shared::artifacts::ArtifactRecord;
-use deepseek_shared::core::client::PromptInspection;
-use deepseek_shared::core::compaction::CompactionConfig;
+use deepseek_engine::core::client::PromptInspection;
+use deepseek_engine::core::compaction::CompactionConfig;
 use deepseek_shared::config::{
     ApiProvider, Config, DEFAULT_TEXT_MODEL, SavedCredential, has_api_key, save_api_key,
 };
 use crate::config_ui::ConfigUiMode;
-use deepseek_shared::capacity::coherence::CoherenceState;
-use deepseek_shared::core::cycle_manager::{CycleBriefing, CycleConfig};
+use deepseek_capacity::coherence::CoherenceState;
+use deepseek_engine::core::cycle_manager::{CycleBriefing, CycleConfig};
 use deepseek_shared::hooks::{HookContext, HookEvent, HookExecutor, HookResult};
 use deepseek_shared::localization::{Locale, MessageId, resolve_locale, tr};
 use deepseek_models::{Message, SystemPrompt, compaction_threshold_for_model_and_effort};
@@ -24,11 +24,11 @@ use crate::settings::theme::Theme;
 use deepseek_shared::pricing::{CostCurrency, CostEstimate};
 use deepseek_shared::session::manager::SessionContextReference;
 use deepseek_shared::config::settings::Settings;
-use deepseek_shared::tools::plan::{SharedPlanState, new_shared_plan_state};
-use deepseek_shared::tools::shell::new_shared_shell_manager;
-use deepseek_shared::tools::spec::RuntimeToolServices;
-use deepseek_shared::tools::agent::AgentResult;
-use deepseek_shared::tools::todo::{SharedTodoList, new_shared_todo_list};
+use deepseek_engine::tools::plan::{SharedPlanState, new_shared_plan_state};
+use deepseek_engine::tools::shell::new_shared_shell_manager;
+use deepseek_engine::tools::spec::RuntimeToolServices;
+use deepseek_engine::tools::agent::AgentResult;
+use deepseek_engine::tools::todo::{SharedTodoList, new_shared_todo_list};
 use crate::render::active_cell::ActiveCell;
 use crate::state::approval::ApprovalMode;
 use crate::input::clipboard::{ClipboardContent, ClipboardHandler};
@@ -1452,7 +1452,7 @@ impl App {
 
         let skills_dir = resolve_skills_dir(&workspace, &global_skills_dir, config);
         let extra_skills_dirs = config.extra_skills_dirs();
-        let agent_role_configs = config.agent_role_configs();
+        let agent_role_configs = config.agent_role_configs(deepseek_engine::tools::agent::builtin_role_configs());
         let cached_skills = Self::discover_cached_skills(&workspace, &extra_skills_dirs);
 
         let input_history = deepseek_shared::session::history::load_history();
@@ -4007,7 +4007,7 @@ impl App {
         };
         // Also clear the plan state — /clear means a full reset.
         if let Some(mut plan) = Self::retry_lock(&self.plan_state, 100) {
-            *plan = deepseek_shared::tools::plan::PlanState::default();
+            *plan = deepseek_engine::tools::plan::PlanState::default();
         }
         todos_cleared
     }
@@ -4216,8 +4216,8 @@ mod tests {
     use super::*;
     use deepseek_shared::config::{ApiProvider, Config, ProviderConfig, ProvidersConfig};
     use crate::test_support::lock_test_env;
-    use deepseek_shared::tools::plan::{PlanItemArg, StepStatus, UpdatePlanArgs};
-    use deepseek_shared::tools::todo::TodoStatus;
+    use deepseek_engine::tools::plan::{PlanItemArg, StepStatus, UpdatePlanArgs};
+    use deepseek_engine::tools::todo::TodoStatus;
     use crate::input::clipboard::PastedImage;
     use std::ffi::OsString;
 

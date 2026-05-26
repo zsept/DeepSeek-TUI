@@ -23,7 +23,7 @@ pub use renderable::Renderable;
 use std::time::Duration;
 
 use deepseek_shared::localization::Locale;
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::{App, AppMode, ComposerDensity, VimMode};
 use crate::state::approval::{
     ApprovalRequest, ApprovalView, ElevationOption, ElevationRequest, RiskLevel, ToolCategory,
@@ -2291,7 +2291,7 @@ mod tests {
     };
     use deepseek_shared::config::{ApiProvider, Config};
     use deepseek_shared::localization::Locale;
-    use deepseek_shared::palette;
+    use deepseek_palette as palette;
     use crate::app::{App, ComposerDensity, TuiOptions};
     use crate::render::history::{GenericToolCell, HistoryCell, ToolCell, ToolStatus};
     use crate::state::scrolling::TranscriptScroll;
@@ -3214,7 +3214,7 @@ mod tests {
     /// redraw).
     #[test]
     fn chat_widget_renders_cleanly_after_resize_during_refreshing_context() {
-        use deepseek_shared::capacity::coherence::CoherenceState;
+        use deepseek_capacity::coherence::CoherenceState;
 
         let mut app = create_test_app();
         for i in 0..30 {

@@ -29,8 +29,8 @@ pub fn agent(app: &mut App, arg: Option<&str>) -> CommandResult {
     }
 
     // Check if input matches a known agent role (general or from config).
-    if let Some(role) = deepseek_shared::tools::agent::AgentRole::from_str(input) {
-        if matches!(role, deepseek_shared::tools::agent::AgentRole::General) {
+    if let Some(role) = deepseek_engine::tools::agent::AgentRole::from_str(input) {
+        if matches!(role, deepseek_engine::tools::agent::AgentRole::General) {
             return CommandResult::message(
                 "'general' is the default parent role. Use /role reset to restore it."
             );

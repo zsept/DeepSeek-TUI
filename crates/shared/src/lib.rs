@@ -5,20 +5,26 @@ pub use deepseek_base::{mode_types, network_policy, retry_status, context_ref, c
 
 pub mod auto_route;
 pub mod config;
-pub mod core;
-pub mod project_context;
-pub mod palette;
-pub mod vision;
-pub mod cost_status;
-pub mod prompts;
-pub mod runtime;
-pub mod session;
-pub mod tools;
-pub mod capacity;
-pub mod working_set;
+// core migrated to deepseek-engine crate
+// project_context migrated to deepseek-context crate
+pub mod palette {
+    pub use deepseek_palette::*;
+}
+// vision migrated to deepseek-engine crate
+pub mod cost_status {
+    pub use deepseek_support::cost_status::*;
+}
+// prompts migrated to deepseek-context crate
+// runtime migrated to deepseek-engine crate
+pub mod session {
+    pub use deepseek_session_mgr::*;
+}
+// tools migrated to deepseek-engine crate
+// capacity migrated to deepseek-capacity crate
+// working_set migrated to deepseek-context crate
 
-pub use context_ref::{ContextReference, ContextReferenceKind, ContextReferenceSource};
 pub use auto_route::resolve_cli_auto_route;
+pub use context_ref::{ContextReference, ContextReferenceKind, ContextReferenceSource};
 
 #[cfg(test)]
 mod test_support;

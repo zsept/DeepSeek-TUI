@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::fmt::Write;
 
-use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
 use deepseek_models::{
     LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, SystemPrompt, context_window_for_model,
 };

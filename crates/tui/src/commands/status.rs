@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use super::CommandResult;
-use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
 use deepseek_models::{LEGACY_DEEPSEEK_CONTEXT_WINDOW_TOKENS, context_window_for_model};
 use deepseek_shared::utils::{display_path, estimate_message_chars};
 

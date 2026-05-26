@@ -9,8 +9,8 @@ use serde_json::Value;
 use unicode_width::UnicodeWidthStr;
 
 use deepseek_models::{ContentBlock, Message};
-use deepseek_shared::palette;
-use deepseek_shared::tools::review::ReviewOutput;
+use deepseek_palette as palette;
+use deepseek_engine::tools::review::ReviewOutput;
 use crate::app::TranscriptSpacing;
 use crate::render::diff_render;
 use crate::render::markdown_render;
@@ -96,7 +96,7 @@ pub enum HistoryCell {
     /// the user can prioritize at a glance.
     Error {
         message: String,
-        severity: deepseek_shared::core::error_taxonomy::ErrorSeverity,
+        severity: deepseek_engine::core::error_taxonomy::ErrorSeverity,
     },
     Thinking {
         content: String,
@@ -2797,34 +2797,34 @@ fn system_body_style() -> Style {
 /// Label glyph for an error cell. `Critical`/`Error` get the loudest marker;
 /// `Warning` is softer; `Info` is neutral. Kept as ASCII so it survives any
 /// terminal font fallback.
-fn error_label_text(severity: deepseek_shared::core::error_taxonomy::ErrorSeverity) -> &'static str {
+fn error_label_text(severity: deepseek_engine::core::error_taxonomy::ErrorSeverity) -> &'static str {
     match severity {
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Critical
-        | deepseek_shared::core::error_taxonomy::ErrorSeverity::Error => "Error",
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning => "Warn",
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Info => "Info",
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Critical
+        | deepseek_engine::core::error_taxonomy::ErrorSeverity::Error => "Error",
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning => "Warn",
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Info => "Info",
     }
 }
 
 /// Label color for an error cell — drives the leading rail glyph.
-fn error_label_style(severity: deepseek_shared::core::error_taxonomy::ErrorSeverity) -> Style {
+fn error_label_style(severity: deepseek_engine::core::error_taxonomy::ErrorSeverity) -> Style {
     let color = match severity {
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Critical
-        | deepseek_shared::core::error_taxonomy::ErrorSeverity::Error => palette::STATUS_ERROR,
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning => palette::STATUS_WARNING,
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Info => palette::TEXT_DIM,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Critical
+        | deepseek_engine::core::error_taxonomy::ErrorSeverity::Error => palette::STATUS_ERROR,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning => palette::STATUS_WARNING,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Info => palette::TEXT_DIM,
     };
     Style::default().fg(color).add_modifier(Modifier::BOLD)
 }
 
 /// Body color for an error cell — softer than the label so the rail draws
 /// the eye but the prose stays readable.
-fn error_body_style(severity: deepseek_shared::core::error_taxonomy::ErrorSeverity) -> Style {
+fn error_body_style(severity: deepseek_engine::core::error_taxonomy::ErrorSeverity) -> Style {
     let color = match severity {
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Critical
-        | deepseek_shared::core::error_taxonomy::ErrorSeverity::Error => palette::STATUS_ERROR,
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning => palette::STATUS_WARNING,
-        deepseek_shared::core::error_taxonomy::ErrorSeverity::Info => palette::TEXT_MUTED,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Critical
+        | deepseek_engine::core::error_taxonomy::ErrorSeverity::Error => palette::STATUS_ERROR,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning => palette::STATUS_WARNING,
+        deepseek_engine::core::error_taxonomy::ErrorSeverity::Info => palette::TEXT_MUTED,
     };
     Style::default().fg(color)
 }
@@ -3204,7 +3204,7 @@ mod tests {
         running_status_label_with_elapsed,
     };
     use deepseek_models::{ContentBlock, Message};
-    use deepseek_shared::palette;
+    use deepseek_palette as palette;
     use crate::settings::theme::Theme;
     use ratatui::style::Modifier;
     use std::time::{Duration, Instant};
@@ -4208,7 +4208,7 @@ mod tests {
 
     #[test]
     fn plan_update_cell_renders_with_dark_theme_tokens() {
-        let theme = Theme::for_mode(deepseek_shared::palette::PaletteMode::Dark);
+        let theme = Theme::for_mode(deepseek_palette::PaletteMode::Dark);
         let cell = PlanUpdateCell {
             explanation: None,
             steps: vec![
@@ -4301,7 +4301,7 @@ mod tests {
 
     #[test]
     fn exec_cell_failed_status_renders_with_dark_theme_tokens() {
-        let theme = Theme::for_mode(deepseek_shared::palette::PaletteMode::Dark);
+        let theme = Theme::for_mode(deepseek_palette::PaletteMode::Dark);
         let cell = ExecCell {
             command: "false".to_string(),
             status: ToolStatus::Failed,
@@ -4745,7 +4745,7 @@ mod tests {
     fn error_severity_cell_renders_in_red() {
         let cell = HistoryCell::Error {
             message: "Authentication failed: invalid API key".to_string(),
-            severity: deepseek_shared::core::error_taxonomy::ErrorSeverity::Error,
+            severity: deepseek_engine::core::error_taxonomy::ErrorSeverity::Error,
         };
         let lines = cell.lines(80);
         assert!(
@@ -4780,7 +4780,7 @@ mod tests {
     fn warning_severity_cell_renders_in_amber() {
         let cell = HistoryCell::Error {
             message: "Stream stalled: no data received for 60s, closing stream".to_string(),
-            severity: deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning,
+            severity: deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning,
         };
         let lines = cell.lines(80);
         let label_span = &lines[0].spans[0];
@@ -4795,7 +4795,7 @@ mod tests {
     fn critical_severity_cell_renders_in_red() {
         let cell = HistoryCell::Error {
             message: "API key expired".to_string(),
-            severity: deepseek_shared::core::error_taxonomy::ErrorSeverity::Critical,
+            severity: deepseek_engine::core::error_taxonomy::ErrorSeverity::Critical,
         };
         let lines = cell.lines(80);
         let label_span = &lines[0].spans[0];
@@ -4809,7 +4809,7 @@ mod tests {
     fn info_severity_cell_renders_in_dim() {
         let cell = HistoryCell::Error {
             message: "Reconnected".to_string(),
-            severity: deepseek_shared::core::error_taxonomy::ErrorSeverity::Info,
+            severity: deepseek_engine::core::error_taxonomy::ErrorSeverity::Info,
         };
         let lines = cell.lines(80);
         let label_span = &lines[0].spans[0];

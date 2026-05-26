@@ -5,6 +5,7 @@ pub mod artifacts;
 pub mod workspace_trust;
 pub mod hooks;
 pub mod logging;
+pub mod cost_status;
 pub use hooks::*;
 pub use logging::*;
 pub use artifacts::*;

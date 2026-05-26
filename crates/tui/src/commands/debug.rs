@@ -5,8 +5,8 @@
 use std::time::Instant;
 
 use super::CommandResult;
-use deepseek_shared::core::client::{PromptInspection, inspect_prompt_for_request};
-use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::core::client::{PromptInspection, inspect_prompt_for_request};
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
 use deepseek_shared::localization::{Locale, MessageId, tr};
 use deepseek_models::{ContentBlock, MessageRequest, SystemPrompt, context_window_for_model};
 

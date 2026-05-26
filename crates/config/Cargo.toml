@@ -8,6 +8,9 @@ description = "Config schema and precedence model for DeepSeek workspace archite
 
 [dependencies]
 deepseek-shared = { path = "../shared", version = "0.8.38" }
+deepseek-base = { path = "../base", version = "0.8.38" }
+deepseek-support = { path = "../support", version = "0.8.38" }
+deepseek-palette = { path = "../palette", version = "0.8.38" }
 deepseek-agent = { path = "../agent", version = "0.8.38" }
 anyhow.workspace = true
 deepseek-secrets = { path = "../secrets", version = "0.8.38" }

@@ -1,0 +1,20 @@
+[package]
+name = "deepseek-session-mgr"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Session management: history, memory, stash, manager"
+
+[dependencies]
+deepseek-support = { path = "../support", version = "0.8.38" }
+deepseek-base = { path = "../base", version = "0.8.38" }
+deepseek-models = { path = "../models", version = "0.8.38" }
+deepseek-snapshot = { path = "../snapshot", version = "0.8.38" }
+anyhow.workspace = true
+chrono.workspace = true
+dirs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing = "0.1"
+uuid.workspace = true

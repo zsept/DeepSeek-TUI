@@ -4,7 +4,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 
 const LINE_NUMBER_WIDTH: usize = 4;
 

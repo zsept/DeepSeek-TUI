@@ -16,6 +16,8 @@ toml = ["schemaui/toml"]
 [dependencies]
 deepseek-support = { path = "../support", version = "0.8.38" }
 deepseek-base = { path = "../base", version = "0.8.38" }
+deepseek-palette = { path = "../palette", version = "0.8.38" }
+deepseek-session-mgr = { path = "../session_mgr", version = "0.8.38" }
 anyhow = "1.0.100"
 arboard = "3.4"
 deepseek-secrets = { path = "../secrets", version = "0.8.38" }

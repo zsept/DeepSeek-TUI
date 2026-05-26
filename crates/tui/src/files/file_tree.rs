@@ -16,7 +16,7 @@ use ratatui::{
     widgets::{Block, Paragraph, Wrap},
 };
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::settings::theme::Theme;
 use crate::render::ui_text::truncate_line_to_width;
 

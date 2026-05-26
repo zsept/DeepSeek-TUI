@@ -168,8 +168,8 @@ pub fn export(app: &mut App, path: Option<&str>) -> CommandResult {
             HistoryCell::Assistant { content, .. } => ("**Assistant:**", content.clone()),
             HistoryCell::System { content } => ("*System:*", content.clone()),
             HistoryCell::Error { message, severity } => match severity {
-                deepseek_shared::core::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
-                deepseek_shared::core::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
+                deepseek_engine::core::error_taxonomy::ErrorSeverity::Warning => ("**Warning:**", message.clone()),
+                deepseek_engine::core::error_taxonomy::ErrorSeverity::Info => ("*Info:*", message.clone()),
                 _ => ("**Error:**", message.clone()),
             },
             HistoryCell::Thinking { content, .. } => ("*Thinking:*", content.clone()),

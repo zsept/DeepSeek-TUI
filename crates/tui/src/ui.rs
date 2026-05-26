@@ -33,31 +33,31 @@ use ratatui::{
 use tracing;
 
 use deepseek_utils::audit::log_sensitive_event;
-use deepseek_shared::runtime::automation::{AutomationManager, AutomationSchedulerConfig, spawn_scheduler};
-use deepseek_shared::core::client::{DeepSeekClient, build_cache_warmup_request};
+use deepseek_engine::runtime::automation::{AutomationManager, AutomationSchedulerConfig, spawn_scheduler};
+use deepseek_engine::core::client::{DeepSeekClient, build_cache_warmup_request};
 use crate::commands;
-use deepseek_shared::core::compaction::estimate_input_tokens_conservative;
+use deepseek_engine::core::compaction::estimate_input_tokens_conservative;
 use deepseek_shared::config::{ApiProvider, Config, DEFAULT_NVIDIA_NIM_BASE_URL};
 use crate::config_ui::{self, ConfigUiMode, WebConfigSession, WebConfigSessionEvent};
-use deepseek_shared::core::engine::{EngineConfig, EngineHandle, spawn_engine};
-use deepseek_shared::core::events::Event as EngineEvent;
-use deepseek_shared::core::ops::Op;
+use deepseek_engine::core::engine::{EngineConfig, EngineHandle, spawn_engine};
+use deepseek_engine::core::events::Event as EngineEvent;
+use deepseek_engine::core::ops::Op;
 use deepseek_shared::hooks::{HookEvent, HookExecutor};
-use deepseek_shared::core::llm_client::LlmClient;
+use deepseek_engine::core::llm_client::LlmClient;
 use deepseek_models::{
     ContentBlock, Message, MessageRequest, SystemPrompt, Usage, context_window_for_model,
 };
-use deepseek_shared::palette;
-use deepseek_shared::prompts;
+use deepseek_palette as palette;
+use deepseek_context::prompts;
 use deepseek_shared::session::manager::{
     OfflineQueueState, QueuedSessionMessage, SavedSession, SessionManager,
     create_saved_session_with_id_and_mode, create_saved_session_with_mode, update_session,
 };
-use deepseek_shared::runtime::task_manager::{
+use deepseek_engine::runtime::task_manager::{
     NewTaskRequest, SharedTaskManager, TaskManager, TaskManagerConfig, TaskStatus,
 };
-use deepseek_shared::tools::spec::RuntimeToolServices;
-use deepseek_shared::tools::agent::AgentStatus;
+use deepseek_engine::tools::spec::RuntimeToolServices;
+use deepseek_engine::tools::agent::AgentStatus;
 use crate::routing::auto_router;
 use crate::render::color_compat::ColorCompatBackend;
 use crate::input::command_palette::{
@@ -456,7 +456,7 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
         .runtime_services
         .shell_manager
         .clone()
-        .unwrap_or_else(|| deepseek_shared::tools::shell::new_shared_shell_manager(app.workspace.clone()));
+        .unwrap_or_else(|| deepseek_engine::tools::shell::new_shared_shell_manager(app.workspace.clone()));
     app.runtime_services = RuntimeToolServices {
         shell_manager: Some(shell_manager),
         task_manager: Some(task_manager.clone()),
@@ -673,7 +673,7 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         mcp_config_path: config.mcp_config_path(),
         skills_dir: app.skills_dir.clone(),
         extra_skills_dirs: app.extra_skills_dirs.clone(),
-        agent_role_configs: config.agent_role_configs(),
+        agent_role_configs: config.agent_role_configs(deepseek_engine::tools::agent::builtin_role_configs()),
         system_prompt: config.system_prompt.clone(),
         instructions: config.instructions_paths(),
         project_context_pack_enabled: config.project_context_pack_enabled(),
@@ -691,10 +691,10 @@ fn build_engine_config(app: &App, config: &Config) -> EngineConfig {
         features: config.features(),
         compaction: app.compaction_config(),
         cycle: app.cycle_config(),
-        capacity: deepseek_shared::capacity::capacity::CapacityControllerConfig::from_app_config(config),
+        capacity: deepseek_capacity::capacity::CapacityControllerConfig::from_app_config(config),
         todos: app.todos.clone(),
         plan_state: app.plan_state.clone(),
-        max_spawn_depth: deepseek_shared::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
+        max_spawn_depth: deepseek_engine::tools::agent::DEFAULT_MAX_SPAWN_DEPTH,
         network_policy: config.network.clone().map(|toml_cfg| {
             deepseek_shared::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
         }),
@@ -739,7 +739,7 @@ async fn refresh_active_task_panel(app: &mut App, task_manager: &SharedTaskManag
         && let Ok(mut mgr) = shell_mgr.lock()
     {
         for job in mgr.list_jobs() {
-            if !matches!(job.status, deepseek_shared::tools::shell::ShellStatus::Running) {
+            if !matches!(job.status, deepseek_engine::tools::shell::ShellStatus::Running) {
                 continue;
             }
             entries.push(TaskPanelEntry {
@@ -1195,7 +1195,7 @@ async fn run_event_loop(
                         }
                         let tool_content = match &result {
                             Ok(output) => sanitize_stream_chunk(
-                                &deepseek_shared::core::engine::compact_tool_result_for_context(
+                                &deepseek_engine::core::engine::compact_tool_result_for_context(
                                     &app.model, &name, output,
                                 ),
                             ),
@@ -1277,7 +1277,7 @@ async fn run_event_loop(
                         status,
                         error,
                     } => {
-                        if !matches!(status, deepseek_shared::core::events::TurnOutcomeStatus::Completed)
+                        if !matches!(status, deepseek_engine::core::events::TurnOutcomeStatus::Completed)
                             || draws_since_last_full_repaint >= PERIODIC_FULL_REPAINT_EVERY_N
                         {
                             force_terminal_repaint = true;
@@ -1288,8 +1288,8 @@ async fn run_event_loop(
                         // hanging forever.
                         if matches!(
                             status,
-                            deepseek_shared::core::events::TurnOutcomeStatus::Interrupted
-                                | deepseek_shared::core::events::TurnOutcomeStatus::Failed
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
+                                | deepseek_engine::core::events::TurnOutcomeStatus::Failed
                         ) {
                             app.finalize_active_cell_as_interrupted();
                             // Also mark the streaming Assistant cell (if any)
@@ -1321,18 +1321,18 @@ async fn run_event_loop(
                         // user opts out by scrolling up.
                         app.user_scrolled_during_stream = false;
                         app.runtime_turn_status = Some(match status {
-                            deepseek_shared::core::events::TurnOutcomeStatus::Completed => {
+                            deepseek_engine::core::events::TurnOutcomeStatus::Completed => {
                                 "completed".to_string()
                             }
-                            deepseek_shared::core::events::TurnOutcomeStatus::Interrupted => {
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted => {
                                 "interrupted".to_string()
                             }
-                            deepseek_shared::core::events::TurnOutcomeStatus::Failed => "failed".to_string(),
+                            deepseek_engine::core::events::TurnOutcomeStatus::Failed => "failed".to_string(),
                         });
                         if matches!(
                             status,
-                            deepseek_shared::core::events::TurnOutcomeStatus::Interrupted
-                                | deepseek_shared::core::events::TurnOutcomeStatus::Failed
+                            deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
+                                | deepseek_engine::core::events::TurnOutcomeStatus::Failed
                         ) {
                             let _ = engine_handle.send(Op::ListAgents).await;
                         }
@@ -1382,7 +1382,7 @@ async fn run_event_loop(
                         }
 
                         // Emit OSC 9 / BEL desktop notification for long turns.
-                        if status == deepseek_shared::core::events::TurnOutcomeStatus::Completed
+                        if status == deepseek_engine::core::events::TurnOutcomeStatus::Completed
                             && let Some((method, threshold, include_summary)) =
                                 notifications::settings(config)
                         {
@@ -1432,13 +1432,13 @@ async fn run_event_loop(
                         // Legacy pending-steer recovery. Current keyboard
                         // handling keeps Esc as cancel-only, but older saved
                         // state may still carry pending steers.
-                        if status == deepseek_shared::core::events::TurnOutcomeStatus::Interrupted
+                        if status == deepseek_engine::core::events::TurnOutcomeStatus::Interrupted
                             && app.submit_pending_steers_after_interrupt
                         {
                             if let Some(merged) = merge_pending_steers(&mut *app) {
                                 queued_to_send = Some(merged);
                             }
-                        } else if status == deepseek_shared::core::events::TurnOutcomeStatus::Failed
+                        } else if status == deepseek_engine::core::events::TurnOutcomeStatus::Failed
                             && !app.pending_steers.is_empty()
                         {
                             // Hard-fail recovery: if the engine failed before
@@ -3466,7 +3466,7 @@ fn apply_alt_0_shortcut(app: &mut App, modifiers: KeyModifiers) {
 }
 
 async fn fetch_available_models(config: &Config) -> Result<Vec<String>> {
-    use deepseek_shared::core::client::DeepSeekClient;
+    use deepseek_engine::core::client::DeepSeekClient;
 
     let client = DeepSeekClient::new(config)?;
     let models = tokio::time::timeout(Duration::from_secs(20), client.list_models()).await??;
@@ -3617,7 +3617,7 @@ fn reconcile_turn_liveness(app: &mut App, now: Instant, has_running_agents: bool
 /// `Warning`, dim for `Info`.
 pub(crate) fn apply_engine_error_to_app(
     app: &mut App,
-    envelope: deepseek_shared::core::error_taxonomy::ErrorEnvelope,
+    envelope: deepseek_engine::core::error_taxonomy::ErrorEnvelope,
 ) {
     let recoverable = envelope.recoverable;
     let message = envelope.message.clone();
@@ -3649,7 +3649,7 @@ pub(crate) fn apply_engine_error_to_app(
     app.turn_error_posted = true;
     if matches!(
         envelope.category,
-        deepseek_shared::core::error_taxonomy::ErrorCategory::Authentication
+        deepseek_engine::core::error_taxonomy::ErrorCategory::Authentication
     ) && app.api_key_env_only
     {
         app.offline_mode = true;
@@ -3997,7 +3997,7 @@ async fn dispatch_user_message(
 
 async fn apply_model_and_compaction_update(
     engine_handle: &EngineHandle,
-    compaction: deepseek_shared::core::compaction::CompactionConfig,
+    compaction: deepseek_engine::core::compaction::CompactionConfig,
 ) {
     let _ = engine_handle
         .send(Op::SetModel {
@@ -4814,7 +4814,7 @@ fn apply_workspace_runtime_state(app: &mut App, config: &Config, workspace: Path
     app.workspace_context_refreshed_at = None;
     app.file_tree = None;
 
-    let shell_manager = deepseek_shared::tools::shell::new_shared_shell_manager(workspace);
+    let shell_manager = deepseek_engine::tools::shell::new_shared_shell_manager(workspace);
     app.runtime_services.shell_manager = Some(shell_manager);
     app.runtime_services.hook_executor = Some(std::sync::Arc::new(app.hooks.clone()));
 }

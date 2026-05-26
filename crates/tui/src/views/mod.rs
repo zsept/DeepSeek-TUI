@@ -4,10 +4,10 @@ use std::cell::{Cell, RefCell};
 use std::fmt;
 
 use deepseek_shared::localization::{Locale, MessageId, tr};
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use deepseek_shared::config::settings::Settings;
-use deepseek_shared::tools::UserInputResponse;
-use deepseek_shared::tools::agent::{AgentAssignment, AgentResult, AgentStatus, AgentRole};
+use deepseek_engine::tools::UserInputResponse;
+use deepseek_engine::tools::agent::{AgentAssignment, AgentResult, AgentStatus, AgentRole};
 use crate::app::App;
 use crate::state::approval::{ElevationOption, ReviewDecision};
 use crate::render::history::{HistoryCell, AgentCell, summarize_tool_output};
@@ -1977,7 +1977,7 @@ mod tests {
     use deepseek_shared::config::Config;
     use deepseek_shared::localization::Locale;
     use deepseek_shared::config::settings::Settings;
-    use deepseek_shared::tools::agent::{
+    use deepseek_engine::tools::agent::{
         AgentAssignment, AgentResult, AgentStatus, AgentRole,
     };
     use crate::app::{App, TuiOptions};

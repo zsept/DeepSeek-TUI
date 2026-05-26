@@ -31,7 +31,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::settings::osc8;
 
 // Thread-local counter incremented every time `parse` runs. Used by tests to

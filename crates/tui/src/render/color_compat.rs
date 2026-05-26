@@ -14,7 +14,8 @@ use ratatui::{
     layout::{Position, Size},
 };
 
-use deepseek_shared::palette::{self, ColorDepth, PaletteMode};
+use deepseek_palette as palette;
+use deepseek_palette::{ColorDepth, PaletteMode};
 use crate::settings::theme::Theme;
 
 #[derive(Debug)]

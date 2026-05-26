@@ -8,6 +8,7 @@ description = "Tool invocation lifecycle, schema validation, and scheduler paral
 
 [dependencies]
 deepseek-shared = { path = "../shared", version = "0.8.38" }
+deepseek-engine = { path = "../engine", version = "0.8.38" }
 anyhow.workspace = true
 async-trait.workspace = true
 deepseek-protocol = { path = "../protocol", version = "0.8.38" }

@@ -19,7 +19,7 @@ use ratatui::{
 };
 
 use deepseek_shared::config::StatusItem;
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 /// Picker state. We hold both the user's working selection AND the original

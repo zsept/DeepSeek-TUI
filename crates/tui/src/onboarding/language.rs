@@ -9,7 +9,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
 use deepseek_shared::localization::MessageId;
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::App;
 
 /// Locale options shown in the picker. Order matches the keyboard hotkeys.

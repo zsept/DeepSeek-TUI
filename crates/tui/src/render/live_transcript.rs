@@ -31,7 +31,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Padding, Paragraph, Widget, Wrap},
 };
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::App;
 use crate::state::backtrack::Direction;
 use crate::render::history::{HistoryCell, TranscriptRenderOptions};

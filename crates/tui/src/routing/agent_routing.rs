@@ -2,8 +2,8 @@
 
 use std::time::Instant;
 
-use deepseek_shared::runtime::task_manager::{TaskRecord, TaskStatus, TaskSummary};
-use deepseek_shared::tools::agent::{MailboxMessage, AgentResult, AgentStatus};
+use deepseek_engine::runtime::task_manager::{TaskRecord, TaskStatus, TaskSummary};
+use deepseek_engine::tools::agent::{MailboxMessage, AgentResult, AgentStatus};
 use crate::app::{App, AppMode, TaskPanelEntry};
 use crate::render::history::{HistoryCell, AgentCell, summarize_tool_output};
 use crate::render::pager::PagerView;
@@ -291,10 +291,10 @@ fn format_task_detail(task: &TaskRecord) -> String {
     } else {
         for tool in &task.tool_calls {
             let status = match tool.status {
-                deepseek_shared::runtime::task_manager::TaskToolStatus::Running => "running",
-                deepseek_shared::runtime::task_manager::TaskToolStatus::Success => "success",
-                deepseek_shared::runtime::task_manager::TaskToolStatus::Failed => "failed",
-                deepseek_shared::runtime::task_manager::TaskToolStatus::Canceled => "canceled",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Running => "running",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Success => "success",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Failed => "failed",
+                deepseek_engine::runtime::task_manager::TaskToolStatus::Canceled => "canceled",
             };
             let mut line = format!(
                 "- {} [{}] {}",
@@ -337,7 +337,7 @@ fn format_task_detail(task: &TaskRecord) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_shared::runtime::task_manager::{TaskStatus, TaskSummary};
+    use deepseek_engine::runtime::task_manager::{TaskStatus, TaskSummary};
     use chrono::Utc;
 
     fn task_summary(id: &str, status: TaskStatus, duration_ms: Option<u64>) -> TaskSummary {

@@ -1,6 +1,6 @@
 //! Background shell job-center helpers for slash commands and pagers.
 
-use deepseek_shared::tools::shell::{ShellJobDetail, ShellJobSnapshot, ShellResult, ShellStatus};
+use deepseek_engine::tools::shell::{ShellJobDetail, ShellJobSnapshot, ShellResult, ShellStatus};
 use crate::app::App;
 use crate::render::history::HistoryCell;
 use crate::render::pager::PagerView;

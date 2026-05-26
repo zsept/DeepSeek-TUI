@@ -1,5 +1,5 @@
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 #[cfg(unix)]
 use std::io::Write;
@@ -1528,6 +1528,27 @@ impl EnvRuntimeOverrides {
             ProviderKind::Vllm => self.vllm_base_url.clone(),
             ProviderKind::Ollama => self.ollama_base_url.clone(),
         }
+    }
+}
+
+/// `[workshop]` section in `config.toml` for large-tool-output routing (#548).
+#[derive(Debug, Clone, serde::Deserialize, Default)]
+pub struct WorkshopConfig {
+    #[serde(default)]
+    pub large_output_threshold_tokens: Option<usize>,
+    #[serde(default)]
+    pub per_tool_thresholds: Option<HashMap<String, usize>>,
+}
+
+impl WorkshopConfig {
+    #[must_use]
+    pub fn threshold_for(&self, tool_name: &str) -> usize {
+        if let Some(per_tool) = self.per_tool_thresholds.as_ref() {
+            if let Some(&limit) = per_tool.get(tool_name) {
+                return limit;
+            }
+        }
+        self.large_output_threshold_tokens.unwrap_or(4096)
     }
 }
 

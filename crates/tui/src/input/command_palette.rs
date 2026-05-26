@@ -14,11 +14,11 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::commands;
 use deepseek_shared::localization::Locale;
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use deepseek_skills::SkillRegistry;
-use deepseek_shared::tools::spec::ApprovalRequirement;
-use deepseek_shared::tools::spec::ToolCapability;
-use deepseek_shared::tools::{ToolContext, ToolRegistryBuilder};
+use deepseek_engine::tools::spec::ApprovalRequirement;
+use deepseek_engine::tools::spec::ToolCapability;
+use deepseek_engine::tools::{ToolContext, ToolRegistryBuilder};
 use crate::ui::views::{CommandPaletteAction, ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

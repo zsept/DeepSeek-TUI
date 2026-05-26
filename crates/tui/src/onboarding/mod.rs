@@ -15,7 +15,7 @@ use ratatui::{
     widgets::{Block, Borders, Padding, Paragraph, Wrap},
 };
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::{App, OnboardingState};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {

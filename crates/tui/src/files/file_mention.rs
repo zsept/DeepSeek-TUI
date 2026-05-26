@@ -28,7 +28,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::app::{App, MentionCompletionCache};
-use deepseek_shared::working_set::Workspace;
+use deepseek_context::working_set::Workspace;
 
 /// Maximum number of `@`-mentions whose contents are inlined into one user
 /// message. Beyond this we stop appending blocks but the raw `@token` text

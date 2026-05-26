@@ -16,7 +16,7 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 use deepseek_shared::localization::{Locale, MessageId, tr};
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::{App, AppMode};
 
 use super::Renderable;
@@ -538,11 +538,11 @@ fn retry_banner_spans(max_width: usize, props: &FooterProps) -> Option<Vec<Span<
             // anything extra.
             (
                 format!("⟳ retry {} in {secs}s — {}", banner.attempt, banner.reason),
-                deepseek_shared::palette::STATUS_WARNING,
+                deepseek_palette::STATUS_WARNING,
             )
         }
         deepseek_shared::retry_status::RetryState::Failed { reason, .. } => {
-            (format!("× failed: {reason}"), deepseek_shared::palette::STATUS_ERROR)
+            (format!("× failed: {reason}"), deepseek_palette::STATUS_ERROR)
         }
         deepseek_shared::retry_status::RetryState::Idle => return None,
     };
@@ -636,7 +636,7 @@ mod tests {
     use super::{FooterProps, FooterWidget, Renderable};
     use deepseek_shared::config::Config;
     use deepseek_shared::localization::Locale;
-    use deepseek_shared::palette;
+    use deepseek_palette as palette;
     use crate::app::{App, AppMode, TuiOptions};
     use ratatui::{
         style::{Color, Style},

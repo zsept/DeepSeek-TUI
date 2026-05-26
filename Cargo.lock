@@ -1186,17 +1186,130 @@ dependencies = [
 ]
 
 [[package]]
+name = "deepseek-capacity"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "deepseek-shared",
+ "dirs",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "thiserror 2.0.17",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "deepseek-config"
 version = "0.8.38"
 dependencies = [
  "anyhow",
  "deepseek-agent",
+ "deepseek-base",
+ "deepseek-palette",
  "deepseek-secrets",
  "deepseek-shared",
+ "deepseek-support",
  "dirs",
  "serde",
  "toml 0.9.11+spec-1.1.0",
  "tracing",
+]
+
+[[package]]
+name = "deepseek-context"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "deepseek-base",
+ "deepseek-models",
+ "deepseek-shared",
+ "deepseek-skills",
+ "deepseek-support",
+ "dirs",
+ "ignore",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "deepseek-engine"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "axum",
+ "base64",
+ "chrono",
+ "clap",
+ "colored",
+ "crossterm 0.28.1",
+ "deepseek-agent",
+ "deepseek-base",
+ "deepseek-capacity",
+ "deepseek-config",
+ "deepseek-context",
+ "deepseek-execpolicy",
+ "deepseek-lsp",
+ "deepseek-mcp",
+ "deepseek-models",
+ "deepseek-palette",
+ "deepseek-protocol",
+ "deepseek-sandbox",
+ "deepseek-secrets",
+ "deepseek-shared",
+ "deepseek-skills",
+ "deepseek-snapshot",
+ "deepseek-state",
+ "deepseek-support",
+ "deepseek-utils",
+ "dirs",
+ "fd-lock",
+ "flate2",
+ "futures-util",
+ "ignore",
+ "image",
+ "libc",
+ "multimap",
+ "pdf-extract",
+ "portable-pty",
+ "pretty_assertions",
+ "ratatui",
+ "regex",
+ "reqwest",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "shellexpand",
+ "shlex",
+ "similar",
+ "starlark",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tiny_http",
+ "tokio",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "tower-http",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+ "uuid",
+ "vt100",
+ "wait-timeout",
+ "windows",
+ "wiremock",
+ "zeroize",
 ]
 
 [[package]]
@@ -1250,6 +1363,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "deepseek-palette"
+version = "0.8.38"
+dependencies = [
+ "ratatui",
+]
+
+[[package]]
 name = "deepseek-protocol"
 version = "0.8.38"
 dependencies = [
@@ -1283,6 +1403,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "deepseek-services"
+version = "0.8.38"
+dependencies = [
+ "deepseek-engine",
+ "deepseek-shared",
+]
+
+[[package]]
+name = "deepseek-session-mgr"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "deepseek-base",
+ "deepseek-models",
+ "deepseek-snapshot",
+ "deepseek-support",
+ "dirs",
+ "serde",
+ "serde_json",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "deepseek-shared"
 version = "0.8.38"
 dependencies = [
@@ -1303,9 +1448,11 @@ dependencies = [
  "deepseek-lsp",
  "deepseek-mcp",
  "deepseek-models",
+ "deepseek-palette",
  "deepseek-protocol",
  "deepseek-sandbox",
  "deepseek-secrets",
+ "deepseek-session-mgr",
  "deepseek-skills",
  "deepseek-snapshot",
  "deepseek-state",
@@ -1430,6 +1577,7 @@ version = "0.8.38"
 dependencies = [
  "anyhow",
  "async-trait",
+ "deepseek-engine",
  "deepseek-protocol",
  "deepseek-shared",
  "serde",
@@ -1453,10 +1601,14 @@ dependencies = [
  "clap_complete",
  "colored",
  "crossterm 0.28.1",
+ "deepseek-capacity",
+ "deepseek-context",
+ "deepseek-engine",
  "deepseek-execpolicy",
  "deepseek-lsp",
  "deepseek-mcp",
  "deepseek-models",
+ "deepseek-palette",
  "deepseek-sandbox",
  "deepseek-secrets",
  "deepseek-shared",
@@ -1547,6 +1699,14 @@ dependencies = [
  "tempfile",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "deepseek-vision"
+version = "0.8.38"
+dependencies = [
+ "deepseek-engine",
+ "deepseek-shared",
 ]
 
 [[package]]

@@ -30,7 +30,7 @@ use std::collections::HashSet;
 use deepseek_shared::config::{
     ApiProvider, model_completion_names_for_provider, provider_passes_model_through,
 };
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::app::{App, ReasoningEffort};
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 

@@ -27,7 +27,7 @@ use ratatui::{
 };
 
 use deepseek_shared::config::{ApiProvider, Config, has_api_key_for};
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::ui::views::{ModalKind, ModalView, ViewAction, ViewEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

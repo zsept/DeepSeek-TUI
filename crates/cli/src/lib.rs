@@ -1,5 +1,6 @@
 mod metrics;
 mod update;
+// auto_route stubs — see crates/tui for full implementation
 
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};

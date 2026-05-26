@@ -94,8 +94,8 @@ pub fn show_cycle(app: &App, arg: Option<&str>) -> CommandResult {
 /// same JSON payload the agent would see; the assistant pretty-prints
 /// short results and dumps long ones inline.
 pub fn recall_archive(app: &App, arg: Option<&str>) -> CommandResult {
-    use deepseek_shared::tools::recall_archive::RecallArchiveTool;
-    use deepseek_shared::tools::spec::{ToolContext, ToolSpec};
+    use deepseek_engine::tools::recall_archive::RecallArchiveTool;
+    use deepseek_engine::tools::spec::{ToolContext, ToolSpec};
 
     let Some(raw) = arg.map(str::trim) else {
         return CommandResult::error("Usage: /recall <query>".to_string());
@@ -141,7 +141,7 @@ fn first_line(text: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deepseek_shared::core::cycle_manager::CycleBriefing;
+    use deepseek_engine::core::cycle_manager::CycleBriefing;
     use crate::ui::app::{App, TuiOptions};
     use chrono::Utc;
     use std::path::PathBuf;

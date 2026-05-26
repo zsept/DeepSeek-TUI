@@ -24,7 +24,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::commands;
 use deepseek_shared::localization::{Locale, MessageId, tr};
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use crate::input::keybindings::KEYBINDINGS;
 use crate::settings::theme::Theme;
 use crate::ui::views::{ModalKind, ModalView, ViewAction};

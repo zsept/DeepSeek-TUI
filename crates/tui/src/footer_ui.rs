@@ -3,9 +3,9 @@ use std::time::Instant;
 #[cfg(test)]
 use unicode_width::UnicodeWidthStr;
 
-use deepseek_shared::capacity::coherence::CoherenceState;
-use deepseek_shared::palette;
-use deepseek_shared::tools::agent::AgentStatus;
+use deepseek_capacity::coherence::CoherenceState;
+use deepseek_palette as palette;
+use deepseek_engine::tools::agent::AgentStatus;
 use crate::app::App;
 use crate::render::format_helpers;
 use crate::render::history::{HistoryCell, ToolCell, ToolStatus, summarize_tool_output};

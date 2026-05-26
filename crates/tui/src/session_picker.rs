@@ -15,7 +15,7 @@ use ratatui::{
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 use deepseek_shared::session::manager::{
     SavedSession, SessionManager, SessionMetadata, extract_title, extract_user_prompt,
     strip_thinking_tags,

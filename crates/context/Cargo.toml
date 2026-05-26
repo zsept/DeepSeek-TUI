@@ -1,0 +1,22 @@
+[package]
+name = "deepseek-context"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "System prompts, project context, working set"
+
+[dependencies]
+deepseek-shared = { path = "../shared", version = "0.8.38" }
+deepseek-base = { path = "../base", version = "0.8.38" }
+deepseek-support = { path = "../support", version = "0.8.38" }
+deepseek-models = { path = "../models", version = "0.8.38" }
+deepseek-skills = { path = "../skills", version = "0.8.38" }
+anyhow.workspace = true
+dirs.workspace = true
+ignore = "0.4"
+regex = "1.11"
+serde.workspace = true
+serde_json.workspace = true
+thiserror = "2.0"
+tracing = "0.1"

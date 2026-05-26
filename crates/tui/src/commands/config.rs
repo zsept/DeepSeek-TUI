@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use super::CommandResult;
-use deepseek_shared::core::client::DeepSeekClient;
+use deepseek_engine::core::client::DeepSeekClient;
 use deepseek_shared::config::{COMMON_DEEPSEEK_MODELS, clear_api_key, normalize_model_name_for_provider};
 use crate::config_ui::{ConfigUiMode, parse_mode};
-use deepseek_shared::core::llm_client::LlmClient;
+use deepseek_engine::core::llm_client::LlmClient;
 use deepseek_shared::localization::resolve_locale;
 use deepseek_models::{ContentBlock, Message, MessageRequest, MessageResponse, SystemPrompt};
 use deepseek_shared::config::settings::Settings;
@@ -122,10 +122,10 @@ fn show_single_setting(app: &App, key: &str) -> CommandResult {
         "approval_mode" | "approval" => Some(app.approval_mode.label().to_string()),
         "locale" | "language" => Some(locale_display(app.ui_locale).to_string()),
         "theme" | "ui_theme" => {
-            Some(deepseek_shared::palette::theme_label_for_mode(app.theme.mode).to_string())
+            Some(deepseek_palette::theme_label_for_mode(app.theme.mode).to_string())
         }
         "background_color" | "background" | "bg" => {
-            deepseek_shared::palette::hex_rgb_string(app.theme.surface_bg)
+            deepseek_palette::hex_rgb_string(app.theme.surface_bg)
                 .or_else(|| Some("(default)".to_string()))
         }
         "auto_compact" | "compact" => {
@@ -1765,7 +1765,7 @@ mod tests {
         let result = theme(&mut app, Some("dark"));
 
         assert_eq!(result.message.unwrap(), "theme = dark (saved)");
-        assert_eq!(app.theme.mode, deepseek_shared::palette::PaletteMode::Dark);
+        assert_eq!(app.theme.mode, deepseek_palette::PaletteMode::Dark);
         assert!(app.needs_redraw);
     }
 
@@ -1788,7 +1788,7 @@ mod tests {
         let msg = result.message.unwrap();
 
         assert_eq!(msg, "theme = dark (saved)");
-        assert_eq!(app.theme.mode, deepseek_shared::palette::PaletteMode::Dark);
+        assert_eq!(app.theme.mode, deepseek_palette::PaletteMode::Dark);
 
         let settings_path = Settings::path().unwrap();
         let saved = fs::read_to_string(settings_path).unwrap();

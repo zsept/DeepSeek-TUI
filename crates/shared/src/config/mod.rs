@@ -1058,7 +1058,7 @@ pub struct Config {
     /// Workshop / large-tool-output routing (#548). When absent, the global
     /// default threshold of 4 096 tokens applies and routing is active.
     #[serde(default)]
-    pub workshop: Option<crate::tools::large_output_router::WorkshopConfig>,
+    pub workshop: Option<WorkshopConfig>,
 
     /// Vision model configuration for the `image_analyze` tool.
     #[serde(default)]
@@ -1863,9 +1863,9 @@ impl Config {
     /// roles take precedence over config-based entries with the same name.
     /// Keys are role names the model can reference in `agent_open`.
     #[must_use]
-    pub fn agent_role_configs(&self) -> std::collections::HashMap<String, AgentRoleConfig> {
+    pub fn agent_role_configs(&self, builtin_roles: std::collections::HashMap<String, AgentRoleConfig>) -> std::collections::HashMap<String, AgentRoleConfig> {
         // Layer 1: built-in defaults (compiled into the binary).
-        let mut roles = crate::tools::agent::builtin_role_configs();
+        let mut roles = builtin_roles;
         // Layer 2: ~/.deepseek/roles/<name>/role.toml overrides built-ins.
         for (name, config) in self.load_roles_from_directory() {
             roles.insert(name, config);
@@ -2015,7 +2015,7 @@ impl Config {
 
 // === Defaults ===
 
-fn default_config_path() -> Option<PathBuf> {
+fn resolve_default_config_path() -> Option<PathBuf> {
     env_config_path().or_else(home_config_path)
 }
 
@@ -2056,7 +2056,7 @@ fn home_config_path() -> Option<PathBuf> {
 
 #[must_use]
 pub fn is_workspace_trusted(workspace: &Path) -> bool {
-    let Some(config_path) = default_config_path() else {
+    let Some(config_path) = resolve_default_config_path() else {
         return false;
     };
     let Ok(raw) = fs::read_to_string(config_path) else {
@@ -2070,7 +2070,7 @@ pub fn is_workspace_trusted(workspace: &Path) -> bool {
 
     #[allow(dead_code)]
 pub fn save_workspace_trust(workspace: &Path) -> Result<PathBuf> {
-    let config_path = default_config_path()
+    let config_path = resolve_default_config_path()
         .context("Failed to resolve config path: home directory not found.")?;
     ensure_parent_dir(&config_path)?;
 
@@ -2179,7 +2179,7 @@ fn resolve_load_config_path(path: Option<PathBuf>) -> Option<PathBuf> {
 pub fn ensure_config_file_exists(path: Option<PathBuf>) -> Result<Option<PathBuf>> {
     let config_path = path
         .map(expand_pathbuf)
-        .or_else(default_config_path)
+        .or_else(resolve_default_config_path)
         .context("Failed to resolve config path: home directory not found.")?;
     if config_path.exists() {
         return Ok(None);
@@ -2232,7 +2232,7 @@ fn default_requirements_path() -> Option<PathBuf> {
     }
 }
 
-pub(crate) fn expand_path(path: &str) -> PathBuf {
+pub fn expand_path(path: &str) -> PathBuf {
     if let Some(stripped) = path.strip_prefix('~')
         && (stripped.is_empty() || stripped.starts_with('/') || stripped.starts_with('\\'))
         && let Some(mut home) = effective_home_dir()
@@ -3284,7 +3284,7 @@ fn save_api_key_to_config_file(api_key: &str) -> Result<PathBuf> {
             .is_some_and(|rest| rest.trim_start().starts_with('='))
     }
 
-    let config_path = default_config_path()
+    let config_path = resolve_default_config_path()
         .context("Failed to resolve config path: home directory not found.")?;
 
     ensure_parent_dir(&config_path)?;
@@ -3485,7 +3485,7 @@ pub fn save_api_key_for(provider: ApiProvider, api_key: &str) -> Result<PathBuf>
         };
     }
 
-    let config_path = default_config_path()
+    let config_path = resolve_default_config_path()
         .context("Failed to resolve config path: home directory not found.")?;
     ensure_parent_dir(&config_path)?;
 
@@ -3581,7 +3581,7 @@ pub fn clear_api_key() -> Result<()> {
     // Strip api_key lines from config.toml, including provider-scoped nested
     // entries. Clearing a config file must not trigger platform credential
     // prompts.
-    let config_path = default_config_path()
+    let config_path = resolve_default_config_path()
         .context("Failed to resolve config path: home directory not found.")?;
 
     if !config_path.exists() {

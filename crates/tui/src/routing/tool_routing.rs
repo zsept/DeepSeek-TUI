@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use deepseek_shared::hooks::HookEvent;
-use deepseek_shared::tools::ReviewOutput;
-use deepseek_shared::tools::spec::{ToolError, ToolResult};
+use deepseek_engine::tools::ReviewOutput;
+use deepseek_engine::tools::spec::{ToolError, ToolResult};
 use crate::render::active_cell::ActiveCell;
 use crate::app::{App, ToolDetailRecord};
 use crate::render::history::{

@@ -5,8 +5,6 @@ members = [
     "crates/support",
     "crates/config",
     "crates/shared",
-    "crates/base",
-    "crates/support",
     "crates/agent",
     "crates/execpolicy",
     "crates/mcp",
@@ -21,6 +19,13 @@ members = [
     "crates/tools",
     "crates/tui",
     "crates/utils",
+    "crates/palette",
+    "crates/capacity",
+    "crates/session_mgr",
+    "crates/context",
+    "crates/services",
+    "crates/vision",
+    "crates/engine",
 ]
 default-members = ["crates/cli", "crates/tui"]
 resolver = "2"

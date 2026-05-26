@@ -12,7 +12,7 @@ use ratatui::text::{Line, Span};
 use std::time::Instant;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use deepseek_shared::palette;
+use deepseek_palette as palette;
 
 pub mod chunking;
 pub mod commit_tick;

@@ -22,7 +22,8 @@ use deepseek_state::{
     JobStateRecord, JobStateStatus, SessionSource, StateStore, ThreadListFilters, ThreadMetadata,
     ThreadStatus as PersistedThreadStatus,
 };
-use crate::tools::{ToolCall, ToolRegistry};
+use crate::tools::{ToolCall};
+use crate::tools::core_types::ToolRegistry;
 use serde_json::{Value, json};
 use uuid::Uuid;
 

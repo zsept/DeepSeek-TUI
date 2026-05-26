@@ -8,6 +8,14 @@
 #![deny(clippy::print_stdout)]
 #![deny(clippy::print_stderr)]
 
+pub mod core_types;
+pub use core_types::{
+    ApprovalRequirement, FunctionCallError, ToolCall, ToolCallSource, ToolCallRuntime,
+    ToolCapability, ToolError, ToolHandler, ToolInvocation, ToolResult,
+    ToolSpec as CoreToolSpec, ConfiguredToolSpec,
+    optional_bool, optional_str, optional_u64, required_str, required_u64,
+};
+
 pub mod apply_patch;
 pub mod approval_cache;
 pub mod arg_repair;

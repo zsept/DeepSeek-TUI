@@ -1,7 +1,6 @@
 //! DeepSeek TUI engine library — core logic types re-exported for external crates.
 
 
-pub mod acp_server;
 pub mod artifacts;
 pub mod auto_reasoning;
 pub mod auto_route;
@@ -11,11 +10,8 @@ pub mod command_safety;
 pub mod config;
 pub mod context_ref;
 pub mod core;
-pub mod core_runtime;
 pub mod cost_status;
 pub mod dependencies;
-pub mod eval;
-pub mod handoff;
 pub mod hooks;
 pub mod localization;
 pub mod logging;
@@ -24,13 +20,10 @@ pub mod network_policy;
 pub mod palette;
 pub mod pricing;
 pub mod project_context;
-pub mod project_doc;
 pub mod prompts;
 pub mod retry_status;
 pub mod runtime;
-pub mod schema_migration;
 pub mod session;
-pub mod summarize;
 pub mod tools;
 pub mod utils;
 pub mod vision;

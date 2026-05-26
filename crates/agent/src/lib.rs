@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use deepseek_config::ProviderKind;
 use serde::{Deserialize, Serialize};
+
+pub use deepseek_config::ProviderKind;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {

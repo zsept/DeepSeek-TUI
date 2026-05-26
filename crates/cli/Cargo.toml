@@ -14,10 +14,10 @@ path = "src/main.rs"
 anyhow.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
-deepseek-agent = { path = "../engine/src/agent", version = "0.8.38" }
+deepseek-agent = { path = "../agent", version = "0.8.38" }
 deepseek-config = { path = "../config", version = "0.8.38" }
-deepseek-execpolicy = { path = "../engine/src/execpolicy", version = "0.8.38" }
-deepseek-mcp = { path = "../engine/src/mcp", version = "0.8.38" }
+deepseek-execpolicy = { path = "../execpolicy", version = "0.8.38" }
+deepseek-mcp = { path = "../mcp", version = "0.8.38" }
 deepseek-secrets = { path = "../secrets", version = "0.8.38" }
 deepseek-state = { path = "../state", version = "0.8.38" }
 chrono.workspace = true

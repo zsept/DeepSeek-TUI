@@ -20,12 +20,12 @@ deepseek-engine = { path = "../engine", version = "0.8.38" }
 deepseek-secrets = { path = "../secrets", version = "0.8.38" }
 deepseek-tools = { path = "../tools", version = "0.8.38" }
 deepseek-models = { path = "../models", version = "0.8.38" }
-deepseek-sandbox = { path = "../engine/src/sandbox", version = "0.8.38" }
+deepseek-sandbox = { path = "../sandbox", version = "0.8.38" }
 deepseek-lsp = { path = "../lsp", version = "0.8.38" }
 deepseek-snapshot = { path = "../snapshot", version = "0.8.38" }
-deepseek-skills = { path = "../engine/src/skills", version = "0.8.38" }
-deepseek-execpolicy = { path = "../engine/src/execpolicy", version = "0.8.38" }
-deepseek-mcp = { path = "../engine/src/mcp", version = "0.8.38" }
+deepseek-skills = { path = "../skills", version = "0.8.38" }
+deepseek-execpolicy = { path = "../execpolicy", version = "0.8.38" }
+deepseek-mcp = { path = "../mcp", version = "0.8.38" }
 deepseek-utils = { path = "../utils", version = "0.8.38" }
 schemaui = { version = "0.12.0", default-features = false, optional = true }
 async-stream = "0.3.6"

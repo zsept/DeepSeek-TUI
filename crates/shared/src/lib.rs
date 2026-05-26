@@ -1,4 +1,5 @@
 //! DeepSeek TUI engine library — core logic types re-exported for external crates.
+pub use deepseek_base::{mode_types, network_policy};
 
 
 pub mod artifacts;
@@ -15,8 +16,6 @@ pub mod dependencies;
 pub mod hooks;
 pub mod localization;
 pub mod logging;
-pub mod mode_types;
-pub mod network_policy;
 pub mod palette;
 pub mod pricing;
 pub mod project_context;

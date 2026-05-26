@@ -1166,6 +1166,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "deepseek-base"
+version = "0.8.38"
+dependencies = [
+ "chrono",
+ "dirs",
+ "reqwest",
+ "serde",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
 name = "deepseek-config"
 version = "0.8.38"
 dependencies = [
@@ -1278,6 +1290,7 @@ dependencies = [
  "colored",
  "crossterm 0.28.1",
  "deepseek-agent",
+ "deepseek-base",
  "deepseek-execpolicy",
  "deepseek-lsp",
  "deepseek-mcp",

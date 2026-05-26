@@ -1309,6 +1309,7 @@ dependencies = [
  "deepseek-skills",
  "deepseek-snapshot",
  "deepseek-state",
+ "deepseek-support",
  "deepseek-utils",
  "dirs",
  "dotenvy",
@@ -1399,6 +1400,25 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "deepseek-support"
+version = "0.8.38"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "deepseek-models",
+ "dirs",
+ "futures-util",
+ "ignore",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "walkdir",
 ]
 
 [[package]]

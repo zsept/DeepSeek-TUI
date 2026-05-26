@@ -1,0 +1,22 @@
+[package]
+name = "deepseek-support"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Support utilities for DeepSeek TUI"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+deepseek-models = { path = "../models", version = "0.8.38" }
+ignore = "0.4"
+dirs.workspace = true
+tempfile = "3.16"
+serde = { workspace = true }
+regex = "1.11"
+walkdir = "2"
+tracing.workspace = true
+futures-util = "0.3.31"
+tokio = { workspace = true }
